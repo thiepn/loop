@@ -1,4 +1,4 @@
-export type AudioEngineState = 'idle' | 'running' | 'suspended' | 'closed' | 'unsupported';
+export type AudioEngineState = AudioContextState | 'idle' | 'unsupported';
 
 export interface AudioEngineSnapshot {
   readonly state: AudioEngineState;
