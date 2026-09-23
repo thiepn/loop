@@ -1,6 +1,11 @@
+import { EffectRack } from '../audio/EffectRack';
 import { ProceduralInstrument } from '../audio/ProceduralInstrument';
 import { SpatialVoice } from '../audio/SpatialVoice';
 import { soundById } from '../sounds/coreCatalog';
+import {
+  effectAmountsAtPoint,
+  type EffectFieldDocument,
+} from '../world/EffectField';
 import type { WorldDocument } from '../world/World';
 import type { NormalizedPoint, SoundOrbDocument } from '../world/SoundOrb';
 import { recommendedVoiceGain } from './MixPolicy';
@@ -19,6 +24,7 @@ export type OrbActivityListener = (activity: OrbActivity) => void;
 interface OrbRuntime {
   orb: SoundOrbDocument;
   readonly spatial: SpatialVoice;
+  readonly effects: EffectRack;
   readonly instrument: ProceduralInstrument;
 }
 
@@ -116,10 +122,11 @@ export class PlaygroundEngine {
   }
 
   public syncWorld(world: WorldDocument): void {
+    const bpmChanged = world.music.bpm !== this.transport.bpm;
     this.world = world;
 
-    if (world.music.bpm !== this.transport?.bpm) {
-      this.transport?.setBpm(world.music.bpm, this.context.currentTime);
+    if (bpmChanged) {
+      this.transport.setBpm(world.music.bpm, this.context.currentTime);
     }
 
     const liveIds = new Set(world.soundOrbs.map((orb) => orb.id));
@@ -127,6 +134,7 @@ export class PlaygroundEngine {
     for (const [orbId, runtime] of this.runtimes) {
       if (!liveIds.has(orbId)) {
         runtime.instrument.stopAll(this.context.currentTime + 0.01);
+        runtime.effects.dispose();
         runtime.spatial.dispose();
         this.runtimes.delete(orbId);
       }
@@ -134,11 +142,14 @@ export class PlaygroundEngine {
 
     for (const orb of world.soundOrbs) {
       const existing = this.runtimes.get(orb.id);
+      const amounts = effectAmountsAtPoint(world.effectFields, orb.position);
 
       if (existing) {
         existing.orb = orb;
         existing.spatial.setPosition(orb.position);
         existing.spatial.setMuted(orb.muted);
+        existing.effects.setTempo(world.music.bpm);
+        existing.effects.setAmounts(amounts);
         continue;
       }
 
@@ -149,16 +160,45 @@ export class PlaygroundEngine {
         orb.muted,
       );
 
+      const effects = new EffectRack(
+        this.context,
+        spatial.input,
+        world.music.bpm,
+      );
+      effects.setAmounts(amounts, true);
+
       this.runtimes.set(orb.id, {
         orb,
         spatial,
-        instrument: new ProceduralInstrument(this.context, spatial.input),
+        effects,
+        instrument: new ProceduralInstrument(this.context, effects.input),
       });
     }
   }
 
   public updateOrbSpatial(orbId: string, position: NormalizedPoint): void {
-    this.runtimes.get(orbId)?.spatial.setPosition(position);
+    const runtime = this.runtimes.get(orbId);
+
+    if (!runtime) {
+      return;
+    }
+
+    runtime.spatial.setPosition(position);
+    runtime.effects.setAmounts(
+      effectAmountsAtPoint(this.world.effectFields, position),
+    );
+  }
+
+  public previewEffectField(field: EffectFieldDocument): void {
+    const fields = this.world.effectFields.some((candidate) => candidate.id === field.id)
+      ? this.world.effectFields.map((candidate) => candidate.id === field.id ? field : candidate)
+      : [...this.world.effectFields, field];
+
+    for (const runtime of this.runtimes.values()) {
+      runtime.effects.setAmounts(
+        effectAmountsAtPoint(fields, runtime.orb.position),
+      );
+    }
   }
 
   public setOrbMuted(orbId: string, muted: boolean): void {
@@ -179,6 +219,7 @@ export class PlaygroundEngine {
 
     for (const runtime of this.runtimes.values()) {
       runtime.instrument.stopAll();
+      runtime.effects.dispose();
       runtime.spatial.dispose();
     }
 
