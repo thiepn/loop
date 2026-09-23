@@ -1,16 +1,24 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 2.
+Updated through Phase 3.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
 ## Runtime layers
 
 ### app/
-Owns application bootstrap, top-level UI lifecycle, temporary phase integration surfaces, and fatal-error handling.
+Owns application bootstrap, the full-screen playground view, top-level interaction orchestration, and fatal-error handling.
 
-It orchestrates domain services but should not implement timing math, music theory, or audio DSP directly.
+Current responsibilities include:
+- mounting the playground;
+- translating pointer/keyboard intent into World actions;
+- starting/stopping the audio runtime;
+- forwarding live drag previews to spatial audio;
+- rendering serializable World state;
+- aligning visual pulse feedback to scheduled audio time.
+
+The app layer should not implement timing math, harmony rules, compatibility scoring, or DSP.
 
 ### core/audio/
 Owns browser audio lifecycle and audio-producing primitives.
@@ -22,20 +30,22 @@ Current responsibilities:
 - safety limiter;
 - suspend/resume/close lifecycle;
 - one bounded AudioRuntime containing context + destination;
-- lightweight procedural event synthesis for the Phase 2 integration groove.
+- lightweight procedural event synthesis;
+- SpatialVoice channels that map orb presence/pan into Web Audio nodes.
 
 No feature may create hidden AudioContexts independently.
 
 ### core/music/
-Owns musical behavior that must remain independent of UI:
+Owns musical behavior independent of UI:
 
 - MusicalTransport — BPM, bars/beats, time conversion, quantization;
 - LookaheadScheduler — short-horizon audio-time scheduling;
 - Harmony — small scale vocabulary and pitch mapping;
 - MixPolicy — metadata normalization and voice-count headroom;
-- FoundationGroove — temporary integration proof using the above systems.
+- OrbPattern — fixed Phase 3 musical behaviors for each built-in sound;
+- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb.
 
-FoundationGroove is not permanent product architecture. Phase 3 should replace its UI role with Sound Orbs while reusing the musical core.
+The old one-off FoundationGroove runtime was removed in Phase 3. There is now one playback architecture.
 
 ### core/sounds/
 Owns built-in sound meaning and compatibility.
@@ -58,15 +68,30 @@ Contains the small observable Store primitive.
 The Store has no dependency on DOM or Web Audio and can be tested in isolation.
 
 ### core/world/
-Owns the serializable World document boundary.
+Owns the serializable World document boundary and pure creative-state mutations.
 
-World schema version 2 now contains musical context:
+World schema version 3 contains:
 - BPM;
 - tonic;
 - scale;
-- deterministic random seed.
+- deterministic random seed;
+- full SoundOrbDocument objects;
+- placeholder collections for later Effect Fields, Links, and Snapshots.
 
-Creative object collections remain intentionally shallow until their roadmap phases arrive.
+SoundOrbDocument contains:
+- id;
+- sound id;
+- role;
+- normalized x/y position;
+- mute state.
+
+WorldActions owns immutable:
+- move;
+- mute/unmute;
+- duplicate;
+- delete.
+
+SpatialMapping translates normalized position into bounded stereo pan and listener-distance presence.
 
 ### core/assets/
 Resolves static assets through Vite's BASE_URL so production assets work under GitHub Pages at /loop/.
@@ -90,30 +115,46 @@ Avoid duplicated mutable truth.
 Examples:
 - AudioContext and master graph belong to AudioEngine;
 - musical clock state belongs to MusicalTransport;
+- runtime Sound Orb channels belong to PlaygroundEngine;
 - sound metadata belongs to the catalog;
 - serializable creative state belongs to World;
-- transient application shell state belongs to AppState/Store;
-- rendered DOM is a projection of state, not a second data model.
+- transient selection/playback UI state belongs to AppState/Store;
+- rendered DOM is a projection of state, not a second persistent data model.
+
+During a drag, DOM position and spatial audio may preview continuously. The normalized position is committed back to World state when the drag ends.
 
 ## Timing rule
 Musical scheduling must not depend on requestAnimationFrame.
 
-Phase 2 uses:
+The runtime uses:
 - AudioContext.currentTime as the authoritative clock;
 - a short lookahead scheduler for future Web Audio events;
 - musical quantization math for safe boundaries.
 
+Visual pulse feedback may use timers only to align already-scheduled UI animation with audio time. UI timers never schedule audio.
+
 After long main-thread gaps, missed historical ticks are skipped rather than burst-fired.
+
+## Spatial rule
+V1 spatial audio is musical, not physically simulated.
+
+Phase 3 mapping:
+- horizontal normalized position → bounded stereo pan;
+- distance from center listener → bounded presence gain.
+
+No room geometry, wall simulation, diffraction, or physical propagation belongs in this layer.
 
 ## Audio lifecycle
 Browsers require user interaction before reliable audio playback.
 
 Therefore:
 1. app boots without starting AudioContext;
-2. a user action initializes/resumes AudioEngine;
-3. future audio systems receive the one AudioRuntime boundary;
-4. event sources connect through the AudioEngine destination;
-5. teardown stops sources and closes the context.
+2. Play initializes/resumes AudioEngine;
+3. PlaygroundEngine receives the one AudioRuntime boundary;
+4. one SpatialVoice exists per live Sound Orb;
+5. procedural event sources connect into each orb channel;
+6. removal/deletion tears down that orb channel;
+7. app teardown disposes the playground and closes AudioEngine.
 
 ## Musical intelligence rule
 Beginner-facing UI should not calculate:
@@ -124,6 +165,19 @@ Beginner-facing UI should not calculate:
 - headroom.
 
 Those decisions belong to core/music and core/sounds.
+
+## Interaction rule
+Direct manipulation should change sound before opening abstract controls.
+
+Phase 3 supports:
+- pointer/touch/stylus dragging;
+- keyboard arrow nudging;
+- selection;
+- mute;
+- duplicate;
+- delete.
+
+Editable musical patterns remain a later phase rather than being mixed into the spatial interaction layer.
 
 ## GitHub Pages
 The production URL is expected to use the repository path:
@@ -146,7 +200,11 @@ Current automated coverage includes:
 - harmony/transposition helpers;
 - headroom policy;
 - sound compatibility ranking;
-- built-in catalog integrity.
+- built-in catalog integrity;
+- spatial mapping;
+- immutable Sound Orb World mutations;
+- orb cap behavior;
+- starter-World sound/role integrity.
 
 Future phases add tests at their domain boundaries.
 
@@ -158,7 +216,9 @@ Recoverable subsystem errors, such as denied audio initialization, update app st
 ## Performance baseline
 The scheduler runs only while musical playback is active.
 
-Procedural Phase 2 sources are finite-lived and clean themselves up after ending.
+Procedural sources are finite-lived and clean themselves up after ending.
+
+Sound Orb visuals use lightweight DOM/CSS animation in Phase 3. Heavier rendering remains deferred to the dedicated visual phase.
 
 Future render loops and expensive DSP must be pausable when hidden or unnecessary.
 
