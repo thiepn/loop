@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 4.
+Updated through Phase 5.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -44,7 +44,8 @@ Owns musical behavior independent of UI:
 - LookaheadScheduler — short-horizon audio-time scheduling;
 - Harmony — small scale vocabulary and pitch mapping;
 - MixPolicy — metadata normalization and voice-count headroom;
-- OrbPattern — fixed Phase 3 musical behaviors for each built-in sound;
+- Pattern — serializable rhythm/melody documents, density/groove macros, deterministic variation;
+- OrbPattern — schedules each orb’s effective editable pattern;
 - PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb.
 
 The old one-off FoundationGroove runtime was removed in Phase 3. There is now one playback architecture.
@@ -75,7 +76,7 @@ The Store has no dependency on DOM or Web Audio and can be tested in isolation.
 ### core/world/
 Owns the serializable World document boundary and pure creative-state mutations.
 
-World schema version 3 contains:
+World schema version 4 contains:
 - BPM;
 - tonic;
 - scale;
@@ -88,7 +89,8 @@ SoundOrbDocument contains:
 - sound id;
 - role;
 - normalized x/y position;
-- mute state.
+- mute state;
+- optional editable rhythm/melody pattern state.
 
 WorldActions owns immutable:
 - move;
@@ -99,6 +101,8 @@ WorldActions owns immutable:
 - Replace while preserving orb identity/position/mute.
 
 StarterWorlds owns the bounded starter templates (Beat, Chill, Dreamy, Dance, Weird, Empty) and lightweight starter Surprise Me behavior.
+
+PatternActions owns immutable pattern painting, clear, density, groove, and variation edits.
 
 SpatialMapping translates normalized position into bounded stereo pan and listener-distance presence.
 
@@ -178,7 +182,7 @@ Those decisions belong to core/music and core/sounds.
 ## Interaction rule
 Direct manipulation should change sound before opening abstract controls.
 
-Phase 3 supports:
+The primary interaction remains direct manipulation:
 - pointer/touch/stylus dragging;
 - keyboard arrow nudging;
 - selection;
@@ -186,7 +190,7 @@ Phase 3 supports:
 - duplicate;
 - delete.
 
-Editable musical patterns remain a later phase rather than being mixed into the spatial interaction layer.
+Phase 5 adds a contextual **Shape** sheet only for editable sound roles. It is secondary to the canvas and writes directly to serializable Sound Orb state rather than creating a separate sequencer model.
 
 ## GitHub Pages
 The production URL is expected to use the repository path:
@@ -217,7 +221,11 @@ Current automated coverage includes:
 - starter Home definitions;
 - palette category grouping;
 - deterministic Surprise Me behavior;
-- Add/Replace World actions.
+- Add/Replace World actions;
+- rhythm/melody pattern normalization;
+- density/groove/variation transforms;
+- immutable PatternActions;
+- pattern preservation/reset behavior across duplicate/change.
 
 Future phases add tests at their domain boundaries.
 
@@ -252,3 +260,26 @@ A starter selection creates a normal WorldDocument. Add and Change use the same 
 The browser user gesture used to select a non-empty starter is intentionally reused to initialize/resume Web Audio, allowing the World to begin playing without an extra permission/setup screen.
 
 Onboarding state remains transient application state in Phase 4. Persistent onboarding preferences belong with later persistence/settings work.
+
+
+## Phase 5 pattern-state rule
+
+Pattern editing is part of the Sound Orb document model.
+
+Rhythm patterns store:
+- 16 boolean steps;
+- friendly groove feel;
+- variation counter.
+
+Melodic patterns store:
+- 16 optional scale-degree values;
+- friendly groove feel;
+- variation counter.
+
+The UI never stores note names or raw MIDI pitches. Melody cells store scale degrees only; Harmony maps those degrees into the current World scale at playback time.
+
+A sound without explicit edited pattern state uses the sound definition's default pattern. The first user edit materializes that pattern into the Sound Orb document.
+
+Duplicate preserves edited patterns. Change preserves a pattern only when the old and new sounds share the same broad pattern kind (rhythm → rhythm or melody → melody); incompatible changes intentionally reset to the new sound's default.
+
+Groove is implemented as a bounded per-orb timing offset applied to already-quantized scheduler ticks. It does not replace the shared transport or create per-orb clocks.
