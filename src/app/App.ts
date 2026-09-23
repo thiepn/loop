@@ -1,6 +1,17 @@
 import { audioEngine } from '../core/audio/AudioEngine';
 import { PlaygroundEngine, type OrbActivity } from '../core/music/PlaygroundEngine';
+import {
+  evaluateMotionFrame,
+  worldHasActiveMotion,
+} from '../core/music/MotionEngine';
 import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
+import type { MotionMode, MotionRange, MotionSpeed } from '../core/world/Motion';
+import {
+  setOrbFollowTarget,
+  setOrbMotionMode,
+  setOrbMotionRange,
+  setOrbMotionSpeed,
+} from '../core/world/MotionActions';
 import {
   addEffectField,
   deleteEffectField,
@@ -8,6 +19,16 @@ import {
   resizeEffectField,
 } from '../core/world/EffectFieldActions';
 import type { EffectFieldDocument, EffectFieldType } from '../core/world/EffectField';
+import {
+  addPlaygroundToy,
+  deletePlaygroundToy,
+  movePlaygroundToy,
+  movePortalExit,
+} from '../core/world/PlaygroundToyActions';
+import type {
+  PlaygroundToyDocument,
+  PlaygroundToyType,
+} from '../core/world/PlaygroundToy';
 import {
   clearOrbPattern,
   paintMelodyNote,
@@ -41,6 +62,7 @@ import {
 import { MAX_SOUND_ORBS, type NormalizedPoint } from '../core/world/SoundOrb';
 import { EffectFieldView } from './EffectFieldView';
 import { HomeView } from './HomeView';
+import { MotionView } from './MotionView';
 import { PatternEditorView } from './PatternEditorView';
 import { PlaygroundView } from './PlaygroundView';
 import { appStore, type AppScreen, type AppState } from './state';
@@ -51,10 +73,15 @@ export class App {
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
   private effectFieldView: EffectFieldView | null = null;
+  private motionView: MotionView | null = null;
   private patternEditorView: PatternEditorView | null = null;
   private playground: PlaygroundEngine | null = null;
   private mountedScreen: AppScreen | null = null;
   private onboardingComplete = false;
+  private motionFrameRequest: number | null = null;
+  private motionEpochMs: number | null = null;
+  private readonly liveOrbOverrides = new Map<string, NormalizedPoint>();
+  private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
   private readonly activityTimers = new Set<ReturnType<typeof setTimeout>>();
   private readonly capabilities = detectCapabilities();
 
@@ -76,6 +103,7 @@ export class App {
 
   public destroy(): void {
     this.clearActivityTimers();
+    this.cancelMotionLoop();
     this.clearPlaygroundRuntime();
 
     this.unsubscribeStore?.();
@@ -86,6 +114,9 @@ export class App {
 
     this.patternEditorView?.destroy();
     this.patternEditorView = null;
+
+    this.motionView?.destroy();
+    this.motionView = null;
 
     this.effectFieldView?.destroy();
     this.effectFieldView = null;
@@ -105,6 +136,9 @@ export class App {
       this.patternEditorView?.destroy();
       this.patternEditorView = null;
 
+      this.motionView?.destroy();
+      this.motionView = null;
+
       this.effectFieldView?.destroy();
       this.effectFieldView = null;
 
@@ -122,7 +156,9 @@ export class App {
 
     this.playgroundView?.render(state);
     this.effectFieldView?.render(state);
+    this.motionView?.render(state);
     this.patternEditorView?.render(state);
+    this.syncMotionLoop(state);
   }
 
   private mountHome(): void {
@@ -148,9 +184,11 @@ export class App {
         appStore.patch({
           selectedOrbId: orbId,
           selectedFieldId: null,
+          selectedToyId: null,
         });
       },
       onMovePreview: (orbId, position) => {
+        this.liveOrbOverrides.set(orbId, position);
         this.playground?.updateOrbSpatial(orbId, position);
         this.effectFieldView?.previewOrbEffect(
           orbId,
@@ -179,10 +217,25 @@ export class App {
       onOpenPattern: (orbId) => {
         appStore.patch({
           patternEditorOrbId: orbId,
+          motionEditorOrbId: null,
           palette: null,
           effectPaletteOpen: false,
+          toyPaletteOpen: false,
           selectedFieldId: null,
+          selectedToyId: null,
           message: 'Shape it however you like.',
+        });
+      },
+      onOpenMotion: (orbId) => {
+        appStore.patch({
+          motionEditorOrbId: orbId,
+          patternEditorOrbId: null,
+          palette: null,
+          effectPaletteOpen: false,
+          toyPaletteOpen: false,
+          selectedFieldId: null,
+          selectedToyId: null,
+          message: 'Give this sound some motion.',
         });
       },
       onClosePalette: () => {
@@ -210,10 +263,13 @@ export class App {
       onOpenPalette: () => {
         appStore.patch({
           effectPaletteOpen: true,
+          toyPaletteOpen: false,
           palette: null,
           patternEditorOrbId: null,
+          motionEditorOrbId: null,
           selectedOrbId: null,
           selectedFieldId: null,
+          selectedToyId: null,
           message: 'Add a field, then move sounds through it.',
         });
       },
@@ -227,8 +283,10 @@ export class App {
         appStore.patch({
           selectedFieldId: fieldId,
           selectedOrbId: null,
+          selectedToyId: null,
           palette: null,
           patternEditorOrbId: null,
+          motionEditorOrbId: null,
         });
       },
       onMovePreview: (field) => {
@@ -245,6 +303,83 @@ export class App {
       },
       onDeleteField: (fieldId) => {
         this.deleteField(fieldId);
+      },
+    });
+
+    this.motionView = new MotionView(this.root, {
+      onCloseMotion: () => {
+        appStore.patch({ motionEditorOrbId: null });
+      },
+      onSetMotionMode: (orbId, mode) => {
+        this.applyMotionWorld(
+          setOrbMotionMode(appStore.getState().world, orbId, mode),
+          mode === 'still' ? 'Motion stopped.' : `${this.motionModeLabel(mode)} motion active.`,
+        );
+      },
+      onSetMotionSpeed: (orbId, speed) => {
+        this.applyMotionWorld(
+          setOrbMotionSpeed(appStore.getState().world, orbId, speed),
+          `${this.motionSpeedLabel(speed)} motion speed.`,
+        );
+      },
+      onSetMotionRange: (orbId, range) => {
+        this.applyMotionWorld(
+          setOrbMotionRange(appStore.getState().world, orbId, range),
+          `${this.motionRangeLabel(range)} motion range.`,
+        );
+      },
+      onSetFollowTarget: (orbId, targetOrbId) => {
+        this.applyMotionWorld(
+          setOrbFollowTarget(appStore.getState().world, orbId, targetOrbId),
+          'Now following that sound.',
+        );
+      },
+      onOpenToyPalette: () => {
+        appStore.patch({
+          toyPaletteOpen: true,
+          effectPaletteOpen: false,
+          palette: null,
+          patternEditorOrbId: null,
+          motionEditorOrbId: null,
+          selectedOrbId: null,
+          selectedFieldId: null,
+          selectedToyId: null,
+          message: 'Add a toy to change how sounds move.',
+        });
+      },
+      onCloseToyPalette: () => {
+        appStore.patch({ toyPaletteOpen: false });
+      },
+      onAddToy: (type) => {
+        this.addToy(type);
+      },
+      onSelectToy: (toyId) => {
+        appStore.patch({
+          selectedToyId: toyId,
+          selectedOrbId: null,
+          selectedFieldId: null,
+          palette: null,
+          effectPaletteOpen: false,
+          patternEditorOrbId: null,
+          motionEditorOrbId: null,
+        });
+      },
+      onToyPreview: (toy) => {
+        this.toyPreviewOverrides.set(toy.id, toy);
+        this.playground?.previewPlaygroundToy(toy);
+      },
+      onToyMoveCommit: (toyId, position) => {
+        this.commitToyMove(toyId, position);
+      },
+      onPortalExitCommit: (toyId, position) => {
+        this.commitPortalExitMove(toyId, position);
+      },
+      onToyPreviewEnd: (toyId) => {
+        this.toyPreviewOverrides.delete(toyId);
+        this.playground?.releasePlaygroundToyPreview(toyId);
+      },
+      onDeleteToy: (toyId) => {
+        this.deleteToy(toyId);
       },
     });
 
@@ -311,9 +446,12 @@ export class App {
       world,
       selectedOrbId: null,
       selectedFieldId: null,
+      selectedToyId: null,
       palette: null,
       effectPaletteOpen: false,
+      toyPaletteOpen: false,
       patternEditorOrbId: null,
+      motionEditorOrbId: null,
       onboardingStep,
       playing: false,
       message: hasSounds
@@ -334,9 +472,12 @@ export class App {
       screen: 'home',
       selectedOrbId: null,
       selectedFieldId: null,
+      selectedToyId: null,
       palette: null,
       effectPaletteOpen: false,
+      toyPaletteOpen: false,
       patternEditorOrbId: null,
+      motionEditorOrbId: null,
       playing: false,
       message: 'Pick a starting point.',
     });
@@ -441,6 +582,9 @@ export class App {
       onboardingStep,
       message,
     });
+
+    this.liveOrbOverrides.delete(orbId);
+    this.playground?.releaseOrbMotionOverride(orbId);
   }
 
   private toggleMute(orbId: string): void {
@@ -490,6 +634,7 @@ export class App {
       world,
       selectedOrbId: current.selectedOrbId === orbId ? null : current.selectedOrbId,
       patternEditorOrbId: current.patternEditorOrbId === orbId ? null : current.patternEditorOrbId,
+      motionEditorOrbId: current.motionEditorOrbId === orbId ? null : current.motionEditorOrbId,
       message: world.soundOrbs.length > 0
         ? 'Sound removed.'
         : 'Your World is quiet. Add something.',
@@ -512,8 +657,11 @@ export class App {
         category: 'beat',
       },
       patternEditorOrbId: null,
+      motionEditorOrbId: null,
       effectPaletteOpen: false,
+      toyPaletteOpen: false,
       selectedFieldId: null,
+      selectedToyId: null,
       selectedOrbId: null,
       message: 'Pick anything that sounds interesting.',
     });
@@ -534,8 +682,11 @@ export class App {
         category: paletteCategoryForRole(orb.role),
       },
       patternEditorOrbId: null,
+      motionEditorOrbId: null,
       effectPaletteOpen: false,
+      toyPaletteOpen: false,
       selectedFieldId: null,
+      selectedToyId: null,
       message: 'Choose a different sound.',
     });
   }
@@ -659,9 +810,12 @@ export class App {
       world: result.world,
       selectedFieldId: result.createdId,
       selectedOrbId: null,
+      selectedToyId: null,
       effectPaletteOpen: false,
+      toyPaletteOpen: false,
       palette: null,
       patternEditorOrbId: null,
+      motionEditorOrbId: null,
       message: 'Field added. Drag a sound into it.',
     });
   }
@@ -675,28 +829,28 @@ export class App {
     const current = appStore.getState();
     const world = moveEffectField(current.world, fieldId, position);
 
-    if (world === current.world) {
-      return;
+    if (world !== current.world) {
+      appStore.patch({
+        world,
+        message: 'Field moved. Sounds react wherever it overlaps.',
+      });
     }
 
-    appStore.patch({
-      world,
-      message: 'Field moved. Sounds react wherever it overlaps.',
-    });
+    this.playground?.releaseEffectFieldPreview(fieldId);
   }
 
   private commitFieldResize(fieldId: string, radius: number): void {
     const current = appStore.getState();
     const world = resizeEffectField(current.world, fieldId, radius);
 
-    if (world === current.world) {
-      return;
+    if (world !== current.world) {
+      appStore.patch({
+        world,
+        message: 'Field resized.',
+      });
     }
 
-    appStore.patch({
-      world,
-      message: 'Field resized.',
-    });
+    this.playground?.releaseEffectFieldPreview(fieldId);
   }
 
   private deleteField(fieldId: string): void {
@@ -712,6 +866,136 @@ export class App {
       selectedFieldId: current.selectedFieldId === fieldId ? null : current.selectedFieldId,
       message: 'Effect field removed.',
     });
+  }
+
+  private addToy(type: PlaygroundToyType): void {
+    const current = appStore.getState();
+    const result = addPlaygroundToy(current.world, type);
+
+    if (!result.createdId) {
+      appStore.patch({
+        toyPaletteOpen: false,
+        message: result.reason === 'duplicate'
+          ? 'That toy is already in this World.'
+          : 'This World already has four toys.',
+      });
+      return;
+    }
+
+    appStore.patch({
+      world: result.world,
+      selectedToyId: result.createdId,
+      selectedOrbId: null,
+      selectedFieldId: null,
+      toyPaletteOpen: false,
+      palette: null,
+      effectPaletteOpen: false,
+      patternEditorOrbId: null,
+      motionEditorOrbId: null,
+      message: type === 'portal'
+        ? 'Portal added. Move IN and OUT wherever you want.'
+        : 'Toy added. Move a sound near it.',
+    });
+  }
+
+  private commitToyMove(toyId: string, position: NormalizedPoint): void {
+    const current = appStore.getState();
+    const world = movePlaygroundToy(current.world, toyId, position);
+
+    if (world !== current.world) {
+      appStore.patch({
+        world,
+        message: 'Toy moved.',
+      });
+    }
+
+    this.toyPreviewOverrides.delete(toyId);
+    this.playground?.releasePlaygroundToyPreview(toyId);
+  }
+
+  private commitPortalExitMove(toyId: string, position: NormalizedPoint): void {
+    const current = appStore.getState();
+    const world = movePortalExit(current.world, toyId, position);
+
+    if (world !== current.world) {
+      appStore.patch({
+        world,
+        message: 'Portal exit moved.',
+      });
+    }
+
+    this.toyPreviewOverrides.delete(toyId);
+    this.playground?.releasePlaygroundToyPreview(toyId);
+  }
+
+  private deleteToy(toyId: string): void {
+    const current = appStore.getState();
+    const world = deletePlaygroundToy(current.world, toyId);
+
+    if (world === current.world) {
+      return;
+    }
+
+    this.toyPreviewOverrides.delete(toyId);
+    this.playground?.releasePlaygroundToyPreview(toyId);
+
+    appStore.patch({
+      world,
+      selectedToyId: current.selectedToyId === toyId ? null : current.selectedToyId,
+      message: 'Playground toy removed.',
+    });
+  }
+
+  private applyMotionWorld(world: AppState['world'], message: string): void {
+    const current = appStore.getState();
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      message,
+    });
+  }
+
+  private motionModeLabel(mode: MotionMode): string {
+    switch (mode) {
+      case 'still':
+        return 'Still';
+      case 'orbit':
+        return 'Orbit';
+      case 'bounce':
+        return 'Bounce';
+      case 'drift':
+        return 'Drift';
+      case 'follow':
+        return 'Follow';
+      case 'wander':
+        return 'Wander';
+    }
+  }
+
+  private motionSpeedLabel(speed: MotionSpeed): string {
+    switch (speed) {
+      case 'slow':
+        return 'Slow';
+      case 'medium':
+        return 'Medium';
+      case 'fast':
+        return 'Fast';
+    }
+  }
+
+  private motionRangeLabel(range: MotionRange): string {
+    switch (range) {
+      case 'tight':
+        return 'Tight';
+      case 'medium':
+        return 'Medium';
+      case 'wide':
+        return 'Wide';
+    }
   }
 
   private setPatternDensity(orbId: string, density: DensityLevel): void {
@@ -751,6 +1035,93 @@ export class App {
       world,
       message,
     });
+  }
+
+  private syncMotionLoop(state: Readonly<AppState>): void {
+    const active = state.screen === 'playground'
+      && (
+        worldHasActiveMotion(state.world)
+        || this.toyPreviewOverrides.size > 0
+      );
+
+    if (!active) {
+      this.cancelMotionLoop();
+      return;
+    }
+
+    if (this.motionFrameRequest !== null) {
+      return;
+    }
+
+    this.motionEpochMs ??= performance.now();
+    this.motionFrameRequest = requestAnimationFrame((timestamp) => {
+      this.runMotionFrame(timestamp);
+    });
+  }
+
+  private runMotionFrame(timestamp: number): void {
+    this.motionFrameRequest = null;
+
+    const state = appStore.getState();
+
+    if (
+      state.screen !== 'playground'
+      || (
+        !worldHasActiveMotion(state.world)
+        && this.toyPreviewOverrides.size === 0
+      )
+    ) {
+      this.cancelMotionLoop();
+      return;
+    }
+
+    this.motionEpochMs ??= timestamp;
+    const timeSeconds = Math.max(0, (timestamp - this.motionEpochMs) / 1000);
+    const motionWorld = this.worldWithToyPreviews(state.world);
+    const frame = this.playground
+      ? this.playground.tickMotion(timeSeconds)
+      : evaluateMotionFrame(motionWorld, timeSeconds);
+
+    for (const orb of state.world.soundOrbs) {
+      const position = this.liveOrbOverrides.get(orb.id)
+        ?? frame.get(orb.id)
+        ?? orb.position;
+
+      this.playgroundView?.previewOrbPosition(orb.id, position);
+      this.effectFieldView?.previewOrbEffect(
+        orb.id,
+        position,
+        state.world.effectFields,
+      );
+    }
+
+    this.motionFrameRequest = requestAnimationFrame((nextTimestamp) => {
+      this.runMotionFrame(nextTimestamp);
+    });
+  }
+
+  private cancelMotionLoop(): void {
+    if (this.motionFrameRequest !== null) {
+      cancelAnimationFrame(this.motionFrameRequest);
+      this.motionFrameRequest = null;
+    }
+
+    this.motionEpochMs = null;
+    this.liveOrbOverrides.clear();
+    this.toyPreviewOverrides.clear();
+  }
+
+  private worldWithToyPreviews(world: AppState['world']): AppState['world'] {
+    if (this.toyPreviewOverrides.size === 0) {
+      return world;
+    }
+
+    return {
+      ...world,
+      playgroundToys: world.playgroundToys.map(
+        (toy) => this.toyPreviewOverrides.get(toy.id) ?? toy,
+      ),
+    };
   }
 
   private clearPlaygroundRuntime(): void {
