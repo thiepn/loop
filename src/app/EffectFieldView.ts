@@ -20,6 +20,7 @@ export interface EffectFieldCallbacks {
   readonly onResizePreview: (field: EffectFieldDocument) => void;
   readonly onResizeCommit: (fieldId: string, radius: number) => void;
   readonly onDeleteField: (fieldId: string) => void;
+  readonly onMagicField: (fieldId: string) => void;
 }
 
 type FieldGesture =
@@ -93,6 +94,7 @@ export class EffectFieldView {
       </div>
       <div class="field-selection-actions">
         <span class="field-help">Drag to move · corner to resize</span>
+        <button class="magic-action" type="button" data-field-magic>✦ Magic</button>
         <button class="danger-action" type="button" data-field-delete>Delete</button>
       </div>
     `;
@@ -104,6 +106,13 @@ export class EffectFieldView {
       throw new Error('Effect Field panel failed to mount.');
     }
     this.fieldPanelName = fieldPanelName;
+
+    fieldPanel.querySelector<HTMLButtonElement>('[data-field-magic]')?.addEventListener('click', () => {
+      const fieldId = this.root.dataset.selectedFieldId || null;
+      if (fieldId) {
+        callbacks.onMagicField(fieldId);
+      }
+    });
 
     fieldPanel.querySelector<HTMLButtonElement>('[data-field-delete]')?.addEventListener('click', () => {
       const fieldId = this.root.dataset.selectedFieldId || null;
