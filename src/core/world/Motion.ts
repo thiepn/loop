@@ -149,9 +149,6 @@ export function evaluateIndependentMotion(
           + Math.sin(angle * 1.17 + 0.2) * range * 0.3,
       });
 
-    case 'still':
-    case 'follow':
-      return orb.position;
   }
 }
 
