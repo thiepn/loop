@@ -34,5 +34,19 @@
 - [x] No studio/DAW/acoustics scope reintroduced.
 - [x] Phase 0 product contract remains authoritative.
 
+## Verification result
+
+GitHub Actions verification passed on the Phase 1 code head after correcting two strict TypeScript issues found by CI:
+- optional fetch signals are no longer passed as explicit `undefined` under `exactOptionalPropertyTypes`;
+- the audio state type now follows the current DOM `AudioContextState` union.
+
+The successful verification covered:
+- dependency installation;
+- strict TypeScript typecheck;
+- unit tests;
+- production Vite build.
+
 ## Exit condition
-Phase 1 is complete only when a clean install can typecheck, run tests, and produce the production Vite build.
+- [x] A clean GitHub Actions install can typecheck, run tests, and produce the production Vite build.
+
+**Phase 1 status: complete.**
