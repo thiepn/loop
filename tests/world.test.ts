@@ -7,6 +7,12 @@ describe('createEmptyWorld', () => {
       id: 'world-test',
       name: '  Dream Garden  ',
       now: 1234,
+      music: {
+        bpm: 96,
+        tonic: 9,
+        scale: 'major-pentatonic',
+        seed: 42,
+      },
     });
 
     expect(world).toEqual({
@@ -15,6 +21,12 @@ describe('createEmptyWorld', () => {
       name: 'Dream Garden',
       createdAt: 1234,
       updatedAt: 1234,
+      music: {
+        bpm: 96,
+        tonic: 9,
+        scale: 'major-pentatonic',
+        seed: 42,
+      },
       soundOrbs: [],
       effectFields: [],
       links: [],
@@ -22,7 +34,7 @@ describe('createEmptyWorld', () => {
     });
   });
 
-  it('falls back to an understandable default name', () => {
+  it('provides safe musical defaults', () => {
     const world = createEmptyWorld({
       id: 'world-test',
       name: '   ',
@@ -30,5 +42,11 @@ describe('createEmptyWorld', () => {
     });
 
     expect(world.name).toBe('Untitled World');
+    expect(world.music).toEqual({
+      bpm: 108,
+      tonic: 0,
+      scale: 'minor-pentatonic',
+      seed: 1,
+    });
   });
 });
