@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 7.
+Introduced in Phase 3 and updated through Phase 8.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -13,6 +13,7 @@ The main screen contains:
 - directly manipulable Effect Fields;
 - optional Sound Orb Motion;
 - directly manipulable playground toys;
+- visible reactive Links between Sound Orbs;
 - one shared musical clock;
 - minimal top-level controls;
 - contextual controls for the selected orb or field.
@@ -97,6 +98,7 @@ Shift + arrow performs a larger movement.
 The contextual selection panel can provide:
 - Shape — edit rhythm/melody when supported;
 - Motion — choose Still/Orbit/Bounce/Drift/Follow/Wander;
+- Link — connect this sound to another using a fixed relationship;
 - Change — choose another sound;
 - Mute / Unmute;
 - Duplicate;
@@ -245,14 +247,48 @@ Toys affect live Motion geometry, so even a Still orb can react when it sits ins
 Toy effects then flow through the existing spatial/effect systems:
 toy-adjusted live position → Effect Fields → SpatialVoice.
 
+## Links
+
+Phase 8 adds five visible one-way Sound Orb relationships:
+
+- **Pulse Together** — target plays when source plays;
+- **Take Turns** — pair alternates by bar;
+- **Follow** — target answers one 16th later;
+- **Kick Pushes Bass** — Beat/Percussion briefly pushes a Bass;
+- **Copy Movement** — target mirrors source live movement around its own anchor.
+
+This musical **Follow** is separate from Phase 7 Motion Follow.
+
+Select an orb → **Link** → choose another sound → choose a relationship.
+
+Invalid combinations remain visible but disabled with a plain-language explanation.
+
+Links render as curved SVG relationships behind the Sound Orbs and follow:
+- Motion;
+- toy movement;
+- manual drag previews.
+
+Reactive Link lines pulse at actual audio-event time.
+
+Clicking a Link selects it and exposes Delete.
+
+Relationship rules are deliberately bounded:
+- no self/duplicate Links;
+- max eight Links;
+- Pulse/Follow playback drivers cannot form chains;
+- Take Turns stays isolated from conflicting reactive drivers;
+- Kick Pushes Bass is Beat/Percussion → Bass only;
+- Copy Movement stays one level deep.
+
 ## World schema
 
-World schema version 6 includes:
+World schema version 7 includes:
 - full SoundOrbDocument objects with optional serializable pattern + Motion state;
 - full EffectFieldDocument objects;
-- full PlaygroundToyDocument objects.
+- full PlaygroundToyDocument objects;
+- full LinkDocument objects.
 
-Links and Snapshots remain placeholders until their roadmap phases.
+Snapshots remain the remaining placeholder collection.
 
 ## Current scope boundary
 
@@ -269,10 +305,10 @@ The playground currently includes:
 - overlapping field processing;
 - Still/Orbit/Bounce/Drift/Follow/Wander;
 - Speed/Range Motion macros;
-- Spinner/Magnet/Repulsor/Portal toys.
+- Spinner/Magnet/Repulsor/Portal toys;
+- Pulse Together/Take Turns/Follow/Kick Pushes Bass/Copy Movement Links.
 
 It does not yet include:
-- Links;
 - Phase 9 Magic;
 - persistent World library;
 - recording/export.
