@@ -19,7 +19,8 @@ export class AssetLoader {
   }
 
   public async fetchText(path: string, signal?: AbortSignal): Promise<string> {
-    const response = await fetch(this.resolve(path), { signal });
+    const url = this.resolve(path);
+    const response = signal ? await fetch(url, { signal }) : await fetch(url);
 
     if (!response.ok) {
       throw new Error(`Failed to load asset: ${path} (${response.status})`);
@@ -29,7 +30,8 @@ export class AssetLoader {
   }
 
   public async fetchArrayBuffer(path: string, signal?: AbortSignal): Promise<ArrayBuffer> {
-    const response = await fetch(this.resolve(path), { signal });
+    const url = this.resolve(path);
+    const response = signal ? await fetch(url, { signal }) : await fetch(url);
 
     if (!response.ok) {
       throw new Error(`Failed to load asset: ${path} (${response.status})`);
