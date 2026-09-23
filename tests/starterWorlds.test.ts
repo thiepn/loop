@@ -32,6 +32,12 @@ describe('starter Worlds', () => {
       for (const orb of world.soundOrbs) {
         expect(soundById(orb.soundId)).toBeDefined();
       }
+
+      expect(world.effectFields.length).toBeGreaterThanOrEqual(1);
+      expect(world.effectFields.length).toBeLessThanOrEqual(5);
+      expect(new Set(world.effectFields.map((field) => field.type)).size).toBe(
+        world.effectFields.length,
+      );
     }
   });
 
