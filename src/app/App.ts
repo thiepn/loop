@@ -1,5 +1,14 @@
 import { audioEngine } from '../core/audio/AudioEngine';
 import { PlaygroundEngine, type OrbActivity } from '../core/music/PlaygroundEngine';
+import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
+import {
+  clearOrbPattern,
+  paintMelodyNote,
+  paintRhythmStep,
+  setOrbPatternDensity,
+  setOrbPatternGroove,
+  varyOrbPattern,
+} from '../core/world/PatternActions';
 import { detectCapabilities } from '../core/platform/capabilities';
 import {
   paletteCategoryForRole,
@@ -24,14 +33,16 @@ import {
 } from '../core/world/WorldActions';
 import { MAX_SOUND_ORBS, type NormalizedPoint } from '../core/world/SoundOrb';
 import { HomeView } from './HomeView';
+import { PatternEditorView } from './PatternEditorView';
 import { PlaygroundView } from './PlaygroundView';
-import { appStore, type AppScreen } from './state';
+import { appStore, type AppScreen, type AppState } from './state';
 
 export class App {
   private unsubscribeStore: (() => void) | null = null;
   private unsubscribeActivity: (() => void) | null = null;
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
+  private patternEditorView: PatternEditorView | null = null;
   private playground: PlaygroundEngine | null = null;
   private mountedScreen: AppScreen | null = null;
   private onboardingComplete = false;
@@ -64,6 +75,9 @@ export class App {
     this.homeView?.destroy();
     this.homeView = null;
 
+    this.patternEditorView?.destroy();
+    this.patternEditorView = null;
+
     this.playgroundView?.destroy();
     this.playgroundView = null;
     this.mountedScreen = null;
@@ -71,10 +85,14 @@ export class App {
     void audioEngine.close();
   }
 
-  private renderState(state: Readonly<ReturnType<typeof appStore.getState>>): void {
+  private renderState(state: Readonly<AppState>): void {
     if (state.screen !== this.mountedScreen) {
       this.homeView?.destroy();
       this.homeView = null;
+
+      this.patternEditorView?.destroy();
+      this.patternEditorView = null;
+
       this.playgroundView?.destroy();
       this.playgroundView = null;
 
@@ -88,6 +106,7 @@ export class App {
     }
 
     this.playgroundView?.render(state);
+    this.patternEditorView?.render(state);
   }
 
   private mountHome(): void {
@@ -133,6 +152,13 @@ export class App {
       onOpenChange: (orbId) => {
         this.openChangePalette(orbId);
       },
+      onOpenPattern: (orbId) => {
+        appStore.patch({
+          patternEditorOrbId: orbId,
+          palette: null,
+          message: 'Shape it however you like.',
+        });
+      },
       onClosePalette: () => {
         appStore.patch({ palette: null });
       },
@@ -151,6 +177,42 @@ export class App {
           onboardingStep: 'done',
           message: 'Explore freely.',
         });
+      },
+    });
+
+    this.patternEditorView = new PatternEditorView(this.root, {
+      onClose: () => {
+        appStore.patch({ patternEditorOrbId: null });
+      },
+      onPaintRhythm: (orbId, step, active) => {
+        this.applyPatternWorld(
+          paintRhythmStep(appStore.getState().world, orbId, step, active),
+          'Beat updated.',
+        );
+      },
+      onPaintMelody: (orbId, step, degree) => {
+        this.applyPatternWorld(
+          paintMelodyNote(appStore.getState().world, orbId, step, degree),
+          'Melody updated.',
+        );
+      },
+      onDensity: (orbId, density) => {
+        this.setPatternDensity(orbId, density);
+      },
+      onGroove: (orbId, groove) => {
+        this.setPatternGroove(orbId, groove);
+      },
+      onClear: (orbId) => {
+        this.applyPatternWorld(
+          clearOrbPattern(appStore.getState().world, orbId),
+          'Pattern cleared.',
+        );
+      },
+      onVary: (orbId) => {
+        this.applyPatternWorld(
+          varyOrbPattern(appStore.getState().world, orbId),
+          'Here’s another version.',
+        );
       },
     });
   }
@@ -181,6 +243,7 @@ export class App {
       world,
       selectedOrbId: null,
       palette: null,
+      patternEditorOrbId: null,
       onboardingStep,
       playing: false,
       message: hasSounds
@@ -201,6 +264,7 @@ export class App {
       screen: 'home',
       selectedOrbId: null,
       palette: null,
+      patternEditorOrbId: null,
       playing: false,
       message: 'Pick a starting point.',
     });
@@ -353,6 +417,7 @@ export class App {
     appStore.patch({
       world,
       selectedOrbId: current.selectedOrbId === orbId ? null : current.selectedOrbId,
+      patternEditorOrbId: current.patternEditorOrbId === orbId ? null : current.patternEditorOrbId,
       message: world.soundOrbs.length > 0
         ? 'Sound removed.'
         : 'Your World is quiet. Add something.',
@@ -374,6 +439,7 @@ export class App {
         mode: 'add',
         category: 'beat',
       },
+      patternEditorOrbId: null,
       selectedOrbId: null,
       message: 'Pick anything that sounds interesting.',
     });
@@ -393,6 +459,7 @@ export class App {
         orbId,
         category: paletteCategoryForRole(orb.role),
       },
+      patternEditorOrbId: null,
       message: 'Choose a different sound.',
     });
   }
@@ -434,6 +501,7 @@ export class App {
         world,
         selectedOrbId: palette.orbId,
         palette: null,
+        patternEditorOrbId: null,
         message: `${sound.name} is now playing here.`,
       });
       return;
@@ -459,6 +527,7 @@ export class App {
       world: result.world,
       selectedOrbId: result.createdId,
       palette: null,
+      patternEditorOrbId: null,
       onboardingStep: completesOnboarding ? 'done' : current.onboardingStep,
       message: completesOnboarding
         ? 'That’s it. Now just play.'
@@ -494,6 +563,45 @@ export class App {
     if (sound) {
       await this.chooseSound(sound.id);
     }
+  }
+
+  private setPatternDensity(orbId: string, density: DensityLevel): void {
+    const labels: Record<DensityLevel, string> = {
+      sparse: 'Made it simpler.',
+      balanced: 'Balanced the pattern.',
+      busy: 'Made it busier.',
+    };
+
+    this.applyPatternWorld(
+      setOrbPatternDensity(appStore.getState().world, orbId, density),
+      labels[density],
+    );
+  }
+
+  private setPatternGroove(orbId: string, groove: GrooveFeel): void {
+    const labels: Record<GrooveFeel, string> = {
+      straight: 'Playing it straight.',
+      bounce: 'Added some bounce.',
+      loose: 'Loosened the feel.',
+    };
+
+    this.applyPatternWorld(
+      setOrbPatternGroove(appStore.getState().world, orbId, groove),
+      labels[groove],
+    );
+  }
+
+  private applyPatternWorld(world: AppState['world'], message: string): void {
+    const current = appStore.getState();
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      message,
+    });
   }
 
   private clearPlaygroundRuntime(): void {
