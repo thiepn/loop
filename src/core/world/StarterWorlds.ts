@@ -1,4 +1,5 @@
 import { createEffectField, type EffectFieldType } from './EffectField';
+import { createLink, type LinkType } from './Link';
 import { createMotion, type CreateMotionOptions } from './Motion';
 import { createPlaygroundToy } from './PlaygroundToy';
 import { createSoundOrb } from './SoundOrb';
@@ -95,6 +96,20 @@ function field(
   });
 }
 
+function link(
+  id: string,
+  type: LinkType,
+  sourceOrbId: string,
+  targetOrbId: string,
+) {
+  return createLink({
+    id,
+    type,
+    sourceOrbId,
+    targetOrbId,
+  });
+}
+
 export function createStarterWorld(
   starterId: StarterWorldId,
   now = Date.now(),
@@ -120,6 +135,14 @@ export function createStarterWorld(
         effectFields: [
           field('beat-echo', 'echo', 0.68, 0.26, 0.15),
         ],
+        links: [
+          link(
+            'beat-kick-push',
+            'kick-pushes-bass',
+            'beat-kick',
+            'beat-bass',
+          ),
+        ],
       });
 
     case 'chill':
@@ -141,6 +164,14 @@ export function createStarterWorld(
         ],
         effectFields: [
           field('chill-space', 'space', 0.72, 0.64, 0.21),
+        ],
+        links: [
+          link(
+            'chill-copy-motion',
+            'copy-movement',
+            'chill-air',
+            'chill-chords',
+          ),
         ],
       });
 
@@ -166,6 +197,14 @@ export function createStarterWorld(
           field('dream-frost', 'frost', 0.58, 0.2, 0.14),
           field('dream-space', 'space', 0.76, 0.62, 0.2),
         ],
+        links: [
+          link(
+            'dream-pulse',
+            'pulse-together',
+            'dream-melody',
+            'dream-hum',
+          ),
+        ],
       });
 
     case 'dance':
@@ -189,6 +228,14 @@ export function createStarterWorld(
         effectFields: [
           field('dance-echo', 'echo', 0.72, 0.25, 0.16),
           field('dance-heat', 'heat', 0.33, 0.29, 0.13),
+        ],
+        links: [
+          link(
+            'dance-turns',
+            'take-turns',
+            'dance-clap',
+            'dance-hats',
+          ),
         ],
       });
 
@@ -223,6 +270,14 @@ export function createStarterWorld(
             radius: 0.14,
             strength: 0.62,
           }),
+        ],
+        links: [
+          link(
+            'weird-follow',
+            'follow',
+            'weird-bell',
+            'weird-hum',
+          ),
         ],
       });
 
