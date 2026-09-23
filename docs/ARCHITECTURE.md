@@ -1,16 +1,18 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 3.
+Updated through Phase 4.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
 ## Runtime layers
 
 ### app/
-Owns application bootstrap, the full-screen playground view, top-level interaction orchestration, and fatal-error handling.
+Owns application bootstrap, the starter Home, the full-screen playground view, top-level interaction orchestration, and fatal-error handling.
 
 Current responsibilities include:
+- mounting/switching Home and Playground surfaces;
+- starting a selected starter World directly from the Home;
 - mounting the playground;
 - translating pointer/keyboard intent into World actions;
 - starting/stopping the audio runtime;
@@ -52,6 +54,9 @@ Owns built-in sound meaning and compatibility.
 
 Current responsibilities:
 - typed sound definitions;
+- reusable musical pattern identity separate from concrete timbre;
+- beginner-facing palette categories and friendly sound grouping;
+- lightweight deterministic Surprise Me selection;
 - role metadata;
 - energy/brightness descriptors;
 - nominal level metadata;
@@ -89,7 +94,11 @@ WorldActions owns immutable:
 - move;
 - mute/unmute;
 - duplicate;
-- delete.
+- delete;
+- Add from the sound palette;
+- Replace while preserving orb identity/position/mute.
+
+StarterWorlds owns the bounded starter templates (Beat, Chill, Dreamy, Dance, Weird, Empty) and lightweight starter Surprise Me behavior.
 
 SpatialMapping translates normalized position into bounded stereo pan and listener-distance presence.
 
@@ -204,7 +213,11 @@ Current automated coverage includes:
 - spatial mapping;
 - immutable Sound Orb World mutations;
 - orb cap behavior;
-- starter-World sound/role integrity.
+- starter-World sound/role integrity;
+- starter Home definitions;
+- palette category grouping;
+- deterministic Surprise Me behavior;
+- Add/Replace World actions.
 
 Future phases add tests at their domain boundaries.
 
@@ -226,3 +239,16 @@ Future render loops and expensive DSP must be pausable when hidden or unnecessar
 Do not create a subsystem because the roadmap mentions it eventually.
 
 Create the smallest stable boundary needed for the current phase, then extend it when the user-facing feature arrives.
+
+
+## Phase 4 entry-flow rule
+
+Home and Sound Palette are presentation/orchestration layers over ordinary World and sound definitions.
+
+They do not create a second project format.
+
+A starter selection creates a normal WorldDocument. Add and Change use the same immutable WorldActions that later persistence will serialize.
+
+The browser user gesture used to select a non-empty starter is intentionally reused to initialize/resume Web Audio, allowing the World to begin playing without an extra permission/setup screen.
+
+Onboarding state remains transient application state in Phase 4. Persistent onboarding preferences belong with later persistence/settings work.
