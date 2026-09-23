@@ -1,35 +1,5 @@
 import type { EffectAmounts } from '../world/EffectField';
 
-const impulseCache = new WeakMap<AudioContext, AudioBuffer>();
-
-function getSpaceImpulse(context: AudioContext): AudioBuffer {
-  const cached = impulseCache.get(context);
-
-  if (cached) {
-    return cached;
-  }
-
-  const length = Math.max(1, Math.floor(context.sampleRate * 1.65));
-  const buffer = context.createBuffer(2, length, context.sampleRate);
-
-  let seed = 0x5f3759df;
-
-  for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
-    const data = buffer.getChannelData(channel);
-
-    for (let index = 0; index < data.length; index += 1) {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      const noise = (seed / 0xffffffff) * 2 - 1;
-      const progress = index / Math.max(1, data.length - 1);
-      const decay = (1 - progress) ** 2.7;
-      data[index] = noise * decay * (channel === 0 ? 0.78 : 0.72);
-    }
-  }
-
-  impulseCache.set(context, buffer);
-  return buffer;
-}
-
 function saturationCurve(): Float32Array<ArrayBuffer> {
   const size = 1024;
   const curve = new Float32Array(
@@ -80,8 +50,14 @@ export class EffectRack {
   private readonly echoSum: GainNode;
 
   private readonly spaceDry: GainNode;
-  private readonly spaceWet: GainNode;
-  private readonly convolver: ConvolverNode;
+  private readonly spaceDelayA: DelayNode;
+  private readonly spaceDelayB: DelayNode;
+  private readonly spaceFilterA: BiquadFilterNode;
+  private readonly spaceFilterB: BiquadFilterNode;
+  private readonly spaceWetA: GainNode;
+  private readonly spaceWetB: GainNode;
+  private readonly spaceFeedbackA: GainNode;
+  private readonly spaceFeedbackB: GainNode;
 
   private bpm: number;
 
@@ -131,9 +107,20 @@ export class EffectRack {
     this.echoSum = context.createGain();
 
     this.spaceDry = context.createGain();
-    this.spaceWet = context.createGain();
-    this.convolver = context.createConvolver();
-    this.convolver.buffer = getSpaceImpulse(context);
+    this.spaceDelayA = context.createDelay(0.4);
+    this.spaceDelayB = context.createDelay(0.4);
+    this.spaceDelayA.delayTime.value = 0.071;
+    this.spaceDelayB.delayTime.value = 0.113;
+    this.spaceFilterA = context.createBiquadFilter();
+    this.spaceFilterB = context.createBiquadFilter();
+    this.spaceFilterA.type = 'lowpass';
+    this.spaceFilterB.type = 'lowpass';
+    this.spaceFilterA.frequency.value = 3900;
+    this.spaceFilterB.frequency.value = 3200;
+    this.spaceWetA = context.createGain();
+    this.spaceWetB = context.createGain();
+    this.spaceFeedbackA = context.createGain();
+    this.spaceFeedbackB = context.createGain();
 
     this.inputNode.connect(this.filterNode);
 
@@ -162,10 +149,21 @@ export class EffectRack {
     this.echoWet.connect(this.echoSum);
 
     this.echoSum.connect(this.spaceDry);
-    this.echoSum.connect(this.convolver);
-    this.convolver.connect(this.spaceWet);
     this.spaceDry.connect(this.outputNode);
-    this.spaceWet.connect(this.outputNode);
+
+    this.echoSum.connect(this.spaceDelayA);
+    this.spaceDelayA.connect(this.spaceFilterA);
+    this.spaceFilterA.connect(this.spaceWetA);
+    this.spaceWetA.connect(this.outputNode);
+    this.spaceFilterA.connect(this.spaceFeedbackA);
+    this.spaceFeedbackA.connect(this.spaceDelayA);
+
+    this.echoSum.connect(this.spaceDelayB);
+    this.spaceDelayB.connect(this.spaceFilterB);
+    this.spaceFilterB.connect(this.spaceWetB);
+    this.spaceWetB.connect(this.outputNode);
+    this.spaceFilterB.connect(this.spaceFeedbackB);
+    this.spaceFeedbackB.connect(this.spaceDelayB);
 
     this.outputNode.connect(destination);
 
@@ -217,8 +215,11 @@ export class EffectRack {
     smooth(this.echoFeedback.gain, echo * 0.4, now, timeConstant);
 
     const space = Math.max(0, Math.min(1, amounts.space));
-    smooth(this.spaceDry.gain, 1 - space * 0.12, now, timeConstant);
-    smooth(this.spaceWet.gain, space * 0.58, now, timeConstant);
+    smooth(this.spaceDry.gain, 1 - space * 0.08, now, timeConstant);
+    smooth(this.spaceWetA.gain, space * 0.31, now, timeConstant);
+    smooth(this.spaceWetB.gain, space * 0.27, now, timeConstant);
+    smooth(this.spaceFeedbackA.gain, space * 0.24, now, timeConstant);
+    smooth(this.spaceFeedbackB.gain, space * 0.2, now, timeConstant);
   }
 
   public dispose(): void {
@@ -243,8 +244,14 @@ export class EffectRack {
       this.echoFeedback,
       this.echoSum,
       this.spaceDry,
-      this.spaceWet,
-      this.convolver,
+      this.spaceDelayA,
+      this.spaceDelayB,
+      this.spaceFilterA,
+      this.spaceFilterB,
+      this.spaceWetA,
+      this.spaceWetB,
+      this.spaceFeedbackA,
+      this.spaceFeedbackB,
     ];
 
     for (const node of nodes) {
