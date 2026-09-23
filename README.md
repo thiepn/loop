@@ -12,7 +12,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 3 — Sound Orbs & Core Playground: complete and CI-verified**
 - **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete and CI-verified**
 - **Phase 5 — Playful Beat & Melody Creation: complete and CI-verified**
-- **Phase 6 — Effect Fields: complete; final CI verification pending**
+- **Phase 6 — Effect Fields: complete and CI-verified**
 - **Next: Phase 7 — Motion Playground**
 
 Loop now opens on a simple starter screen, enters a spatial Sound Orb playground immediately, lets users shape what editable orbs play, and makes effects physical. Space, Echo, Heat, Frost, and Filter are visible fields: drag a Sound Orb through them and the sound changes continuously with depth; move or resize the fields themselves to reshape the World.
@@ -59,9 +59,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 5 remains fully verified.
+The final Phase 6 implementation passed CI with:
 
-The integrated Phase 6 field/audio/UI implementation has passed strict typecheck, the full test suite, and production build during development. The exact final Phase 6 documentation/status head is verified before the phase is marked CI-complete.
+- **17 test files**
+- **68 tests**
+- strict TypeScript typecheck
+- production Vite build
+
+The Phase 6 suite covers field depth geometry, overlap, dominant visual effects, safe size/position clamping, field actions, starter-field integrity, and every prior Phase 1–5 regression test.
 
 ## Product rule
 
