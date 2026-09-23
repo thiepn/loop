@@ -528,6 +528,7 @@ export class PlaygroundView {
     const label = element.querySelector<HTMLElement>('.orb-label');
 
     element.dataset.role = orb.role;
+    element.dataset.motion = orb.motion?.mode ?? 'still';
     element.dataset.x = String(orb.position.x);
     element.dataset.y = String(orb.position.y);
     element.style.left = `${orb.position.x * 100}%`;
