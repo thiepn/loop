@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultPattern } from '../src/core/music/Pattern';
+import { createMotion } from '../src/core/world/Motion';
 import { soundById } from '../src/core/sounds/coreCatalog';
 import { createEmptyWorld } from '../src/core/world/World';
 import { createSoundOrb, MAX_SOUND_ORBS } from '../src/core/world/SoundOrb';
@@ -74,6 +75,61 @@ describe('WorldActions', () => {
     const result = duplicateSoundOrb(world, 'orb-a', 200);
 
     expect(result.world.soundOrbs[1]?.pattern).toEqual(pattern);
+  });
+
+  it('duplicates Motion state with the musical idea', () => {
+    const world = createEmptyWorld({
+      id: 'motion-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'orb-a',
+          soundId: 'melody-soft-pluck',
+          role: 'melody',
+          position: { x: 0.2, y: 0.3 },
+          motion: createMotion({
+            mode: 'wander',
+            speed: 'slow',
+            range: 'wide',
+            seed: 22,
+          }),
+        }),
+      ],
+    });
+
+    const result = duplicateSoundOrb(world, 'orb-a', 200);
+
+    expect(result.world.soundOrbs[1]?.motion).toEqual(
+      world.soundOrbs[0]?.motion,
+    );
+  });
+
+  it('preserves Motion when changing the sound', () => {
+    const motion = createMotion({
+      mode: 'orbit',
+      speed: 'medium',
+      range: 'tight',
+      seed: 7,
+    });
+    const world = createEmptyWorld({
+      id: 'motion-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'orb-a',
+          soundId: 'bass-warm',
+          role: 'bass',
+          position: { x: 0.2, y: 0.3 },
+          motion,
+        }),
+      ],
+    });
+    const replacement = soundById('bass-deep');
+    expect(replacement).toBeDefined();
+
+    const changed = replaceSoundOrb(world, 'orb-a', replacement!, 200);
+
+    expect(changed.soundOrbs[0]?.motion).toEqual(motion);
   });
 
   it('enforces the V1 Sound Orb cap', () => {
