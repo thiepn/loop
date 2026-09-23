@@ -141,11 +141,20 @@ Tests cover:
 - [x] No automation lanes.
 - [x] No Phase 9 Magic implemented early.
 
-## Exit condition
-Phase 8 is complete only when the exact final main head passes:
+## Final CI verification
+
+GitHub Actions passed on the completed Phase 8 implementation with:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **23 test files**;
+- **112 tests**;
 - production Vite build.
 
-Final CI result is recorded after documentation/status commits.
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+
+**Phase 8 status: complete and CI-verified.**
