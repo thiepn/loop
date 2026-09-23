@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 6.
+Updated through Phase 7.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -47,7 +47,8 @@ Owns musical behavior independent of UI:
 - MixPolicy — metadata normalization and voice-count headroom;
 - Pattern — serializable rhythm/melody documents, density/groove macros, deterministic variation;
 - OrbPattern — schedules each orb’s effective editable pattern;
-- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb.
+- MotionEngine — deterministic live-position evaluation for Motion presets and playground toys;
+- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb, with live Motion positions applied to EffectRack + SpatialVoice.
 
 The old one-off FoundationGroove runtime was removed in Phase 3. There is now one playback architecture.
 
@@ -77,13 +78,14 @@ The Store has no dependency on DOM or Web Audio and can be tested in isolation.
 ### core/world/
 Owns the serializable World document boundary and pure creative-state mutations.
 
-World schema version 5 contains:
+World schema version 6 contains:
 - BPM;
 - tonic;
 - scale;
 - deterministic random seed;
 - full SoundOrbDocument objects;
 - full EffectFieldDocument objects;
+- PlaygroundToyDocument objects;
 - placeholder collections for later Links and Snapshots.
 
 SoundOrbDocument contains:
@@ -92,7 +94,8 @@ SoundOrbDocument contains:
 - role;
 - normalized x/y position;
 - mute state;
-- optional editable rhythm/melody pattern state.
+- optional editable rhythm/melody pattern state;
+- optional MotionDocument.
 
 WorldActions owns immutable:
 - move;
@@ -107,6 +110,10 @@ StarterWorlds owns the bounded starter templates (Beat, Chill, Dreamy, Dance, We
 PatternActions owns immutable pattern painting, clear, density, groove, and variation edits.
 
 EffectFieldActions owns immutable field Add, move, resize, and delete operations.
+
+MotionActions owns immutable mode/Speed/Range/Follow target updates.
+
+PlaygroundToyActions owns immutable toy Add/move/Portal OUT/delete operations.
 
 EffectField geometry maps normalized orb/field positions into smooth 0–1 effect amounts.
 
@@ -134,7 +141,9 @@ Avoid duplicated mutable truth.
 Examples:
 - AudioContext and master graph belong to AudioEngine;
 - musical clock state belongs to MusicalTransport;
-- runtime Sound Orb channels and their EffectRacks belong to PlaygroundEngine;
+- runtime Sound Orb channels, EffectRacks, and transient Motion preview overrides belong to PlaygroundEngine;
+- serialized Motion anchors/toys belong to World;
+- live Motion positions do not belong to persistent app state;
 - sound metadata belongs to the catalog;
 - serializable creative state belongs to World;
 - transient selection/playback UI state belongs to AppState/Store;
@@ -202,6 +211,8 @@ Phase 5 adds a contextual **Shape** sheet only for editable sound roles. It is s
 
 Phase 6 adds directly manipulable Effect Fields. Fields live behind Sound Orbs on the same canvas, can be dragged/resized, and expose no technical DSP parameters.
 
+Phase 7 adds contextual Motion plus directly manipulable playground toys. Motion computes transient live positions around saved anchors; it does not write World state every animation frame.
+
 ## GitHub Pages
 The production URL is expected to use the repository path:
 https://thiepn.github.io/loop/
@@ -240,7 +251,15 @@ Current automated coverage includes:
 - overlap combination;
 - field size/position clamping;
 - EffectFieldActions;
-- starter field integrity.
+- starter field integrity;
+- Motion preset determinism/bounds;
+- Follow targeting/fallback;
+- Motion frame activation;
+- Spinner/Magnet/Repulsor/Portal transforms;
+- MotionActions;
+- PlaygroundToyActions;
+- Motion preservation across Duplicate/Change;
+- starter Motion/toy integrity.
 
 Future phases add tests at their domain boundaries.
 
@@ -257,6 +276,8 @@ Procedural sources are finite-lived and clean themselves up after ending.
 Sound Orb and Effect Field visuals use lightweight DOM/CSS animation. Heavier rendering remains deferred to the dedicated visual phase.
 
 Phase 6 explicitly avoids a convolution engine or granular AudioWorklet per Sound Orb. Space uses filtered delay diffusion and Frost uses bounded short-delay feedback so the 12-orb cap remains realistic for web/mobile hardware.
+
+Phase 7 adds one demand-driven requestAnimationFrame loop. It runs only while at least one Sound Orb exists and Motion/toys require live position evaluation; static Worlds do not keep the loop alive.
 
 Future render loops and expensive DSP must be pausable when hidden or unnecessary.
 
@@ -324,3 +345,28 @@ EffectRack order is intentionally fixed and hidden:
 Filter → Heat → Frost → Echo → Space.
 
 All wet/feedback parameters remain bounded and smoothed.
+
+
+## Phase 7 Motion rule
+
+World state stores Motion rules and Sound Orb anchors, not live animation positions.
+
+Runtime evaluation order:
+
+saved Sound Orb anchors
+→ independent Motion presets
+→ Follow pass
+→ playground toys
+→ live positions
+→ Effect Field depth
+→ SpatialVoice
+
+App owns the demand-driven requestAnimationFrame lifecycle because rendering is a UI concern. MotionEngine is a pure deterministic evaluator and contains no DOM or audio dependencies.
+
+PlaygroundEngine consumes the same live positions to update SpatialVoice and EffectRack. This prevents audio and visuals from diverging.
+
+Manual Sound Orb drag uses a transient override that wins over Motion until pointer commit. The commit moves the saved anchor and releases the override.
+
+Effect Field and toy drag previews are transient runtime state. Motion frames use those previews without serializing them each frame.
+
+Playground toys are bounded geometry transforms, not physics bodies. Phase 7 intentionally has no collision solver, velocity integration, acceleration model, or Doppler simulation.
