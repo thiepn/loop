@@ -114,11 +114,17 @@ export function effectAmountAtPoint(
   const dy = (point.y - field.position.y) / radius;
   const distance = Math.hypot(dx, dy);
 
-  if (distance >= 1) {
+  if (distance >= 1 - 1e-9) {
     return 0;
   }
 
-  return smoothDepth(1 - distance);
+  const depth = 1 - distance;
+
+  if (depth <= 1e-6) {
+    return 0;
+  }
+
+  return smoothDepth(depth);
 }
 
 function combineAmounts(current: number, incoming: number): number {
