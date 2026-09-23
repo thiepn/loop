@@ -302,6 +302,7 @@ export class MotionView {
       ] as const,
       motion.speed,
       (value) => this.callbacks.onSetMotionSpeed(orb.id, value),
+      motion.mode === 'still',
     );
 
     this.renderMacroOptions(
@@ -313,6 +314,7 @@ export class MotionView {
       ] as const,
       motion.range,
       (value) => this.callbacks.onSetMotionRange(orb.id, value),
+      motion.mode === 'still',
     );
 
     this.followGroup.hidden = motion.mode !== 'follow';
@@ -343,6 +345,7 @@ export class MotionView {
     options: readonly (readonly [T, string])[],
     selected: T,
     onSelect: (value: T) => void,
+    disabled = false,
   ): void {
     container.replaceChildren();
 
@@ -350,6 +353,7 @@ export class MotionView {
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = label;
+      button.disabled = disabled;
       button.classList.toggle('is-active', value === selected);
       button.addEventListener('click', () => onSelect(value));
       container.append(button);
