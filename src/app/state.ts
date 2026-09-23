@@ -26,9 +26,12 @@ export interface AppState {
   readonly world: WorldDocument;
   readonly selectedOrbId: string | null;
   readonly selectedFieldId: string | null;
+  readonly selectedToyId: string | null;
   readonly palette: PaletteState | null;
   readonly effectPaletteOpen: boolean;
+  readonly toyPaletteOpen: boolean;
   readonly patternEditorOrbId: string | null;
+  readonly motionEditorOrbId: string | null;
   readonly onboardingStep: OnboardingStep;
   readonly playing: boolean;
   readonly message: string;
@@ -41,9 +44,12 @@ export const appStore = new Store<AppState>({
   world: createStarterWorld('dreamy', 0),
   selectedOrbId: null,
   selectedFieldId: null,
+  selectedToyId: null,
   palette: null,
   effectPaletteOpen: false,
+  toyPaletteOpen: false,
   patternEditorOrbId: null,
+  motionEditorOrbId: null,
   onboardingStep: 'move',
   playing: false,
   message: 'Pick a starting point.',
