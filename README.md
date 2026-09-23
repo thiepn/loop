@@ -9,9 +9,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 0 — Product Consolidation & Specification Lock: complete**
 - **Phase 1 — Clean Repository, Architecture & Deployment Foundation: complete and CI-verified**
 - **Phase 2 — Musical Core & Smart Sound System: complete and CI-verified**
-- **Next: Phase 3 — Sound Orbs & Core Playground**
+- **Phase 3 — Sound Orbs & Core Playground: complete and CI-verified**
+- **Next: Phase 4 — Zero-Friction Home, Sound Palette & Onboarding**
 
-The repository now contains a runnable Vite + TypeScript application, a safe Web Audio lifecycle, a shared musical transport, audio-time lookahead scheduling, scale-aware pitch rules, smart sound metadata/compatibility, automatic headroom policy, and a tiny procedural sound catalog used by the temporary Foundation Groove.
+Loop now opens directly into a playable spatial World containing six living Sound Orbs. Users can play the shared groove, drag sounds around the listener to change stereo position/presence, select them, mute/unmute, duplicate, delete, and see sound-synchronized visual reactions.
 
 ## Product contract
 
@@ -23,10 +24,12 @@ The authoritative specifications live in `docs/`:
 - [AUDIO_SYSTEM.md](docs/AUDIO_SYSTEM.md) — timing, compatibility, automatic musical behavior, DSP boundaries
 - [V1_SCOPE.md](docs/V1_SCOPE.md) — hard V1 feature boundary and feature-complete definition
 - [NON_GOALS.md](docs/NON_GOALS.md) — explicit anti-goals preventing DAW/acoustics/platform scope creep
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — runtime boundaries and dependency rules
-- [MUSICAL_CORE.md](docs/MUSICAL_CORE.md) — Phase 2 timing, harmony, catalog, compatibility, and mix contracts
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — current runtime boundaries and dependency rules
+- [MUSICAL_CORE.md](docs/MUSICAL_CORE.md) — timing, harmony, catalog, compatibility, and mix contracts
+- [PLAYGROUND.md](docs/PLAYGROUND.md) — Sound Orb model, spatial behavior, direct manipulation, and runtime
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
+- [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -44,6 +47,15 @@ Verification:
 npm run check
 npm run build
 ```
+
+## Current automated verification
+
+Phase 3's integrated verification passed:
+
+- **12 test files**
+- **35 tests**
+- strict TypeScript typecheck
+- production Vite build
 
 ## Product rule
 
