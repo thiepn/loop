@@ -102,12 +102,18 @@ export function setOrbMotionSpeed(
   speed: MotionSpeed,
   now = Date.now(),
 ): WorldDocument {
-  return updateOrb(world, orbId, (orb) => ({
-    ...orb,
+  const orb = world.soundOrbs.find((candidate) => candidate.id === orbId);
+
+  if (!orb?.motion || orb.motion.mode === 'still') {
+    return world;
+  }
+
+  return updateOrb(world, orbId, (candidate) => ({
+    ...candidate,
     motion: createMotionForOrb(
-      orb.motion?.mode ?? 'orbit',
+      candidate.motion?.mode ?? 'orbit',
       world,
-      orb,
+      candidate,
       { speed },
     ),
   }), now);
@@ -119,12 +125,18 @@ export function setOrbMotionRange(
   range: MotionRange,
   now = Date.now(),
 ): WorldDocument {
-  return updateOrb(world, orbId, (orb) => ({
-    ...orb,
+  const orb = world.soundOrbs.find((candidate) => candidate.id === orbId);
+
+  if (!orb?.motion || orb.motion.mode === 'still') {
+    return world;
+  }
+
+  return updateOrb(world, orbId, (candidate) => ({
+    ...candidate,
     motion: createMotionForOrb(
-      orb.motion?.mode ?? 'orbit',
+      candidate.motion?.mode ?? 'orbit',
       world,
-      orb,
+      candidate,
       { range },
     ),
   }), now);
