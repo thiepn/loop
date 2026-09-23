@@ -5,6 +5,7 @@ import {
   createSurpriseWorld,
 } from '../src/core/world/StarterWorlds';
 import { soundById } from '../src/core/sounds/coreCatalog';
+import { validateLinkCandidate } from '../src/core/world/LinkActions';
 
 describe('starter Worlds', () => {
   it('offers the six locked starting directions', () => {
@@ -25,6 +26,7 @@ describe('starter Worlds', () => {
       if (definition.id === 'empty') {
         expect(world.soundOrbs).toHaveLength(0);
         expect(world.playgroundToys).toHaveLength(0);
+        expect(world.links).toHaveLength(0);
         continue;
       }
 
@@ -45,6 +47,27 @@ describe('starter Worlds', () => {
       expect(new Set(world.playgroundToys.map((toy) => toy.type)).size).toBe(
         world.playgroundToys.length,
       );
+
+      expect(world.links.length).toBeGreaterThanOrEqual(1);
+      expect(world.links.length).toBeLessThanOrEqual(8);
+      expect(new Set(world.links.map((link) => link.id)).size).toBe(
+        world.links.length,
+      );
+
+      for (const link of world.links) {
+        const withoutCurrent = {
+          ...world,
+          links: world.links.filter((candidate) => candidate.id !== link.id),
+        };
+        expect(
+          validateLinkCandidate(
+            withoutCurrent,
+            link.type,
+            link.sourceOrbId,
+            link.targetOrbId,
+          ).ok,
+        ).toBe(true);
+      }
     }
   });
 
