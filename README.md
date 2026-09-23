@@ -14,9 +14,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 5 — Playful Beat & Melody Creation: complete and CI-verified**
 - **Phase 6 — Effect Fields: complete and CI-verified**
 - **Phase 7 — Motion Playground: complete and CI-verified**
-- **Next: Phase 8 — Links & Reactive Music**
+- **Phase 8 — Links & Reactive Music: complete; final CI verification pending**
+- **Next: Phase 9 — Magic, Mutation & Controlled Randomness**
 
-Loop now opens on a simple starter screen and becomes a living spatial playground: users can shape patterns, move sounds through visible Effect Fields, give Sound Orbs simple Motion (Orbit/Bounce/Drift/Follow/Wander), and add Spinner/Magnet/Repulsor/Portal toys that continuously alter live positions and therefore the sound.
+Loop now behaves as a living reactive music playground: users can shape patterns, move sounds through Effect Fields, animate them with Motion and toys, then Link Sound Orbs with plain-language relationships such as Pulse Together, Take Turns, Follow, Kick Pushes Bass, and Copy Movement.
 
 ## Product contract
 
@@ -35,6 +36,7 @@ The authoritative specifications live in `docs/`:
 - [PATTERN_PLAY.md](docs/PATTERN_PLAY.md) — rhythm/melody pattern state, Shape editor, density, groove, and variation
 - [EFFECT_FIELDS.md](docs/EFFECT_FIELDS.md) — field geometry, direct manipulation, DSP behavior, overlap, and safety
 - [MOTION_PLAYGROUND.md](docs/MOTION_PLAYGROUND.md) — Motion presets, live-position runtime, playground toys, previews, and performance boundaries
+- [LINKS_REACTIVE_MUSIC.md](docs/LINKS_REACTIVE_MUSIC.md) — Link vocabulary, reactive timing, relationship safety, visual connections, and lifecycle rules
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
@@ -42,6 +44,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_5_ACCEPTANCE.md](docs/PHASE_5_ACCEPTANCE.md) — Phase 5 verification gate
 - [PHASE_6_ACCEPTANCE.md](docs/PHASE_6_ACCEPTANCE.md) — Phase 6 verification gate
 - [PHASE_7_ACCEPTANCE.md](docs/PHASE_7_ACCEPTANCE.md) — Phase 7 verification gate
+- [PHASE_8_ACCEPTANCE.md](docs/PHASE_8_ACCEPTANCE.md) — Phase 8 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -62,14 +65,9 @@ npm run build
 
 ## Current automated verification
 
-The final Phase 7 implementation passed CI with:
+Phase 7 remains fully verified.
 
-- **21 test files**
-- **93 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The Motion/toy suite covers all six Motion modes, Follow fallback, demand-driven loop activation, Spinner/Magnet/Repulsor/Portal behavior, toy actions, Motion lifecycle preservation, starter Motion integrity, and every prior Phase 1–6 regression test.
+The integrated Phase 8 implementation passed its pre-documentation gate with **23 test files / 112 tests**, strict TypeScript, and a production build. The exact final documentation/status head is verified before Phase 8 is marked CI-complete.
 
 ## Product rule
 
