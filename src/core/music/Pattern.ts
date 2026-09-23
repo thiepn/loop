@@ -309,6 +309,26 @@ export function varyPattern(
         : 'balanced';
 
     const varied = setPatternDensity(pattern, level, effectiveSeed) as RhythmPatternDocument;
+    const sameSteps = varied.steps.every((active, index) => active === Boolean(pattern.steps[index]));
+
+    if (sameSteps) {
+      const steps = [...varied.steps];
+      const priority = rotatedPriority(RHYTHM_PRIORITY, effectiveSeed);
+      const protectedAnchor = steps[0] ? 0 : null;
+      const removable = priority.find((step) => steps[step] && step !== protectedAnchor);
+      const replacement = priority.find((step) => !steps[step]);
+
+      if (removable !== undefined && replacement !== undefined) {
+        steps[removable] = false;
+        steps[replacement] = true;
+      }
+
+      return {
+        ...varied,
+        steps,
+        variation,
+      };
+    }
 
     return {
       ...varied,
