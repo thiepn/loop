@@ -9,14 +9,32 @@ export type SoundRole =
   | 'texture'
   | 'voice';
 
+export type OrbPatternId =
+  | 'kick-steady'
+  | 'clap-backbeat'
+  | 'hat-eighths'
+  | 'shaker-offbeats'
+  | 'bass-pulse'
+  | 'harmony-pad'
+  | 'melody-spark'
+  | 'texture-bed'
+  | 'voice-hum';
+
 export type ProceduralPreset =
   | 'round-kick'
+  | 'punch-kick'
   | 'soft-clap'
   | 'glass-hat'
+  | 'dust-shaker'
   | 'warm-bass'
+  | 'deep-bass'
   | 'dream-chord'
+  | 'glow-chord'
   | 'soft-pluck'
-  | 'air-texture';
+  | 'bell-pluck'
+  | 'air-texture'
+  | 'haze-texture'
+  | 'soft-hum';
 
 export interface TonalMetadata {
   readonly root: number;
@@ -34,6 +52,7 @@ export interface SoundDefinition {
   readonly brightness: number;
   readonly nominalDb: number;
   readonly loopBars: number;
+  readonly pattern: OrbPatternId;
   readonly sourceBpm?: number;
   readonly tonal?: TonalMetadata;
   readonly source: {
@@ -49,6 +68,10 @@ export function assertSoundDefinition(definition: SoundDefinition): void {
 
   if (!definition.name.trim()) {
     throw new Error(`Sound ${definition.id} must have a name.`);
+  }
+
+  if (!definition.description.trim()) {
+    throw new Error(`Sound ${definition.id} must have a description.`);
   }
 
   if (definition.energy < 0 || definition.energy > 1) {
