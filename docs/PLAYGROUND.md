@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 6.
+Introduced in Phase 3 and updated through Phase 7.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -11,6 +11,8 @@ The main screen contains:
 - a central listener;
 - draggable Sound Orbs;
 - directly manipulable Effect Fields;
+- optional Sound Orb Motion;
+- directly manipulable playground toys;
 - one shared musical clock;
 - minimal top-level controls;
 - contextual controls for the selected orb or field.
@@ -25,7 +27,8 @@ Each orb stores:
 - musical role;
 - normalized x/y position;
 - mute state;
-- optional edited rhythm or melody pattern.
+- optional edited rhythm or melody pattern;
+- optional Motion behavior.
 
 Positions are normalized from 0 to 1 so Worlds remain independent of viewport size.
 
@@ -62,7 +65,7 @@ The shared PlaygroundEngine owns:
 - synchronization with the serializable World;
 - audio activity events for visual feedback.
 
-Adding, removing, muting, moving, editing an orb, or changing field geometry updates the same runtime without creating another AudioContext.
+Adding, removing, muting, moving, editing an orb, changing field geometry, or evaluating Motion updates the same runtime without creating another AudioContext.
 
 ## Musical behavior
 
@@ -93,6 +96,7 @@ Shift + arrow performs a larger movement.
 ### Selection controls
 The contextual selection panel can provide:
 - Shape — edit rhythm/melody when supported;
+- Motion — choose Still/Orbit/Bounce/Drift/Follow/Wander;
 - Change — choose another sound;
 - Mute / Unmute;
 - Duplicate;
@@ -202,11 +206,51 @@ The **Effects** button in the playground dock adds missing field types. A World 
 
 Sound Orbs visually pick up their strongest active field treatment, while audio can combine multiple overlapping fields at once.
 
+## Motion
+
+Phase 7 adds simple contextual Motion to Sound Orbs.
+
+Available behaviors:
+- Still
+- Orbit
+- Bounce
+- Drift
+- Follow
+- Wander
+
+Motion also exposes:
+- Speed — Slow / Medium / Fast
+- Range — Tight / Medium / Wide
+
+The saved Sound Orb position remains its anchor. Live animation positions are computed at runtime and are never written to World state every frame.
+
+Manual dragging temporarily overrides Motion. Releasing the pointer moves the anchor and Motion resumes around it.
+
+Follow uses another ordinary Sound Orb as a target and falls back safely if that target disappears.
+
+## Playground toys
+
+The dock now includes **Toys**.
+
+Phase 7 toys:
+- Spinner
+- Magnet
+- Repulsor
+- Portal
+
+Spinner rotates nearby live positions. Magnet pulls them inward. Repulsor pushes them outward. Portal maps IN-region positions near a separately movable OUT endpoint.
+
+Toys affect live Motion geometry, so even a Still orb can react when it sits inside a toy's influence.
+
+Toy effects then flow through the existing spatial/effect systems:
+toy-adjusted live position → Effect Fields → SpatialVoice.
+
 ## World schema
 
-World schema version 5 includes:
-- full SoundOrbDocument objects with optional serializable pattern state;
-- full EffectFieldDocument objects.
+World schema version 6 includes:
+- full SoundOrbDocument objects with optional serializable pattern + Motion state;
+- full EffectFieldDocument objects;
+- full PlaygroundToyDocument objects.
 
 Links and Snapshots remain placeholders until their roadmap phases.
 
@@ -222,10 +266,12 @@ The playground currently includes:
 - density/groove/variation macros;
 - Space/Echo/Heat/Frost/Filter Effect Fields;
 - field drag/resize/delete;
-- overlapping field processing.
+- overlapping field processing;
+- Still/Orbit/Bounce/Drift/Follow/Wander;
+- Speed/Range Motion macros;
+- Spinner/Magnet/Repulsor/Portal toys.
 
 It does not yet include:
-- Motion;
 - Links;
 - Phase 9 Magic;
 - persistent World library;
