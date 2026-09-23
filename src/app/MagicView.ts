@@ -90,7 +90,7 @@ export class MagicView {
 
   public constructor(
     root: HTMLElement,
-    callbacks: MagicViewCallbacks,
+    private readonly callbacks: MagicViewCallbacks,
   ) {
     const dock = root.querySelector<HTMLElement>('.playground-dock');
     const shell = root.querySelector<HTMLElement>('.playground-shell');
