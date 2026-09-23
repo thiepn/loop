@@ -309,15 +309,9 @@ export function varyPattern(
         : 'balanced';
 
     const varied = setPatternDensity(pattern, level, effectiveSeed) as RhythmPatternDocument;
-    const shift = 1 + Math.abs(effectiveSeed) % 3;
-    const steps = Array.from(
-      { length: PATTERN_STEPS },
-      (_, index) => Boolean(varied.steps[(index - shift + PATTERN_STEPS) % PATTERN_STEPS]),
-    );
 
     return {
       ...varied,
-      steps,
       variation,
     };
   }
