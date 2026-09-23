@@ -14,7 +14,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 5 — Playful Beat & Melody Creation: complete and CI-verified**
 - **Phase 6 — Effect Fields: complete and CI-verified**
 - **Phase 7 — Motion Playground: complete and CI-verified**
-- **Phase 8 — Links & Reactive Music: complete; final CI verification pending**
+- **Phase 8 — Links & Reactive Music: complete and CI-verified**
 - **Next: Phase 9 — Magic, Mutation & Controlled Randomness**
 
 Loop now behaves as a living reactive music playground: users can shape patterns, move sounds through Effect Fields, animate them with Motion and toys, then Link Sound Orbs with plain-language relationships such as Pulse Together, Take Turns, Follow, Kick Pushes Bass, and Copy Movement.
@@ -65,9 +65,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 7 remains fully verified.
+The final Phase 8 implementation passed CI with:
 
-The integrated Phase 8 implementation passed its pre-documentation gate with **23 test files / 112 tests**, strict TypeScript, and a production build. The exact final documentation/status head is verified before Phase 8 is marked CI-complete.
+- **23 test files**
+- **112 tests**
+- strict TypeScript typecheck
+- production Vite build
+
+The Link suite covers bounded relationship validation, Pulse/Follow/Take Turns timing, Kick Pushes Bass role safety, Copy Movement geometry, lifecycle cleanup, starter relationships, and every prior Phase 1–7 regression test.
 
 ## Product rule
 
