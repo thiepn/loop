@@ -1,3 +1,4 @@
+import type { OrbPatternDocument } from '../music/Pattern';
 import type { SoundRole } from '../sounds/SoundDefinition';
 
 export const MAX_SOUND_ORBS = 12;
@@ -13,6 +14,7 @@ export interface SoundOrbDocument {
   readonly role: SoundRole;
   readonly position: NormalizedPoint;
   readonly muted: boolean;
+  readonly pattern?: OrbPatternDocument;
 }
 
 export interface CreateSoundOrbOptions {
@@ -21,6 +23,7 @@ export interface CreateSoundOrbOptions {
   readonly role: SoundRole;
   readonly position: NormalizedPoint;
   readonly muted?: boolean;
+  readonly pattern?: OrbPatternDocument;
 }
 
 export function clamp01(value: number): number {
@@ -43,11 +46,15 @@ function createOrbId(): string {
 }
 
 export function createSoundOrb(options: CreateSoundOrbOptions): SoundOrbDocument {
-  return {
+  const base: SoundOrbDocument = {
     id: options.id ?? createOrbId(),
     soundId: options.soundId,
     role: options.role,
     position: clampPoint(options.position),
     muted: options.muted ?? false,
   };
+
+  return options.pattern
+    ? { ...base, pattern: options.pattern }
+    : base;
 }
