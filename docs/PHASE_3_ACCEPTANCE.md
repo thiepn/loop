@@ -76,11 +76,20 @@ Automated tests cover:
 - [x] No DAW mixer introduced.
 - [x] No persistence or recording pulled forward.
 
-## Exit condition
-Phase 3 is complete only when the exact final main head passes:
+## Automated verification
+
+GitHub Actions passed on the integrated Phase 3 implementation head:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **12 test files**;
+- **35 tests**;
 - production Vite build.
 
-CI verification is recorded after the final Phase 3 documentation/status commits.
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+
+**Phase 3 status: complete.**
