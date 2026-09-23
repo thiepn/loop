@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 8.
+Introduced in Phase 3 and updated through Phase 9.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -99,6 +99,7 @@ The contextual selection panel can provide:
 - Shape — edit rhythm/melody when supported;
 - Motion — choose Still/Orbit/Bounce/Drift/Follow/Wander;
 - Link — connect this sound to another using a fixed relationship;
+- ✦ Magic — create a compatible live variation;
 - Change — choose another sound;
 - Mute / Unmute;
 - Duplicate;
@@ -280,6 +281,64 @@ Relationship rules are deliberately bounded:
 - Kick Pushes Bass is Beat/Percussion → Bass only;
 - Copy Movement stays one level deep.
 
+## Magic
+
+Phase 9 adds controlled seeded experimentation.
+
+### Per-object Magic
+Selected Sound Orbs, Effect Fields, and playground toys expose **✦ Magic**.
+
+Magic immediately creates a live preview.
+
+Sound Orb Magic can vary:
+- same-role sound;
+- pattern;
+- Motion.
+
+It preserves:
+- id;
+- role;
+- position;
+- mute state;
+- Links.
+
+Effect Field Magic keeps its field type and varies only bounded spatial geometry.
+
+Toy Magic keeps its type and varies bounded placement/strength, including Portal OUT where relevant.
+
+### Remix
+The dock includes **✦ Remix**.
+
+Intent choices:
+- Surprise Me
+- More Energy
+- Calmer
+- Stranger
+- Simpler
+- Busier
+
+Remix changes a coherent subset of existing objects rather than adding/removing content.
+
+### Strength
+Magic preview exposes:
+- Gentle
+- Playful
+- Wild
+
+### Preview controls
+Every preview exposes:
+- Revert
+- Retry
+- Keep
+
+Retry regenerates from the original base World rather than stacking mutations.
+
+Keep leaves a one-step **Undo Magic** while no later material World edit has occurred.
+
+The canvas is temporarily pointer-locked during preview so Revert/Retry cannot silently erase a manual edit made after the preview began.
+
+Magic itself does not add a persistent schema field. World schema remains version 7.
+
 ## World schema
 
 World schema version 7 includes:
@@ -306,10 +365,13 @@ The playground currently includes:
 - Still/Orbit/Bounce/Drift/Follow/Wander;
 - Speed/Range Motion macros;
 - Spinner/Magnet/Repulsor/Portal toys;
-- Pulse Together/Take Turns/Follow/Kick Pushes Bass/Copy Movement Links.
+- Pulse Together/Take Turns/Follow/Kick Pushes Bass/Copy Movement Links;
+- per-object ✦ Magic;
+- global ✦ Remix with six intent choices;
+- Gentle/Playful/Wild preview strength;
+- Retry/Keep/Revert and one-step Undo Magic.
 
 It does not yet include:
-- Phase 9 Magic;
 - persistent World library;
 - recording/export.
 
