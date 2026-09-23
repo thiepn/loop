@@ -38,6 +38,14 @@ describe('MotionEngine', () => {
       ],
     });
     const toyWorld = createEmptyWorld({
+      soundOrbs: [
+        createSoundOrb({
+          id: 'toy-orb',
+          soundId: 'beat-round-kick',
+          role: 'beat',
+          position: { x: 0.5, y: 0.5 },
+        }),
+      ],
       playgroundToys: [
         createPlaygroundToy({
           id: 'spinner',
@@ -46,9 +54,13 @@ describe('MotionEngine', () => {
         }),
       ],
     });
+    const emptyToyWorld = createEmptyWorld({
+      playgroundToys: toyWorld.playgroundToys,
+    });
 
     expect(worldHasActiveMotion(moving)).toBe(true);
     expect(worldHasActiveMotion(toyWorld)).toBe(true);
+    expect(worldHasActiveMotion(emptyToyWorld)).toBe(false);
   });
 
   it('evaluates Follow after independent target motion', () => {
@@ -76,6 +88,35 @@ describe('MotionEngine', () => {
     expect(frame.get('target')).toBeDefined();
     expect(frame.get('follower')).toBeDefined();
     expect(frame.get('follower')).not.toEqual(follower.position);
+  });
+
+  it('falls back to another nearby target if a saved Follow target disappears', () => {
+    const follower = createSoundOrb({
+      id: 'follower',
+      soundId: 'melody-soft-pluck',
+      role: 'melody',
+      position: { x: 0.2, y: 0.5 },
+      motion: createMotion({
+        mode: 'follow',
+        targetOrbId: 'gone',
+        seed: 3,
+      }),
+    });
+    const remaining = createSoundOrb({
+      id: 'remaining',
+      soundId: 'bass-warm',
+      role: 'bass',
+      position: { x: 0.78, y: 0.5 },
+    });
+    const world = createEmptyWorld({
+      soundOrbs: [follower, remaining],
+    });
+
+    const frame = evaluateMotionFrame(world, 2);
+    const position = frame.get('follower');
+
+    expect(position).toBeDefined();
+    expect(position).not.toEqual(follower.position);
   });
 
   it('Spinner rotates a point inside its radius', () => {
