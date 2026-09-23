@@ -1808,8 +1808,6 @@ a:focus-visible {
   --field-soft: rgba(167, 139, 250, 0.18);
   position: absolute;
   translate: -50% -50%;
-  min-width: 90px;
-  min-height: 70px;
   border: 0;
   border-radius: 50%;
   outline: 0;
