@@ -163,6 +163,39 @@ export function applyPlaygroundToys(
   return result;
 }
 
+function applyCopyMovementLinks(
+  world: WorldDocument,
+  positions: Map<string, NormalizedPoint>,
+): void {
+  const byId = new Map(world.soundOrbs.map((orb) => [orb.id, orb]));
+  const links = [...world.links]
+    .filter((link) => link.type === 'copy-movement')
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  for (const link of links) {
+    const source = byId.get(link.sourceOrbId);
+    const target = byId.get(link.targetOrbId);
+
+    if (!source || !target) {
+      continue;
+    }
+
+    const sourcePosition = positions.get(source.id) ?? source.position;
+    const delta = {
+      x: sourcePosition.x - source.position.x,
+      y: sourcePosition.y - source.position.y,
+    };
+
+    positions.set(
+      target.id,
+      clampLivePoint({
+        x: target.position.x + delta.x,
+        y: target.position.y + delta.y,
+      }),
+    );
+  }
+}
+
 export function evaluateMotionFrame(
   world: WorldDocument,
   timeSeconds: number,
@@ -211,6 +244,8 @@ export function evaluateMotionFrame(
     );
   }
 
+  applyCopyMovementLinks(world, positions);
+
   return positions;
 }
 
@@ -219,6 +254,11 @@ export function worldHasActiveMotion(world: WorldDocument): boolean {
     return false;
   }
 
+  const copyMovementNeedsFrames = world.links.some(
+    (link) => link.type === 'copy-movement',
+  );
+
   return world.playgroundToys.length > 0
+    || copyMovementNeedsFrames
     || world.soundOrbs.some((orb) => (orb.motion?.mode ?? 'still') !== 'still');
 }
