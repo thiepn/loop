@@ -4,6 +4,7 @@ import {
   evaluateMotionFrame,
   worldHasActiveMotion,
 } from '../src/core/music/MotionEngine';
+import { createLink } from '../src/core/world/Link';
 import { createMotion } from '../src/core/world/Motion';
 import { createPlaygroundToy } from '../src/core/world/PlaygroundToy';
 import { createSoundOrb } from '../src/core/world/SoundOrb';
@@ -117,6 +118,77 @@ describe('MotionEngine', () => {
 
     expect(position).toBeDefined();
     expect(position).not.toEqual(follower.position);
+  });
+
+  it('copies source movement delta onto the target anchor', () => {
+    const source = createSoundOrb({
+      id: 'source',
+      soundId: 'melody-soft-pluck',
+      role: 'melody',
+      position: { x: 0.3, y: 0.3 },
+      motion: createMotion({
+        mode: 'orbit',
+        speed: 'medium',
+        range: 'tight',
+        seed: 14,
+      }),
+    });
+    const target = createSoundOrb({
+      id: 'target',
+      soundId: 'harmony-dream',
+      role: 'harmony',
+      position: { x: 0.7, y: 0.65 },
+    });
+    const world = createEmptyWorld({
+      soundOrbs: [source, target],
+      links: [
+        createLink({
+          id: 'copy',
+          type: 'copy-movement',
+          sourceOrbId: 'source',
+          targetOrbId: 'target',
+        }),
+      ],
+    });
+
+    const frame = evaluateMotionFrame(world, 3);
+    const sourcePosition = frame.get('source')!;
+    const targetPosition = frame.get('target')!;
+
+    expect(targetPosition.x - target.position.x).toBeCloseTo(
+      sourcePosition.x - source.position.x,
+    );
+    expect(targetPosition.y - target.position.y).toBeCloseTo(
+      sourcePosition.y - source.position.y,
+    );
+  });
+
+  it('does not start the frame loop for a static Copy Movement pair', () => {
+    const source = createSoundOrb({
+      id: 'source',
+      soundId: 'beat-round-kick',
+      role: 'beat',
+      position: { x: 0.3, y: 0.5 },
+    });
+    const target = createSoundOrb({
+      id: 'target',
+      soundId: 'bass-warm',
+      role: 'bass',
+      position: { x: 0.7, y: 0.5 },
+    });
+    const world = createEmptyWorld({
+      soundOrbs: [source, target],
+      links: [
+        createLink({
+          id: 'copy',
+          type: 'copy-movement',
+          sourceOrbId: 'source',
+          targetOrbId: 'target',
+        }),
+      ],
+    });
+
+    expect(worldHasActiveMotion(world)).toBe(false);
   });
 
   it('Spinner rotates a point inside its radius', () => {
