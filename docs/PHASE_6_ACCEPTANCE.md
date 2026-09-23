@@ -104,11 +104,20 @@ Tests cover:
 - [x] No Links implemented early.
 - [x] No Phase 9 Magic implemented early.
 
-## Exit condition
-Phase 6 is complete only when the exact final main head passes:
+## Final CI verification
+
+GitHub Actions passed on the completed Phase 6 implementation with:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **17 test files**;
+- **68 tests**;
 - production Vite build.
 
-Final CI result is recorded after documentation/status commits.
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+
+**Phase 6 status: complete and CI-verified.**
