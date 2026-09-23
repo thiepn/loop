@@ -24,6 +24,7 @@ describe('starter Worlds', () => {
 
       if (definition.id === 'empty') {
         expect(world.soundOrbs).toHaveLength(0);
+        expect(world.playgroundToys).toHaveLength(0);
         continue;
       }
 
@@ -37,6 +38,12 @@ describe('starter Worlds', () => {
       expect(world.effectFields.length).toBeLessThanOrEqual(5);
       expect(new Set(world.effectFields.map((field) => field.type)).size).toBe(
         world.effectFields.length,
+      );
+
+      expect(world.soundOrbs.some((orb) => orb.motion)).toBe(true);
+      expect(world.playgroundToys.length).toBeLessThanOrEqual(4);
+      expect(new Set(world.playgroundToys.map((toy) => toy.type)).size).toBe(
+        world.playgroundToys.length,
       );
     }
   });
