@@ -52,9 +52,9 @@ Expected building blocks:
 - StereoPannerNode or equivalent spatial balance;
 - BiquadFilterNode;
 - DelayNode or proven custom delay if necessary;
-- Convolver or algorithmic reverb;
+- lightweight filtered delay diffusion for ambience;
 - saturation/waveshaping;
-- granular/freeze processor where necessary;
+- bounded short-delay coloration for Frost where sufficient;
 - DynamicsCompressorNode / limiter;
 - AudioWorklet only for features that materially benefit from it.
 
@@ -88,23 +88,29 @@ Mappings must be bounded, smoothed, and tested for headphones and speakers.
 ## Effect Fields
 
 ### Space
-Primary behavior: reverb/ambience.
-No user-facing decay-time or send terminology required.
+Primary behavior: ambience / roomy diffusion.
+
+Phase 6 uses two short filtered feedback delays per orb rather than a convolution engine. Wet level and feedback follow field depth. No user-facing decay-time or send terminology exists.
 
 ### Echo
 Primary behavior: synchronized delay.
-Delay choices should snap to musically useful values internally.
+
+Phase 6 uses one filtered feedback delay per orb at approximately 0.75 beat of the shared tempo. Feedback is capped at 0.40 and delay time follows BPM changes smoothly.
 
 ### Heat
 Primary behavior: saturation/distortion.
-Protect output level and avoid unexpected extreme loudness.
+
+Phase 6 uses a parallel WaveShaper path with bounded wet gain so the original signal remains present and output stays controlled.
 
 ### Frost
-Primary behavior: granular freeze/fragmentation.
-Must avoid clicks and runaway CPU usage.
+Primary behavior: icy / fractured coloration.
+
+Phase 6 uses a short resonant filtered-delay feedback network instead of a granular AudioWorklet per orb. This keeps CPU bounded while delivering the intended crystalline character. True granular freeze is optional future implementation detail, not a user-facing contract.
 
 ### Filter
-Primary behavior: intuitive spectral dark-to-bright transformation.
+Primary behavior: spectral darkening.
+
+Phase 6 maps field depth from a near-open low-pass to roughly 650 Hz at full depth, with bounded resonance.
 
 ## Motion
 Motion updates visual position and, where appropriate, audible spatial parameters.
@@ -171,6 +177,21 @@ V1 goals:
 - stable capture;
 - export a useful audio file;
 - no advanced stem matrix.
+
+## Phase 6 field runtime
+
+Every live Sound Orb routes:
+
+ProceduralInstrument → EffectRack → SpatialVoice → master.
+
+EffectRack exists even when all field amounts are zero, so moving through fields only changes AudioParams rather than rebuilding nodes.
+
+Current hard feedback ceilings:
+- Frost < 0.40;
+- Echo = 0.40 maximum;
+- Space taps < 0.25.
+
+All field amounts are clamped to 0–1 and smoothed.
 
 ## Audio safety
 Requirements:
