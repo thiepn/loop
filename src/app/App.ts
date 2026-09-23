@@ -81,6 +81,7 @@ export class App {
   private motionFrameRequest: number | null = null;
   private motionEpochMs: number | null = null;
   private readonly liveOrbOverrides = new Map<string, NormalizedPoint>();
+  private readonly fieldPreviewOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
   private readonly activityTimers = new Set<ReturnType<typeof setTimeout>>();
   private readonly capabilities = detectCapabilities();
@@ -823,6 +824,7 @@ export class App {
   }
 
   private previewField(field: EffectFieldDocument): void {
+    this.fieldPreviewOverrides.set(field.id, field);
     this.playground?.previewEffectField(field);
     this.effectFieldView?.previewFieldEffects(field);
   }
@@ -838,6 +840,7 @@ export class App {
       });
     }
 
+    this.fieldPreviewOverrides.delete(fieldId);
     this.playground?.releaseEffectFieldPreview(fieldId);
   }
 
@@ -852,6 +855,7 @@ export class App {
       });
     }
 
+    this.fieldPreviewOverrides.delete(fieldId);
     this.playground?.releaseEffectFieldPreview(fieldId);
   }
 
@@ -862,6 +866,9 @@ export class App {
     if (world === current.world) {
       return;
     }
+
+    this.fieldPreviewOverrides.delete(fieldId);
+    this.playground?.releaseEffectFieldPreview(fieldId);
 
     appStore.patch({
       world,
@@ -1093,7 +1100,7 @@ export class App {
       this.effectFieldView?.previewOrbEffect(
         orb.id,
         position,
-        state.world.effectFields,
+        this.effectFieldsWithPreviews(state.world.effectFields),
       );
     }
 
@@ -1110,7 +1117,20 @@ export class App {
 
     this.motionEpochMs = null;
     this.liveOrbOverrides.clear();
+    this.fieldPreviewOverrides.clear();
     this.toyPreviewOverrides.clear();
+  }
+
+  private effectFieldsWithPreviews(
+    fields: AppState['world']['effectFields'],
+  ): AppState['world']['effectFields'] {
+    if (this.fieldPreviewOverrides.size === 0) {
+      return fields;
+    }
+
+    return fields.map(
+      (field) => this.fieldPreviewOverrides.get(field.id) ?? field,
+    );
   }
 
   private worldWithToyPreviews(world: AppState['world']): AppState['world'] {
