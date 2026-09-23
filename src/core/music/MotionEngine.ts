@@ -187,9 +187,11 @@ export function evaluateMotionFrame(
       continue;
     }
 
-    const target = motion.targetOrbId
-      ? world.soundOrbs.find((candidate) => candidate.id === motion.targetOrbId)
-      : nearestFollowTarget(orb, world.soundOrbs);
+    const target = (
+      motion.targetOrbId
+        ? world.soundOrbs.find((candidate) => candidate.id === motion.targetOrbId)
+        : undefined
+    ) ?? nearestFollowTarget(orb, world.soundOrbs);
 
     const targetPosition = target
       ? positions.get(target.id) ?? target.position
@@ -213,6 +215,10 @@ export function evaluateMotionFrame(
 }
 
 export function worldHasActiveMotion(world: WorldDocument): boolean {
+  if (world.soundOrbs.length === 0) {
+    return false;
+  }
+
   return world.playgroundToys.length > 0
     || world.soundOrbs.some((orb) => (orb.motion?.mode ?? 'still') !== 'still');
 }
