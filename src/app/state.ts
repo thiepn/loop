@@ -25,7 +25,9 @@ export interface AppState {
   readonly screen: AppScreen;
   readonly world: WorldDocument;
   readonly selectedOrbId: string | null;
+  readonly selectedFieldId: string | null;
   readonly palette: PaletteState | null;
+  readonly effectPaletteOpen: boolean;
   readonly patternEditorOrbId: string | null;
   readonly onboardingStep: OnboardingStep;
   readonly playing: boolean;
@@ -38,7 +40,9 @@ export const appStore = new Store<AppState>({
   screen: 'home',
   world: createStarterWorld('dreamy', 0),
   selectedOrbId: null,
+  selectedFieldId: null,
   palette: null,
+  effectPaletteOpen: false,
   patternEditorOrbId: null,
   onboardingStep: 'move',
   playing: false,
