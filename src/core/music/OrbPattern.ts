@@ -4,6 +4,10 @@ import type { SoundOrbDocument } from '../world/SoundOrb';
 import { midiForScaleDegree, type Harmony } from './Harmony';
 import type { ScheduledTick } from './LookaheadScheduler';
 import type { MusicalTransport } from './MusicalTransport';
+import {
+  effectivePattern,
+  grooveOffsetBeats,
+} from './Pattern';
 
 export interface OrbPatternContext {
   readonly orb: SoundOrbDocument;
@@ -34,6 +38,22 @@ function roleVelocityTrim(role: SoundRole): number {
   }
 }
 
+function melodicBaseMidi(role: SoundRole): number {
+  switch (role) {
+    case 'bass':
+      return 36;
+    case 'harmony':
+    case 'voice':
+      return 48;
+    case 'melody':
+      return 60;
+    case 'beat':
+    case 'percussion':
+    case 'texture':
+      return 60;
+  }
+}
+
 export function scheduleOrbPattern(context: OrbPatternContext): number | null {
   const {
     orb,
@@ -49,134 +69,70 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
     return null;
   }
 
-  const step = tick.stepInBar;
-  const beatSeconds = transport.secondsPerBeat;
-  const velocityTrim = roleVelocityTrim(sound.role);
+  const pattern = effectivePattern(orb.pattern, sound);
 
-  switch (sound.pattern) {
-    case 'kick-steady':
-      if (step === 0 || step === 8) {
-        const velocity = (step === 0 ? 0.96 : 0.84) * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
-        return velocity;
-      }
-      return null;
-
-    case 'clap-backbeat':
-      if (step === 4 || step === 12) {
-        const velocity = 0.82 * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
-        return velocity;
-      }
-      return null;
-
-    case 'hat-eighths':
-      if (step % 2 === 0) {
-        const velocity = (step % 4 === 2 ? 0.56 : 0.38) * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
-        return velocity;
-      }
-      return null;
-
-    case 'shaker-offbeats':
-      if (step === 2 || step === 6 || step === 10 || step === 14) {
-        const velocity = (step === 6 || step === 14 ? 0.64 : 0.48) * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
-        return velocity;
-      }
-      return null;
-
-    case 'bass-pulse': {
-      const degrees: Readonly<Record<number, number>> = {
-        0: 0,
-        3: 0,
-        7: 2,
-        10: 3,
-        14: 1,
-      };
-      const degree = degrees[step];
-
-      if (degree === undefined) {
-        return null;
-      }
-
-      const velocity = (step === 0 ? 0.94 : 0.7) * velocityTrim;
+  if (!pattern) {
+    if (sound.pattern === 'texture-bed' && tick.stepInBar === 0 && tick.bar % 4 === 0) {
+      const velocity = 0.34;
       instrument.schedule(sound.source.preset, tick.time, {
-        midi: midiForScaleDegree(36, harmony, degree),
-        duration: beatSeconds * 0.72,
+        duration: transport.secondsPerBeat * 3.4,
         velocity,
         gain,
       });
       return velocity;
     }
 
-    case 'harmony-pad':
-      if ((step === 0 || step === 8) && tick.bar % 2 === 0) {
-        const rootDegree = step === 0 ? 0 : 3;
-        const velocity = 0.7 * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, {
-          midiNotes: [
-            midiForScaleDegree(48, harmony, rootDegree),
-            midiForScaleDegree(48, harmony, rootDegree + 2),
-            midiForScaleDegree(48, harmony, rootDegree + 4),
-          ],
-          duration: beatSeconds * 1.8,
-          velocity,
-          gain,
-        });
-        return velocity;
-      }
-      return null;
-
-    case 'melody-spark': {
-      const degrees: Readonly<Record<number, number>> = {
-        3: 4,
-        7: 3,
-        11: 5,
-        15: 2,
-      };
-      const degree = degrees[step];
-
-      if (degree === undefined || tick.bar % 2 === 0) {
-        return null;
-      }
-
-      const velocity = 0.62 * velocityTrim;
-      instrument.schedule(sound.source.preset, tick.time, {
-        midi: midiForScaleDegree(60, harmony, degree),
-        duration: beatSeconds * 0.48,
-        velocity,
-        gain,
-      });
-      return velocity;
-    }
-
-    case 'texture-bed':
-      if (step === 0 && tick.bar % 4 === 0) {
-        const velocity = 0.52 * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, {
-          duration: beatSeconds * 3.4,
-          velocity,
-          gain,
-        });
-        return velocity;
-      }
-      return null;
-
-    case 'voice-hum':
-      if (step === 0 && tick.bar % 2 === 1) {
-        const velocity = 0.5 * velocityTrim;
-        instrument.schedule(sound.source.preset, tick.time, {
-          midiNotes: [
-            midiForScaleDegree(48, harmony, 2),
-            midiForScaleDegree(48, harmony, 4),
-          ],
-          duration: beatSeconds * 2.6,
-          velocity,
-          gain,
-        });
-        return velocity;
-      }
-      return null;
+    return null;
   }
+
+  const step = tick.stepInBar;
+  const velocityTrim = roleVelocityTrim(sound.role);
+  const eventTime = tick.time + transport.secondsPerBeat * grooveOffsetBeats(pattern.groove, step);
+
+  if (pattern.kind === 'rhythm') {
+    if (!pattern.steps[step]) {
+      return null;
+    }
+
+    const velocity = (step % 4 === 0 ? 0.9 : 0.68) * velocityTrim;
+    instrument.schedule(sound.source.preset, eventTime, {
+      velocity,
+      gain,
+    });
+    return velocity;
+  }
+
+  const degree = pattern.notes[step];
+
+  if (degree === null || degree === undefined) {
+    return null;
+  }
+
+  const velocity = (step % 4 === 0 ? 0.76 : 0.62) * velocityTrim;
+  const baseMidi = melodicBaseMidi(sound.role);
+
+  if (sound.role === 'harmony' || sound.role === 'voice') {
+    const thirdOffset = sound.role === 'harmony' ? 2 : 2;
+    const fifthOffset = sound.role === 'harmony' ? 4 : 4;
+    instrument.schedule(sound.source.preset, eventTime, {
+      midiNotes: [
+        midiForScaleDegree(baseMidi, harmony, degree),
+        midiForScaleDegree(baseMidi, harmony, degree + thirdOffset),
+        midiForScaleDegree(baseMidi, harmony, degree + fifthOffset),
+      ],
+      duration: transport.secondsPerBeat * (sound.role === 'harmony' ? 1.65 : 2.2),
+      velocity,
+      gain,
+    });
+    return velocity;
+  }
+
+  instrument.schedule(sound.source.preset, eventTime, {
+    midi: midiForScaleDegree(baseMidi, harmony, degree),
+    duration: transport.secondsPerBeat * (sound.role === 'bass' ? 0.68 : 0.45),
+    velocity,
+    gain,
+  });
+
+  return velocity;
 }
