@@ -9,6 +9,10 @@ import {
 import type { WorldDocument } from '../world/World';
 import type { NormalizedPoint, SoundOrbDocument } from '../world/SoundOrb';
 import { recommendedVoiceGain } from './MixPolicy';
+import {
+  evaluateMotionFrame,
+  type MotionFrame,
+} from './MotionEngine';
 import { LookaheadScheduler, type ScheduledTick } from './LookaheadScheduler';
 import { MusicalTransport } from './MusicalTransport';
 import { scheduleOrbPattern } from './OrbPattern';
@@ -53,6 +57,9 @@ export class PlaygroundEngine {
   private readonly scheduler: LookaheadScheduler;
   private readonly runtimes = new Map<string, OrbRuntime>();
   private readonly activityListeners = new Set<OrbActivityListener>();
+  private readonly manualPositionOverrides = new Map<string, NormalizedPoint>();
+  private lastMotionFrame: MotionFrame = new Map();
+  private lastMotionTimeSeconds = 0;
   private world: WorldDocument;
   private unsubscribeTicks: (() => void) | null = null;
   private playing = false;
@@ -129,6 +136,12 @@ export class PlaygroundEngine {
       this.transport.setBpm(world.music.bpm, this.context.currentTime);
     }
 
+    const motionFrame = this.lastMotionTimeSeconds > 0
+      ? evaluateMotionFrame(world, this.lastMotionTimeSeconds)
+      : new Map<string, NormalizedPoint>();
+
+    this.lastMotionFrame = motionFrame;
+
     const liveIds = new Set(world.soundOrbs.map((orb) => orb.id));
 
     for (const [orbId, runtime] of this.runtimes) {
@@ -136,17 +149,21 @@ export class PlaygroundEngine {
         runtime.instrument.stopAll(this.context.currentTime + 0.01);
         runtime.effects.dispose();
         runtime.spatial.dispose();
+        this.manualPositionOverrides.delete(orbId);
         this.runtimes.delete(orbId);
       }
     }
 
     for (const orb of world.soundOrbs) {
       const existing = this.runtimes.get(orb.id);
-      const amounts = effectAmountsAtPoint(world.effectFields, orb.position);
+      const position = this.manualPositionOverrides.get(orb.id)
+        ?? motionFrame.get(orb.id)
+        ?? orb.position;
+      const amounts = effectAmountsAtPoint(world.effectFields, position);
 
       if (existing) {
         existing.orb = orb;
-        existing.spatial.setPosition(orb.position);
+        existing.spatial.setPosition(position);
         existing.spatial.setMuted(orb.muted);
         existing.effects.setTempo(world.music.bpm);
         existing.effects.setAmounts(amounts);
@@ -156,7 +173,7 @@ export class PlaygroundEngine {
       const spatial = new SpatialVoice(
         this.context,
         this.destination,
-        orb.position,
+        position,
         orb.muted,
       );
 
@@ -179,6 +196,8 @@ export class PlaygroundEngine {
   public updateOrbSpatial(orbId: string, position: NormalizedPoint): void {
     const runtime = this.runtimes.get(orbId);
 
+    this.manualPositionOverrides.set(orbId, position);
+
     if (!runtime) {
       return;
     }
@@ -189,14 +208,50 @@ export class PlaygroundEngine {
     );
   }
 
+  public releaseOrbMotionOverride(orbId: string): void {
+    this.manualPositionOverrides.delete(orbId);
+  }
+
+  public tickMotion(timeSeconds: number): MotionFrame {
+    this.lastMotionTimeSeconds = Math.max(0, timeSeconds);
+    const computed = evaluateMotionFrame(this.world, this.lastMotionTimeSeconds);
+    const resolved = new Map<string, NormalizedPoint>();
+
+    for (const orb of this.world.soundOrbs) {
+      const position = this.manualPositionOverrides.get(orb.id)
+        ?? computed.get(orb.id)
+        ?? orb.position;
+
+      resolved.set(orb.id, position);
+
+      const runtime = this.runtimes.get(orb.id);
+
+      if (!runtime) {
+        continue;
+      }
+
+      runtime.spatial.setPosition(position);
+      runtime.effects.setAmounts(
+        effectAmountsAtPoint(this.world.effectFields, position),
+      );
+    }
+
+    this.lastMotionFrame = resolved;
+    return resolved;
+  }
+
   public previewEffectField(field: EffectFieldDocument): void {
     const fields = this.world.effectFields.some((candidate) => candidate.id === field.id)
       ? this.world.effectFields.map((candidate) => candidate.id === field.id ? field : candidate)
       : [...this.world.effectFields, field];
 
     for (const runtime of this.runtimes.values()) {
+      const position = this.manualPositionOverrides.get(runtime.orb.id)
+        ?? this.lastMotionFrame.get(runtime.orb.id)
+        ?? runtime.orb.position;
+
       runtime.effects.setAmounts(
-        effectAmountsAtPoint(fields, runtime.orb.position),
+        effectAmountsAtPoint(fields, position),
       );
     }
   }
@@ -223,6 +278,7 @@ export class PlaygroundEngine {
       runtime.spatial.dispose();
     }
 
+    this.manualPositionOverrides.clear();
     this.runtimes.clear();
     this.activityListeners.clear();
   }
