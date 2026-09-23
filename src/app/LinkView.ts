@@ -71,7 +71,6 @@ function orbName(state: Readonly<AppState>, orbId: string): string {
 }
 
 export class LinkView {
-  private readonly canvas: HTMLElement;
   private readonly svg: SVGSVGElement;
   private readonly editor: HTMLElement;
   private readonly editorTitle: HTMLElement;
@@ -94,8 +93,6 @@ export class LinkView {
     if (!canvas || !shell) {
       throw new Error('Link view requires the playground shell.');
     }
-
-    this.canvas = canvas;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.classList.add('link-layer');
