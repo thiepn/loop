@@ -15,7 +15,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 6 — Effect Fields: complete and CI-verified**
 - **Phase 7 — Motion Playground: complete and CI-verified**
 - **Phase 8 — Links & Reactive Music: complete and CI-verified**
-- **Phase 9 — Magic, Mutation & Controlled Randomness: complete; final CI verification pending**
+- **Phase 9 — Magic, Mutation & Controlled Randomness: complete and CI-verified**
 - **Next: Phase 10 — Worlds, Snapshots & Persistence**
 
 Loop now behaves as a living reactive music playground with controlled experimentation: users can shape patterns, move sounds through Effect Fields, animate them with Motion/toys, create reactive Links, then use per-object ✦ Magic or global ✦ Remix to generate seeded compatible variations with Retry/Keep/Revert safety.
@@ -68,9 +68,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 8 remains fully verified.
+The final Phase 9 implementation passed CI with:
 
-The integrated Phase 9 implementation passed its pre-documentation gate with **24 test files / 124 tests**, strict TypeScript, and a production build. The exact final Phase 9 documentation/status head is verified before the phase is marked CI-complete.
+- **24 test files**
+- **124 tests**
+- strict TypeScript typecheck
+- production Vite build
+
+The Magic suite covers deterministic seeded mutation, role-safe sound changes, intent-aware pattern/tempo behavior, bounded field/toy mutation, coherent Remix structure, Link validity preservation, and every prior Phase 1–8 regression test.
 
 ## Product rule
 
