@@ -14,10 +14,12 @@ function createMotionForOrb(
   overrides: {
     readonly speed?: MotionSpeed;
     readonly range?: MotionRange;
-    readonly targetOrbId?: string;
+    readonly targetOrbId?: string | null;
   } = {},
 ) {
-  const targetOrbId = overrides.targetOrbId ?? orb.motion?.targetOrbId;
+  const targetOrbId = overrides.targetOrbId === null
+    ? undefined
+    : overrides.targetOrbId ?? orb.motion?.targetOrbId;
   const speed = overrides.speed ?? orb.motion?.speed;
   const range = overrides.range ?? orb.motion?.range;
 
@@ -71,9 +73,12 @@ export function setOrbMotionMode(
     const existing = orb.motion;
     const target = mode === 'follow'
       ? (
-          existing?.targetOrbId
-            ? world.soundOrbs.find((candidate) => candidate.id === existing.targetOrbId)
-            : nearestFollowTarget(orb, world.soundOrbs)
+          (
+            existing?.targetOrbId
+              ? world.soundOrbs.find((candidate) => candidate.id === existing.targetOrbId)
+              : undefined
+          )
+          ?? nearestFollowTarget(orb, world.soundOrbs)
         )
       : null;
 
@@ -83,7 +88,9 @@ export function setOrbMotionMode(
         mode,
         world,
         orb,
-        target?.id ? { targetOrbId: target.id } : {},
+        mode === 'follow'
+          ? { targetOrbId: target?.id ?? null }
+          : { targetOrbId: null },
       ),
     };
   }, now);
