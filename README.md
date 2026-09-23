@@ -12,9 +12,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 3 — Sound Orbs & Core Playground: complete and CI-verified**
 - **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete and CI-verified**
 - **Phase 5 — Playful Beat & Melody Creation: complete and CI-verified**
-- **Next: Phase 6 — Effect Fields**
+- **Phase 6 — Effect Fields: complete; final CI verification pending**
+- **Next: Phase 7 — Motion Playground**
 
-Loop now opens on a simple starter screen, enters a spatial Sound Orb playground immediately, and lets users shape what editable orbs play. Rhythm orbs use a touch-friendly 16-step row; Bass/Chords/Melody/Voice use a scale-locked visual melody grid with no note names. Sparse/Balanced/Busy, Straight/Bounce/Loose, Clear, and Try another remain contextual rather than turning the app into a DAW.
+Loop now opens on a simple starter screen, enters a spatial Sound Orb playground immediately, lets users shape what editable orbs play, and makes effects physical. Space, Echo, Heat, Frost, and Filter are visible fields: drag a Sound Orb through them and the sound changes continuously with depth; move or resize the fields themselves to reshape the World.
 
 ## Product contract
 
@@ -31,11 +32,13 @@ The authoritative specifications live in `docs/`:
 - [PLAYGROUND.md](docs/PLAYGROUND.md) — Sound Orb model, spatial behavior, direct manipulation, and runtime
 - [ENTRY_FLOW.md](docs/ENTRY_FLOW.md) — starter Home, palette, Add/Change, Surprise Me, and onboarding
 - [PATTERN_PLAY.md](docs/PATTERN_PLAY.md) — rhythm/melody pattern state, Shape editor, density, groove, and variation
+- [EFFECT_FIELDS.md](docs/EFFECT_FIELDS.md) — field geometry, direct manipulation, DSP behavior, overlap, and safety
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
 - [PHASE_4_ACCEPTANCE.md](docs/PHASE_4_ACCEPTANCE.md) — Phase 4 verification gate
 - [PHASE_5_ACCEPTANCE.md](docs/PHASE_5_ACCEPTANCE.md) — Phase 5 verification gate
+- [PHASE_6_ACCEPTANCE.md](docs/PHASE_6_ACCEPTANCE.md) — Phase 6 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -56,14 +59,9 @@ npm run build
 
 ## Current automated verification
 
-The final Phase 5 implementation passed CI with:
+Phase 5 remains fully verified.
 
-- **15 test files**
-- **57 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The pattern suite covers rhythm/melody defaults, painting, scale-degree bounds, density, groove, deterministic variation, World actions, duplication, and compatible/incompatible sound replacement behavior.
+The integrated Phase 6 field/audio/UI implementation has passed strict typecheck, the full test suite, and production build during development. The exact final Phase 6 documentation/status head is verified before the phase is marked CI-complete.
 
 ## Product rule
 
