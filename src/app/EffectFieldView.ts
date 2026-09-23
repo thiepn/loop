@@ -1,5 +1,6 @@
 import {
   MAX_EFFECT_FIELDS,
+  clampEffectFieldRadius,
   dominantEffectAtPoint,
   effectFieldDescription,
   effectFieldLabel,
@@ -163,6 +164,25 @@ export class EffectFieldView {
     this.applyOrbEffectVisual(element, position, fields);
   }
 
+  public previewFieldEffects(field: EffectFieldDocument): void {
+    const state = this.latestState;
+
+    if (!state) {
+      return;
+    }
+
+    const fields = state.world.effectFields.some((candidate) => candidate.id === field.id)
+      ? state.world.effectFields.map((candidate) => candidate.id === field.id ? field : candidate)
+      : [...state.world.effectFields, field];
+
+    for (const orb of state.world.soundOrbs) {
+      const element = this.findOrbElement(orb.id);
+      if (element) {
+        this.applyOrbEffectVisual(element, orb.position, fields);
+      }
+    }
+  }
+
   public destroy(): void {
     this.gesture = null;
     this.fieldElements.clear();
@@ -269,10 +289,10 @@ export class EffectFieldView {
       }
 
       const pointer = this.positionFromPointer(event);
-      const radius = Math.max(
+      const radius = clampEffectFieldRadius(Math.max(
         Math.abs(pointer.x - gesture.center.x),
         Math.abs(pointer.y - gesture.center.y),
-      );
+      ));
       gesture.lastRadius = radius;
       const preview = {
         ...(this.fieldFromLatestState(field.id) ?? field),
@@ -357,8 +377,9 @@ export class EffectFieldView {
     element.dataset.fieldType = field.type;
     element.style.left = `${field.position.x * 100}%`;
     element.style.top = `${field.position.y * 100}%`;
-    element.style.width = `${field.radius * 200 * 100}%`;
-    element.style.height = `${field.radius * 200 * 100}%`;
+    const diameterPercent = clampEffectFieldRadius(field.radius) * 200;
+    element.style.width = `${diameterPercent}%`;
+    element.style.height = `${diameterPercent}%`;
     element.classList.toggle('is-selected', selected);
     element.setAttribute(
       'aria-label',
