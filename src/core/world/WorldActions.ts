@@ -5,7 +5,12 @@ import {
   type NormalizedPoint,
   type SoundOrbDocument,
 } from './SoundOrb';
+import {
+  effectivePattern,
+  patternKindForSound,
+} from '../music/Pattern';
 import type { SoundDefinition } from '../sounds/SoundDefinition';
+import { soundById } from '../sounds/coreCatalog';
 import type { WorldDocument } from './World';
 
 function touch(world: WorldDocument, soundOrbs: readonly SoundOrbDocument[], now: number): WorldDocument {
@@ -113,6 +118,7 @@ export function duplicateSoundOrb(
     soundId: source.soundId,
     role: source.role,
     muted: source.muted,
+    pattern: source.pattern,
     position: {
       x: Math.min(0.94, source.position.x + 0.07),
       y: Math.min(0.94, source.position.y + 0.06),
@@ -178,12 +184,26 @@ export function replaceSoundOrb(
       return orb;
     }
 
+    const previousSound = soundById(orb.soundId);
+    const previousKind = previousSound ? patternKindForSound(previousSound) : null;
+    const nextKind = patternKindForSound(sound);
+    const preservedPattern = previousKind && previousKind === nextKind
+      ? effectivePattern(orb.pattern, previousSound!)
+      : undefined;
+
     changed = true;
-    return {
+    const base = {
       ...orb,
       soundId: sound.id,
       role: sound.role,
     };
+
+    return preservedPattern
+      ? { ...base, pattern: preservedPattern }
+      : (() => {
+          const { pattern: _pattern, ...withoutPattern } = base;
+          return withoutPattern;
+        })();
   });
 
   return changed ? touch(world, soundOrbs, now) : world;
