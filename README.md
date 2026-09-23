@@ -13,7 +13,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete and CI-verified**
 - **Phase 5 — Playful Beat & Melody Creation: complete and CI-verified**
 - **Phase 6 — Effect Fields: complete and CI-verified**
-- **Phase 7 — Motion Playground: complete; final CI verification pending**
+- **Phase 7 — Motion Playground: complete and CI-verified**
 - **Next: Phase 8 — Links & Reactive Music**
 
 Loop now opens on a simple starter screen and becomes a living spatial playground: users can shape patterns, move sounds through visible Effect Fields, give Sound Orbs simple Motion (Orbit/Bounce/Drift/Follow/Wander), and add Spinner/Magnet/Repulsor/Portal toys that continuously alter live positions and therefore the sound.
@@ -62,9 +62,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 6 remains fully verified.
+The final Phase 7 implementation passed CI with:
 
-The integrated Phase 7 implementation includes dedicated Motion/toy regression suites. The exact final Phase 7 documentation/status head is verified before the phase is marked CI-complete.
+- **21 test files**
+- **93 tests**
+- strict TypeScript typecheck
+- production Vite build
+
+The Motion/toy suite covers all six Motion modes, Follow fallback, demand-driven loop activation, Spinner/Magnet/Repulsor/Portal behavior, toy actions, Motion lifecycle preservation, starter Motion integrity, and every prior Phase 1–6 regression test.
 
 ## Product rule
 
