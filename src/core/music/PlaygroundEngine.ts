@@ -6,6 +6,7 @@ import {
   effectAmountsAtPoint,
   type EffectFieldDocument,
 } from '../world/EffectField';
+import type { LinkType } from '../world/Link';
 import type { PlaygroundToyDocument } from '../world/PlaygroundToy';
 import type { WorldDocument } from '../world/World';
 import type { NormalizedPoint, SoundOrbDocument } from '../world/SoundOrb';
@@ -16,7 +17,17 @@ import {
 } from './MotionEngine';
 import { LookaheadScheduler, type ScheduledTick } from './LookaheadScheduler';
 import { MusicalTransport } from './MusicalTransport';
-import { scheduleOrbPattern } from './OrbPattern';
+import {
+  scheduleOrbPattern,
+  scheduleReactiveOrbHit,
+  type ScheduledOrbEvent,
+} from './OrbPattern';
+import {
+  baseEventAllowedByLinks,
+  reactiveLinkTime,
+  reactiveLinksFromSource,
+  takeTurnsLinkForActivity,
+} from './ReactiveLinks';
 
 export interface OrbActivity {
   readonly orbId: string;
@@ -24,7 +35,18 @@ export interface OrbActivity {
   readonly intensity: number;
 }
 
+export interface LinkActivity {
+  readonly linkId: string;
+  readonly type: LinkType;
+  readonly sourceOrbId: string;
+  readonly targetOrbId: string;
+  readonly activeOrbId: string;
+  readonly time: number;
+  readonly intensity: number;
+}
+
 export type OrbActivityListener = (activity: OrbActivity) => void;
+export type LinkActivityListener = (activity: LinkActivity) => void;
 
 interface OrbRuntime {
   orb: SoundOrbDocument;
@@ -58,6 +80,7 @@ export class PlaygroundEngine {
   private readonly scheduler: LookaheadScheduler;
   private readonly runtimes = new Map<string, OrbRuntime>();
   private readonly activityListeners = new Set<OrbActivityListener>();
+  private readonly linkActivityListeners = new Set<LinkActivityListener>();
   private readonly manualPositionOverrides = new Map<string, NormalizedPoint>();
   private readonly effectFieldPreviewOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
@@ -97,8 +120,17 @@ export class PlaygroundEngine {
 
   public subscribeActivity(listener: OrbActivityListener): () => void {
     this.activityListeners.add(listener);
+
     return () => {
       this.activityListeners.delete(listener);
+    };
+  }
+
+  public subscribeLinkActivity(listener: LinkActivityListener): () => void {
+    this.linkActivityListeners.add(listener);
+
+    return () => {
+      this.linkActivityListeners.delete(listener);
     };
   }
 
@@ -279,6 +311,7 @@ export class PlaygroundEngine {
 
   public setOrbMuted(orbId: string, muted: boolean): void {
     const runtime = this.runtimes.get(orbId);
+
     if (!runtime) {
       return;
     }
@@ -304,6 +337,7 @@ export class PlaygroundEngine {
     this.toyPreviewOverrides.clear();
     this.runtimes.clear();
     this.activityListeners.clear();
+    this.linkActivityListeners.clear();
   }
 
   private effectiveEffectFields(): readonly EffectFieldDocument[] {
@@ -329,32 +363,66 @@ export class PlaygroundEngine {
     };
   }
 
+  private emitOrbActivity(activity: OrbActivity): void {
+    for (const listener of this.activityListeners) {
+      listener(activity);
+    }
+  }
+
+  private emitLinkActivity(activity: LinkActivity): void {
+    for (const listener of this.linkActivityListeners) {
+      listener(activity);
+    }
+  }
+
+  private gainForOrb(
+    orb: SoundOrbDocument,
+    activeCount: number,
+  ): number | null {
+    const sound = soundById(orb.soundId);
+
+    if (!sound) {
+      return null;
+    }
+
+    return recommendedVoiceGain(
+      sound.nominalDb,
+      activeCount,
+      roleTrimDb(orb.role),
+    );
+  }
+
   private scheduleTick(tick: ScheduledTick): void {
     const activeCount = Math.max(
       1,
       this.world.soundOrbs.filter((orb) => !orb.muted).length,
     );
-
     const harmony = {
       tonic: this.world.music.tonic,
       scale: this.world.music.scale,
     } as const;
+    const baseEvents = new Map<string, ScheduledOrbEvent>();
 
     for (const orb of this.world.soundOrbs) {
       const runtime = this.runtimes.get(orb.id);
       const sound = soundById(orb.soundId);
 
-      if (!runtime || !sound || orb.muted) {
+      if (
+        !runtime
+        || !sound
+        || orb.muted
+        || !baseEventAllowedByLinks(this.world, orb.id, tick)
+      ) {
         continue;
       }
 
-      const gain = recommendedVoiceGain(
-        sound.nominalDb,
-        activeCount,
-        roleTrimDb(orb.role),
-      );
+      const gain = this.gainForOrb(orb, activeCount);
 
-      const intensity = scheduleOrbPattern({
+      if (gain === null) {
+        continue;
+      }
+
+      const event = scheduleOrbPattern({
         orb,
         sound,
         tick,
@@ -364,15 +432,124 @@ export class PlaygroundEngine {
         gain,
       });
 
-      if (intensity === null) {
+      if (!event) {
         continue;
       }
 
-      for (const listener of this.activityListeners) {
-        listener({
-          orbId: orb.id,
-          time: tick.time,
-          intensity,
+      baseEvents.set(orb.id, event);
+      this.emitOrbActivity({
+        orbId: orb.id,
+        time: event.time,
+        intensity: event.intensity,
+      });
+
+      const takeTurns = takeTurnsLinkForActivity(
+        this.world.links,
+        orb.id,
+      );
+
+      if (takeTurns) {
+        this.emitLinkActivity({
+          linkId: takeTurns.id,
+          type: takeTurns.type,
+          sourceOrbId: takeTurns.sourceOrbId,
+          targetOrbId: takeTurns.targetOrbId,
+          activeOrbId: orb.id,
+          time: event.time,
+          intensity: event.intensity,
+        });
+      }
+    }
+
+    const reactiveDedupe = new Set<string>();
+
+    for (const [sourceOrbId, sourceEvent] of baseEvents) {
+      for (const link of reactiveLinksFromSource(
+        this.world.links,
+        sourceOrbId,
+      )) {
+        const target = this.world.soundOrbs.find(
+          (orb) => orb.id === link.targetOrbId,
+        );
+        const targetRuntime = target
+          ? this.runtimes.get(target.id)
+          : undefined;
+
+        if (!target || !targetRuntime || target.muted) {
+          continue;
+        }
+
+        const eventTime = reactiveLinkTime(
+          link,
+          sourceEvent.time,
+          this.transport,
+        );
+
+        if (link.type === 'kick-pushes-bass') {
+          targetRuntime.spatial.schedulePush(
+            eventTime,
+            Math.max(0.45, sourceEvent.intensity),
+          );
+
+          this.emitLinkActivity({
+            linkId: link.id,
+            type: link.type,
+            sourceOrbId: link.sourceOrbId,
+            targetOrbId: link.targetOrbId,
+            activeOrbId: target.id,
+            time: eventTime,
+            intensity: sourceEvent.intensity,
+          });
+          continue;
+        }
+
+        const targetSound = soundById(target.soundId);
+        const targetGain = this.gainForOrb(target, activeCount);
+
+        if (!targetSound || targetGain === null) {
+          continue;
+        }
+
+        const dedupeKey = `${target.id}:${Math.round(eventTime * 10000)}`;
+
+        if (reactiveDedupe.has(dedupeKey)) {
+          continue;
+        }
+
+        reactiveDedupe.add(dedupeKey);
+
+        const stepOffset = link.type === 'follow' ? 1 : 0;
+        const targetStep = (tick.stepInBar + stepOffset) % 16;
+        const reactiveEvent = scheduleReactiveOrbHit({
+          orb: target,
+          sound: targetSound,
+          time: eventTime,
+          step: targetStep,
+          transport: this.transport,
+          harmony,
+          instrument: targetRuntime.instrument,
+          gain: targetGain,
+          intensity: sourceEvent.intensity,
+        });
+
+        if (!reactiveEvent) {
+          continue;
+        }
+
+        this.emitOrbActivity({
+          orbId: target.id,
+          time: reactiveEvent.time,
+          intensity: reactiveEvent.intensity,
+        });
+
+        this.emitLinkActivity({
+          linkId: link.id,
+          type: link.type,
+          sourceOrbId: link.sourceOrbId,
+          targetOrbId: link.targetOrbId,
+          activeOrbId: target.id,
+          time: reactiveEvent.time,
+          intensity: reactiveEvent.intensity,
         });
       }
     }
