@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 7.
+Updated through Phase 8.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -46,9 +46,10 @@ Owns musical behavior independent of UI:
 - Harmony — small scale vocabulary and pitch mapping;
 - MixPolicy — metadata normalization and voice-count headroom;
 - Pattern — serializable rhythm/melody documents, density/groove macros, deterministic variation;
-- OrbPattern — schedules each orb’s effective editable pattern;
-- MotionEngine — deterministic live-position evaluation for Motion presets and playground toys;
-- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb, with live Motion positions applied to EffectRack + SpatialVoice.
+- OrbPattern — schedules each orb’s effective editable pattern and exposes actual event time;
+- ReactiveLinks — pure base-event gating and reactive Link timing rules;
+- MotionEngine — deterministic live-position evaluation for Motion presets, playground toys, and Copy Movement Links;
+- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb, with two-pass Link scheduling and live positions applied to EffectRack + SpatialVoice.
 
 The old one-off FoundationGroove runtime was removed in Phase 3. There is now one playback architecture.
 
@@ -78,7 +79,7 @@ The Store has no dependency on DOM or Web Audio and can be tested in isolation.
 ### core/world/
 Owns the serializable World document boundary and pure creative-state mutations.
 
-World schema version 6 contains:
+World schema version 7 contains:
 - BPM;
 - tonic;
 - scale;
@@ -86,7 +87,8 @@ World schema version 6 contains:
 - full SoundOrbDocument objects;
 - full EffectFieldDocument objects;
 - PlaygroundToyDocument objects;
-- placeholder collections for later Links and Snapshots.
+- typed LinkDocument objects;
+- placeholder Snapshots.
 
 SoundOrbDocument contains:
 - id;
@@ -114,6 +116,8 @@ EffectFieldActions owns immutable field Add, move, resize, and delete operations
 MotionActions owns immutable mode/Speed/Range/Follow target updates.
 
 PlaygroundToyActions owns immutable toy Add/move/Portal OUT/delete operations.
+
+LinkActions owns bounded Link validation, Add/Delete, and lifecycle cleanup.
 
 EffectField geometry maps normalized orb/field positions into smooth 0–1 effect amounts.
 
@@ -144,6 +148,7 @@ Examples:
 - runtime Sound Orb channels, EffectRacks, and transient Motion preview overrides belong to PlaygroundEngine;
 - serialized Motion anchors/toys belong to World;
 - live Motion positions do not belong to persistent app state;
+- Link definitions belong to World while Link activity events remain runtime-only;
 - sound metadata belongs to the catalog;
 - serializable creative state belongs to World;
 - transient selection/playback UI state belongs to AppState/Store;
@@ -213,6 +218,8 @@ Phase 6 adds directly manipulable Effect Fields. Fields live behind Sound Orbs o
 
 Phase 7 adds contextual Motion plus directly manipulable playground toys. Motion computes transient live positions around saved anchors; it does not write World state every animation frame.
 
+Phase 8 adds visible one-way Links between Sound Orbs. Link creation is vocabulary-driven rather than port/routing driven, and reactive audio is deliberately non-recursive.
+
 ## GitHub Pages
 The production URL is expected to use the repository path:
 https://thiepn.github.io/loop/
@@ -259,7 +266,12 @@ Current automated coverage includes:
 - MotionActions;
 - PlaygroundToyActions;
 - Motion preservation across Duplicate/Change;
-- starter Motion/toy integrity.
+- starter Motion/toy integrity;
+- Link validation/conflict rules;
+- Pulse/Follow/Take Turns timing/gating;
+- Copy Movement geometry;
+- Link lifecycle cleanup;
+- starter Link integrity.
 
 Future phases add tests at their domain boundaries.
 
@@ -370,3 +382,36 @@ Manual Sound Orb drag uses a transient override that wins over Motion until poin
 Effect Field and toy drag previews are transient runtime state. Motion frames use those previews without serializing them each frame.
 
 Playground toys are bounded geometry transforms, not physics bodies. Phase 7 intentionally has no collision solver, velocity integration, acceleration model, or Doppler simulation.
+
+
+## Phase 8 Link rule
+
+Links are serializable relationships, not audio connections.
+
+World stores:
+- Link id;
+- fixed Link type;
+- source Sound Orb id;
+- target Sound Orb id.
+
+Reactive playback uses a two-pass scheduler:
+
+1. schedule allowed base events;
+2. derive Pulse Together, Link Follow, and Kick Pushes Bass reactions from those base events.
+
+Pass-2 events never become new Link sources. This prevents recursive reactive graphs and keeps timing deterministic.
+
+Take Turns gates base patterns by bar parity rather than rewriting pattern documents.
+
+Copy Movement belongs to live-position geometry:
+
+saved anchors
+→ Phase 7 Motion
+→ Phase 7 toys
+→ Phase 8 Copy Movement
+→ Effect Fields
+→ SpatialVoice
+
+SpatialVoice owns a separate reactiveGain node for Kick Pushes Bass so reactive pumping does not overwrite listener-distance gain automation.
+
+LinkView owns only visual relationship rendering and editor interaction. It receives the same live Sound Orb positions used by the runtime, keeping Link curves aligned with Motion and manual drag.
