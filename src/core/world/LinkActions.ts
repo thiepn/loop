@@ -19,6 +19,7 @@ export type LinkValidationReason =
   | 'target-driven'
   | 'take-turns-conflict'
   | 'copy-target-conflict'
+  | 'copy-chain-conflict'
   | 'copy-cycle';
 
 export interface LinkValidation {
@@ -123,14 +124,45 @@ export function validateLinkCandidate(
   }
 
   if (
+    isPlaybackDriverLink(type)
+    && world.links.some(
+      (link) => (
+        isPlaybackDriverLink(link.type)
+        && (
+          link.targetOrbId === sourceOrbId
+          || link.sourceOrbId === targetOrbId
+        )
+      ),
+    )
+  ) {
+    return { ok: false, reason: 'target-driven' };
+  }
+
+
+  if (
     type === 'take-turns'
     && world.links.some(
       (link) => (
-        link.type === 'take-turns'
+        (
+          link.type === 'take-turns'
+          || isPlaybackDriverLink(link.type)
+        )
         && (
           linkTouchesOrb(link, sourceOrbId)
           || linkTouchesOrb(link, targetOrbId)
         )
+      ),
+    )
+  ) {
+    return { ok: false, reason: 'take-turns-conflict' };
+  }
+
+  if (
+    isPlaybackDriverLink(type)
+    && world.links.some(
+      (link) => (
+        link.type === 'take-turns'
+        && linkTouchesOrb(link, targetOrbId)
       ),
     )
   ) {
@@ -148,6 +180,22 @@ export function validateLinkCandidate(
   ) {
     return { ok: false, reason: 'copy-target-conflict' };
   }
+
+  if (
+    type === 'copy-movement'
+    && world.links.some(
+      (link) => (
+        link.type === 'copy-movement'
+        && (
+          link.targetOrbId === sourceOrbId
+          || link.sourceOrbId === targetOrbId
+        )
+      ),
+    )
+  ) {
+    return { ok: false, reason: 'copy-chain-conflict' };
+  }
+
 
   if (
     type === 'copy-movement'
