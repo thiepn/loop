@@ -74,7 +74,7 @@ describe('Pattern', () => {
     expect(grooveOffsetBeats('bounce', 1)).toBeGreaterThan(0);
   });
 
-  it('generates deterministic successive variations from the same state', () => {
+  it('generates deterministic successive melody variations from the same state', () => {
     const base = createDefaultPattern('bass-pulse')!;
     const first = varyPattern(base, 42);
     const again = varyPattern(base, 42);
@@ -83,5 +83,15 @@ describe('Pattern', () => {
     expect(first).toEqual(again);
     expect(second.variation).toBe(first.variation + 1);
     expect(second).not.toEqual(first);
+  });
+
+  it('changes actual rhythm hits while preserving a downbeat anchor', () => {
+    const base = createDefaultPattern('kick-steady') as RhythmPatternDocument;
+    const first = varyPattern(base, 42) as RhythmPatternDocument;
+    const second = varyPattern(first, 42) as RhythmPatternDocument;
+
+    expect(first.steps[0]).toBe(true);
+    expect(second.steps[0]).toBe(true);
+    expect(second.steps).not.toEqual(first.steps);
   });
 });
