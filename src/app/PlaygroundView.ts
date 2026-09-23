@@ -4,6 +4,7 @@ import {
   type SoundPaletteCategoryId,
 } from '../core/sounds/SoundPalette';
 import { soundById } from '../core/sounds/coreCatalog';
+import { patternKindForRole } from '../core/music/Pattern';
 import { clampPoint, type NormalizedPoint, type SoundOrbDocument } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 
@@ -18,6 +19,7 @@ export interface PlaygroundCallbacks {
   readonly onDelete: (orbId: string) => void;
   readonly onOpenAdd: () => void;
   readonly onOpenChange: (orbId: string) => void;
+  readonly onOpenPattern: (orbId: string) => void;
   readonly onClosePalette: () => void;
   readonly onSelectPaletteCategory: (category: SoundPaletteCategoryId) => void;
   readonly onChooseSound: (soundId: string) => void;
@@ -75,6 +77,7 @@ export class PlaygroundView {
   private readonly selectedName: HTMLElement;
   private readonly selectedRole: HTMLElement;
   private readonly muteButton: HTMLButtonElement;
+  private readonly patternButton: HTMLButtonElement;
   private readonly addButton: HTMLButtonElement;
   private readonly palette: HTMLElement;
   private readonly paletteTitle: HTMLElement;
@@ -142,6 +145,7 @@ export class PlaygroundView {
             <strong data-selected-name>Sound</strong>
           </div>
           <div class="selection-actions">
+            <button type="button" data-action="pattern">Shape</button>
             <button type="button" data-action="change">Change</button>
             <button type="button" data-action="mute">Mute</button>
             <button type="button" data-action="duplicate">Duplicate</button>
@@ -182,6 +186,7 @@ export class PlaygroundView {
     const selectedName = root.querySelector<HTMLElement>('[data-selected-name]');
     const selectedRole = root.querySelector<HTMLElement>('[data-selected-role]');
     const muteButton = root.querySelector<HTMLButtonElement>('[data-action="mute"]');
+    const patternButton = root.querySelector<HTMLButtonElement>('[data-action="pattern"]');
     const addButton = root.querySelector<HTMLButtonElement>('[data-add]');
     const palette = root.querySelector<HTMLElement>('[data-palette]');
     const paletteTitle = root.querySelector<HTMLElement>('[data-palette-title]');
@@ -200,6 +205,7 @@ export class PlaygroundView {
       !selectedName ||
       !selectedRole ||
       !muteButton ||
+      !patternButton ||
       !addButton ||
       !palette ||
       !paletteTitle ||
@@ -220,6 +226,7 @@ export class PlaygroundView {
     this.selectedName = selectedName;
     this.selectedRole = selectedRole;
     this.muteButton = muteButton;
+    this.patternButton = patternButton;
     this.addButton = addButton;
     this.palette = palette;
     this.paletteTitle = paletteTitle;
@@ -235,6 +242,13 @@ export class PlaygroundView {
     this.canvas.addEventListener('pointerdown', (event) => {
       if (event.target === this.canvas || (event.target as HTMLElement).classList.contains('world-grid')) {
         callbacks.onSelectOrb(null);
+      }
+    });
+
+    this.patternButton.addEventListener('click', () => {
+      const selected = this.selectedOrbId();
+      if (selected) {
+        callbacks.onOpenPattern(selected);
       }
     });
 
@@ -532,6 +546,7 @@ export class PlaygroundView {
     this.selectedName.textContent = sound?.name ?? roleLabel(selected);
     this.selectedRole.textContent = roleLabel(selected);
     this.muteButton.textContent = selected.muted ? 'Unmute' : 'Mute';
+    this.patternButton.hidden = patternKindForRole(selected.role) === null;
   }
 
   private renderPalette(state: Readonly<AppState>): void {
