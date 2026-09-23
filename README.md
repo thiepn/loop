@@ -11,9 +11,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 2 — Musical Core & Smart Sound System: complete and CI-verified**
 - **Phase 3 — Sound Orbs & Core Playground: complete and CI-verified**
 - **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete and CI-verified**
-- **Next: Phase 5 — Playful Beat & Melody Creation**
+- **Phase 5 — Playful Beat & Melody Creation: complete; final CI verification pending**
+- **Next: Phase 6 — Effect Fields**
 
-Loop now opens on a simple starter screen. Pick Beat, Chill, Dreamy, Dance, Weird, Empty, or Surprise Me; non-empty Worlds enter the playground and begin playing immediately when browser audio permission allows it. The playground includes plain-language Add/Change sound choices and a three-step interaction-first onboarding.
+Loop now opens on a simple starter screen, enters a spatial Sound Orb playground immediately, and lets users shape what editable orbs play. Rhythm orbs use a touch-friendly 16-step row; Bass/Chords/Melody/Voice use a scale-locked visual melody grid with no note names. Sparse/Balanced/Busy, Straight/Bounce/Loose, Clear, and Try another remain contextual rather than turning the app into a DAW.
 
 ## Product contract
 
@@ -29,10 +30,12 @@ The authoritative specifications live in `docs/`:
 - [MUSICAL_CORE.md](docs/MUSICAL_CORE.md) — timing, harmony, catalog, compatibility, and mix contracts
 - [PLAYGROUND.md](docs/PLAYGROUND.md) — Sound Orb model, spatial behavior, direct manipulation, and runtime
 - [ENTRY_FLOW.md](docs/ENTRY_FLOW.md) — starter Home, palette, Add/Change, Surprise Me, and onboarding
+- [PATTERN_PLAY.md](docs/PATTERN_PLAY.md) — rhythm/melody pattern state, Shape editor, density, groove, and variation
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
 - [PHASE_4_ACCEPTANCE.md](docs/PHASE_4_ACCEPTANCE.md) — Phase 4 verification gate
+- [PHASE_5_ACCEPTANCE.md](docs/PHASE_5_ACCEPTANCE.md) — Phase 5 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -53,14 +56,9 @@ npm run build
 
 ## Current automated verification
 
-The final cleaned Phase 4 implementation passed CI with:
+Phase 4 remains fully verified.
 
-- **13 test files**
-- **41 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The obsolete Phase 3-only fixed starter factory/test has been removed, leaving the starter Home as the single canonical entry path.
+The integrated Phase 5 implementation has already passed strict typecheck/build during development with the expanded pattern suite. The exact final Phase 5 documentation/status head is verified before the phase is marked CI-complete.
 
 ## Product rule
 
