@@ -1,0 +1,125 @@
+import {
+  MAX_SOUND_ORBS,
+  clampPoint,
+  createSoundOrb,
+  type NormalizedPoint,
+  type SoundOrbDocument,
+} from './SoundOrb';
+import type { WorldDocument } from './World';
+
+function touch(world: WorldDocument, soundOrbs: readonly SoundOrbDocument[], now: number): WorldDocument {
+  return {
+    ...world,
+    updatedAt: now,
+    soundOrbs,
+  };
+}
+
+export function soundOrbById(
+  world: WorldDocument,
+  orbId: string,
+): SoundOrbDocument | undefined {
+  return world.soundOrbs.find((orb) => orb.id === orbId);
+}
+
+export function moveSoundOrb(
+  world: WorldDocument,
+  orbId: string,
+  position: NormalizedPoint,
+  now = Date.now(),
+): WorldDocument {
+  let changed = false;
+  const nextPosition = clampPoint(position);
+
+  const soundOrbs = world.soundOrbs.map((orb) => {
+    if (orb.id !== orbId) {
+      return orb;
+    }
+
+    if (orb.position.x === nextPosition.x && orb.position.y === nextPosition.y) {
+      return orb;
+    }
+
+    changed = true;
+    return {
+      ...orb,
+      position: nextPosition,
+    };
+  });
+
+  return changed ? touch(world, soundOrbs, now) : world;
+}
+
+export function setSoundOrbMuted(
+  world: WorldDocument,
+  orbId: string,
+  muted: boolean,
+  now = Date.now(),
+): WorldDocument {
+  let changed = false;
+
+  const soundOrbs = world.soundOrbs.map((orb) => {
+    if (orb.id !== orbId || orb.muted === muted) {
+      return orb;
+    }
+
+    changed = true;
+    return {
+      ...orb,
+      muted,
+    };
+  });
+
+  return changed ? touch(world, soundOrbs, now) : world;
+}
+
+export function toggleSoundOrbMuted(
+  world: WorldDocument,
+  orbId: string,
+  now = Date.now(),
+): WorldDocument {
+  const orb = soundOrbById(world, orbId);
+  return orb ? setSoundOrbMuted(world, orbId, !orb.muted, now) : world;
+}
+
+export function deleteSoundOrb(
+  world: WorldDocument,
+  orbId: string,
+  now = Date.now(),
+): WorldDocument {
+  const soundOrbs = world.soundOrbs.filter((orb) => orb.id !== orbId);
+  return soundOrbs.length === world.soundOrbs.length
+    ? world
+    : touch(world, soundOrbs, now);
+}
+
+export function duplicateSoundOrb(
+  world: WorldDocument,
+  orbId: string,
+  now = Date.now(),
+): { readonly world: WorldDocument; readonly createdId: string | null } {
+  if (world.soundOrbs.length >= MAX_SOUND_ORBS) {
+    return { world, createdId: null };
+  }
+
+  const source = soundOrbById(world, orbId);
+
+  if (!source) {
+    return { world, createdId: null };
+  }
+
+  const duplicate = createSoundOrb({
+    soundId: source.soundId,
+    role: source.role,
+    muted: source.muted,
+    position: {
+      x: Math.min(0.94, source.position.x + 0.07),
+      y: Math.min(0.94, source.position.y + 0.06),
+    },
+  });
+
+  return {
+    world: touch(world, [...world.soundOrbs, duplicate], now),
+    createdId: duplicate.id,
+  };
+}
