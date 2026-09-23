@@ -7,6 +7,27 @@ import {
 } from './Motion';
 import type { WorldDocument } from './World';
 
+function createMotionForOrb(
+  mode: MotionMode,
+  world: WorldDocument,
+  orb: WorldDocument['soundOrbs'][number],
+  overrides: {
+    readonly speed?: MotionSpeed;
+    readonly range?: MotionRange;
+    readonly targetOrbId?: string;
+  } = {},
+) {
+  const targetOrbId = overrides.targetOrbId ?? orb.motion?.targetOrbId;
+
+  return createMotion({
+    mode,
+    speed: overrides.speed ?? orb.motion?.speed,
+    range: overrides.range ?? orb.motion?.range,
+    seed: orb.motion?.seed ?? world.music.seed + orb.id.length * 17,
+    ...(targetOrbId ? { targetOrbId } : {}),
+  });
+}
+
 function updateOrb(
   world: WorldDocument,
   orbId: string,
@@ -56,13 +77,12 @@ export function setOrbMotionMode(
 
     return {
       ...orb,
-      motion: createMotion({
+      motion: createMotionForOrb(
         mode,
-        speed: existing?.speed,
-        range: existing?.range,
-        seed: existing?.seed ?? world.music.seed + orb.id.length * 17,
-        targetOrbId: target?.id,
-      }),
+        world,
+        orb,
+        target?.id ? { targetOrbId: target.id } : {},
+      ),
     };
   }, now);
 }
@@ -75,13 +95,12 @@ export function setOrbMotionSpeed(
 ): WorldDocument {
   return updateOrb(world, orbId, (orb) => ({
     ...orb,
-    motion: createMotion({
-      mode: orb.motion?.mode ?? 'orbit',
-      speed,
-      range: orb.motion?.range,
-      seed: orb.motion?.seed ?? world.music.seed + orb.id.length * 17,
-      targetOrbId: orb.motion?.targetOrbId,
-    }),
+    motion: createMotionForOrb(
+      orb.motion?.mode ?? 'orbit',
+      world,
+      orb,
+      { speed },
+    ),
   }), now);
 }
 
@@ -93,13 +112,12 @@ export function setOrbMotionRange(
 ): WorldDocument {
   return updateOrb(world, orbId, (orb) => ({
     ...orb,
-    motion: createMotion({
-      mode: orb.motion?.mode ?? 'orbit',
-      speed: orb.motion?.speed,
-      range,
-      seed: orb.motion?.seed ?? world.music.seed + orb.id.length * 17,
-      targetOrbId: orb.motion?.targetOrbId,
-    }),
+    motion: createMotionForOrb(
+      orb.motion?.mode ?? 'orbit',
+      world,
+      orb,
+      { range },
+    ),
   }), now);
 }
 
@@ -115,12 +133,11 @@ export function setOrbFollowTarget(
 
   return updateOrb(world, orbId, (orb) => ({
     ...orb,
-    motion: createMotion({
-      mode: 'follow',
-      speed: orb.motion?.speed,
-      range: orb.motion?.range,
-      seed: orb.motion?.seed ?? world.music.seed + orb.id.length * 17,
-      targetOrbId,
-    }),
+    motion: createMotionForOrb(
+      'follow',
+      world,
+      orb,
+      { targetOrbId },
+    ),
   }), now);
 }
