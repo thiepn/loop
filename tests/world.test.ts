@@ -29,6 +29,7 @@ describe('createEmptyWorld', () => {
       },
       soundOrbs: [],
       effectFields: [],
+      playgroundToys: [],
       links: [],
       snapshots: [],
     });
