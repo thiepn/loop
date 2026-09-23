@@ -79,6 +79,7 @@ function targetLabel(
 }
 
 export class MagicView {
+  private readonly shell: HTMLElement;
   private readonly remixButton: HTMLButtonElement;
   private readonly intentBackdrop: HTMLElement;
   private readonly previewBar: HTMLElement;
@@ -97,6 +98,8 @@ export class MagicView {
     if (!dock || !shell) {
       throw new Error('Magic view requires the playground shell.');
     }
+
+    this.shell = shell;
 
     const remixButton = document.createElement('button');
     remixButton.type = 'button';
@@ -212,6 +215,10 @@ export class MagicView {
 
   public render(state: Readonly<AppState>): void {
     this.intentBackdrop.hidden = !state.magicIntentOpen;
+    this.shell.classList.toggle(
+      'magic-preview-active',
+      Boolean(state.magicSession),
+    );
 
     const session = state.magicSession;
     this.previewBar.hidden = !session;
@@ -235,6 +242,7 @@ export class MagicView {
   }
 
   public destroy(): void {
+    this.shell.classList.remove('magic-preview-active');
     this.remixButton.remove();
     this.intentBackdrop.remove();
     this.previewBar.remove();
