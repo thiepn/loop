@@ -30,9 +30,11 @@ function getSpaceImpulse(context: AudioContext): AudioBuffer {
   return buffer;
 }
 
-function saturationCurve(): Float32Array {
+function saturationCurve(): Float32Array<ArrayBuffer> {
   const size = 1024;
-  const curve = new Float32Array(size);
+  const curve = new Float32Array(
+    new ArrayBuffer(size * Float32Array.BYTES_PER_ELEMENT),
+  );
 
   for (let index = 0; index < size; index += 1) {
     const x = (index / (size - 1)) * 2 - 1;
