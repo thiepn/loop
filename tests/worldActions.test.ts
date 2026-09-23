@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createDefaultPattern } from '../src/core/music/Pattern';
 import { soundById } from '../src/core/sounds/coreCatalog';
 import { createEmptyWorld } from '../src/core/world/World';
 import { createSoundOrb, MAX_SOUND_ORBS } from '../src/core/world/SoundOrb';
@@ -52,6 +53,29 @@ describe('WorldActions', () => {
     expect(result.world.soundOrbs[1]?.position).toEqual({ x: 0.27, y: 0.36 });
   });
 
+  it('duplicates edited pattern state', () => {
+    const pattern = createDefaultPattern('kick-steady');
+    expect(pattern?.kind).toBe('rhythm');
+
+    const world = createEmptyWorld({
+      id: 'pattern-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'orb-a',
+          soundId: 'beat-round-kick',
+          role: 'beat',
+          position: { x: 0.2, y: 0.3 },
+          pattern: pattern!,
+        }),
+      ],
+    });
+
+    const result = duplicateSoundOrb(world, 'orb-a', 200);
+
+    expect(result.world.soundOrbs[1]?.pattern).toEqual(pattern);
+  });
+
   it('enforces the V1 Sound Orb cap', () => {
     let world = makeWorld();
 
@@ -102,5 +126,53 @@ describe('WorldActions', () => {
       position: { x: 0.2, y: 0.3 },
       muted: false,
     });
+  });
+
+  it('preserves custom rhythm when changing between rhythm sounds', () => {
+    const pattern = createDefaultPattern('kick-steady');
+    expect(pattern?.kind).toBe('rhythm');
+
+    const world = createEmptyWorld({
+      id: 'pattern-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'orb-a',
+          soundId: 'beat-round-kick',
+          role: 'beat',
+          position: { x: 0.2, y: 0.3 },
+          pattern: pattern!,
+        }),
+      ],
+    });
+    const shaker = soundById('perc-dust-shaker');
+    expect(shaker).toBeDefined();
+
+    const replaced = replaceSoundOrb(world, 'orb-a', shaker!, 200);
+
+    expect(replaced.soundOrbs[0]?.pattern).toEqual(pattern);
+  });
+
+  it('drops incompatible custom pattern when changing rhythm to melody', () => {
+    const pattern = createDefaultPattern('kick-steady');
+    const world = createEmptyWorld({
+      id: 'pattern-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'orb-a',
+          soundId: 'beat-round-kick',
+          role: 'beat',
+          position: { x: 0.2, y: 0.3 },
+          pattern: pattern!,
+        }),
+      ],
+    });
+    const bass = soundById('bass-warm');
+    expect(bass).toBeDefined();
+
+    const replaced = replaceSoundOrb(world, 'orb-a', bass!, 200);
+
+    expect(replaced.soundOrbs[0]?.pattern).toBeUndefined();
   });
 });
