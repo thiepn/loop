@@ -210,13 +210,27 @@ export class App {
       },
       onMovePreview: (orbId, position) => {
         this.liveOrbOverrides.set(orbId, position);
-        this.playground?.updateOrbSpatial(orbId, position);
-        this.effectFieldView?.previewOrbEffect(
+
+        const updates = this.playground?.updateOrbSpatial(
           orbId,
           position,
-          appStore.getState().world.effectFields,
-        );
-        this.linkView?.previewOrbPosition(orbId, position);
+        ) ?? new Map([[orbId, position]]);
+
+        for (const [changedOrbId, changedPosition] of updates) {
+          this.playgroundView?.previewOrbPosition(
+            changedOrbId,
+            changedPosition,
+          );
+          this.effectFieldView?.previewOrbEffect(
+            changedOrbId,
+            changedPosition,
+            appStore.getState().world.effectFields,
+          );
+          this.linkView?.previewOrbPosition(
+            changedOrbId,
+            changedPosition,
+          );
+        }
       },
       onMoveCommit: (orbId, position) => {
         this.commitMove(orbId, position);
@@ -684,6 +698,26 @@ export class App {
 
     this.liveOrbOverrides.delete(orbId);
     this.playground?.releaseOrbMotionOverride(orbId);
+
+    this.linkView?.previewOrbPosition(orbId, position);
+
+    for (const link of world.links) {
+      if (
+        link.type === 'copy-movement'
+        && link.sourceOrbId === orbId
+      ) {
+        const target = world.soundOrbs.find(
+          (candidate) => candidate.id === link.targetOrbId,
+        );
+
+        if (target) {
+          this.linkView?.previewOrbPosition(
+            target.id,
+            target.position,
+          );
+        }
+      }
+    }
   }
 
   private toggleMute(orbId: string): void {
