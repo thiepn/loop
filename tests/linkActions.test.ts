@@ -4,6 +4,7 @@ import {
   deleteLink,
   validateLinkCandidate,
 } from '../src/core/world/LinkActions';
+import { createLink } from '../src/core/world/Link';
 import { createMotion } from '../src/core/world/Motion';
 import { createSoundOrb } from '../src/core/world/SoundOrb';
 import { createEmptyWorld } from '../src/core/world/World';
@@ -155,6 +156,61 @@ describe('LinkActions', () => {
         'bass',
       ).reason,
     ).toBe('target-driven');
+  });
+
+  it('keeps Take Turns separate from playback-driver Links', () => {
+    let world = addLink(
+      makeWorld(),
+      'pulse-together',
+      'kick',
+      'melody',
+    ).world;
+
+    expect(
+      addLink(
+        world,
+        'take-turns',
+        'melody',
+        'bass',
+      ).reason,
+    ).toBe('take-turns-conflict');
+
+    world = addLink(
+      makeWorld(),
+      'take-turns',
+      'kick',
+      'bass',
+    ).world;
+
+    expect(
+      addLink(
+        world,
+        'follow',
+        'melody',
+        'bass',
+      ).reason,
+    ).toBe('take-turns-conflict');
+  });
+
+  it('enforces the eight-Link World cap', () => {
+    const world = {
+      ...makeWorld(),
+      links: Array.from({ length: 8 }, (_, index) => createLink({
+        id: `existing-${index}`,
+        type: 'copy-movement',
+        sourceOrbId: 'kick',
+        targetOrbId: 'bass',
+      })),
+    };
+
+    expect(
+      validateLinkCandidate(
+        world,
+        'pulse-together',
+        'kick',
+        'melody',
+      ).reason,
+    ).toBe('limit');
   });
 
   it('restricts Kick Pushes Bass to beat/percussion → bass', () => {
