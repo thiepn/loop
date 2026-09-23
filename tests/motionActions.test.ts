@@ -40,6 +40,13 @@ describe('MotionActions', () => {
     expect(still.soundOrbs[0]?.motion).toBeUndefined();
   });
 
+  it('does not start movement when Speed or Range changes while Still', () => {
+    const world = worldWithTwoOrbs();
+
+    expect(setOrbMotionSpeed(world, 'a', 'fast')).toBe(world);
+    expect(setOrbMotionRange(world, 'a', 'wide')).toBe(world);
+  });
+
   it('changes Speed and Range while preserving the motion mode', () => {
     let world = setOrbMotionMode(worldWithTwoOrbs(), 'a', 'wander');
     world = setOrbMotionSpeed(world, 'a', 'fast');
