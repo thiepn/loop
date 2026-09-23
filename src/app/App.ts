@@ -2,6 +2,13 @@ import { audioEngine } from '../core/audio/AudioEngine';
 import { PlaygroundEngine, type OrbActivity } from '../core/music/PlaygroundEngine';
 import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
 import {
+  addEffectField,
+  deleteEffectField,
+  moveEffectField,
+  resizeEffectField,
+} from '../core/world/EffectFieldActions';
+import type { EffectFieldDocument, EffectFieldType } from '../core/world/EffectField';
+import {
   clearOrbPattern,
   paintMelodyNote,
   paintRhythmStep,
@@ -32,6 +39,7 @@ import {
   toggleSoundOrbMuted,
 } from '../core/world/WorldActions';
 import { MAX_SOUND_ORBS, type NormalizedPoint } from '../core/world/SoundOrb';
+import { EffectFieldView } from './EffectFieldView';
 import { HomeView } from './HomeView';
 import { PatternEditorView } from './PatternEditorView';
 import { PlaygroundView } from './PlaygroundView';
@@ -42,6 +50,7 @@ export class App {
   private unsubscribeActivity: (() => void) | null = null;
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
+  private effectFieldView: EffectFieldView | null = null;
   private patternEditorView: PatternEditorView | null = null;
   private playground: PlaygroundEngine | null = null;
   private mountedScreen: AppScreen | null = null;
@@ -78,6 +87,9 @@ export class App {
     this.patternEditorView?.destroy();
     this.patternEditorView = null;
 
+    this.effectFieldView?.destroy();
+    this.effectFieldView = null;
+
     this.playgroundView?.destroy();
     this.playgroundView = null;
     this.mountedScreen = null;
@@ -93,6 +105,9 @@ export class App {
       this.patternEditorView?.destroy();
       this.patternEditorView = null;
 
+      this.effectFieldView?.destroy();
+      this.effectFieldView = null;
+
       this.playgroundView?.destroy();
       this.playgroundView = null;
 
@@ -106,6 +121,7 @@ export class App {
     }
 
     this.playgroundView?.render(state);
+    this.effectFieldView?.render(state);
     this.patternEditorView?.render(state);
   }
 
@@ -129,10 +145,18 @@ export class App {
         this.openHome();
       },
       onSelectOrb: (orbId) => {
-        appStore.patch({ selectedOrbId: orbId });
+        appStore.patch({
+          selectedOrbId: orbId,
+          selectedFieldId: null,
+        });
       },
       onMovePreview: (orbId, position) => {
         this.playground?.updateOrbSpatial(orbId, position);
+        this.effectFieldView?.previewOrbEffect(
+          orbId,
+          position,
+          appStore.getState().world.effectFields,
+        );
       },
       onMoveCommit: (orbId, position) => {
         this.commitMove(orbId, position);
@@ -156,6 +180,8 @@ export class App {
         appStore.patch({
           patternEditorOrbId: orbId,
           palette: null,
+          effectPaletteOpen: false,
+          selectedFieldId: null,
           message: 'Shape it however you like.',
         });
       },
@@ -177,6 +203,48 @@ export class App {
           onboardingStep: 'done',
           message: 'Explore freely.',
         });
+      },
+    });
+
+    this.effectFieldView = new EffectFieldView(this.root, {
+      onOpenPalette: () => {
+        appStore.patch({
+          effectPaletteOpen: true,
+          palette: null,
+          patternEditorOrbId: null,
+          selectedOrbId: null,
+          selectedFieldId: null,
+          message: 'Add a field, then move sounds through it.',
+        });
+      },
+      onClosePalette: () => {
+        appStore.patch({ effectPaletteOpen: false });
+      },
+      onAddField: (type) => {
+        this.addField(type);
+      },
+      onSelectField: (fieldId) => {
+        appStore.patch({
+          selectedFieldId: fieldId,
+          selectedOrbId: null,
+          palette: null,
+          patternEditorOrbId: null,
+        });
+      },
+      onMovePreview: (field) => {
+        this.previewField(field);
+      },
+      onMoveCommit: (fieldId, position) => {
+        this.commitFieldMove(fieldId, position);
+      },
+      onResizePreview: (field) => {
+        this.previewField(field);
+      },
+      onResizeCommit: (fieldId, radius) => {
+        this.commitFieldResize(fieldId, radius);
+      },
+      onDeleteField: (fieldId) => {
+        this.deleteField(fieldId);
       },
     });
 
@@ -242,7 +310,9 @@ export class App {
       screen: 'playground',
       world,
       selectedOrbId: null,
+      selectedFieldId: null,
       palette: null,
+      effectPaletteOpen: false,
       patternEditorOrbId: null,
       onboardingStep,
       playing: false,
@@ -263,7 +333,9 @@ export class App {
     appStore.patch({
       screen: 'home',
       selectedOrbId: null,
+      selectedFieldId: null,
       palette: null,
+      effectPaletteOpen: false,
       patternEditorOrbId: null,
       playing: false,
       message: 'Pick a starting point.',
@@ -440,6 +512,8 @@ export class App {
         category: 'beat',
       },
       patternEditorOrbId: null,
+      effectPaletteOpen: false,
+      selectedFieldId: null,
       selectedOrbId: null,
       message: 'Pick anything that sounds interesting.',
     });
@@ -460,6 +534,8 @@ export class App {
         category: paletteCategoryForRole(orb.role),
       },
       patternEditorOrbId: null,
+      effectPaletteOpen: false,
+      selectedFieldId: null,
       message: 'Choose a different sound.',
     });
   }
@@ -563,6 +639,79 @@ export class App {
     if (sound) {
       await this.chooseSound(sound.id);
     }
+  }
+
+  private addField(type: EffectFieldType): void {
+    const current = appStore.getState();
+    const result = addEffectField(current.world, type);
+
+    if (!result.createdId) {
+      appStore.patch({
+        effectPaletteOpen: false,
+        message: result.reason === 'duplicate'
+          ? 'That field is already in this World.'
+          : 'This World already has five effect fields.',
+      });
+      return;
+    }
+
+    appStore.patch({
+      world: result.world,
+      selectedFieldId: result.createdId,
+      selectedOrbId: null,
+      effectPaletteOpen: false,
+      palette: null,
+      patternEditorOrbId: null,
+      message: 'Field added. Drag a sound into it.',
+    });
+  }
+
+  private previewField(field: EffectFieldDocument): void {
+    this.playground?.previewEffectField(field);
+    this.effectFieldView?.previewFieldEffects(field);
+  }
+
+  private commitFieldMove(fieldId: string, position: NormalizedPoint): void {
+    const current = appStore.getState();
+    const world = moveEffectField(current.world, fieldId, position);
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      message: 'Field moved. Sounds react wherever it overlaps.',
+    });
+  }
+
+  private commitFieldResize(fieldId: string, radius: number): void {
+    const current = appStore.getState();
+    const world = resizeEffectField(current.world, fieldId, radius);
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      message: 'Field resized.',
+    });
+  }
+
+  private deleteField(fieldId: string): void {
+    const current = appStore.getState();
+    const world = deleteEffectField(current.world, fieldId);
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      selectedFieldId: current.selectedFieldId === fieldId ? null : current.selectedFieldId,
+      message: 'Effect field removed.',
+    });
   }
 
   private setPatternDensity(orbId: string, density: DensityLevel): void {
