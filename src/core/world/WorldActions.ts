@@ -57,16 +57,7 @@ export function moveSoundOrb(
     };
   });
 
-  if (!changed) {
-    return world;
-  }
-
-  const next = touch(world, soundOrbs, now);
-
-  return {
-    ...next,
-    links: pruneInvalidLinks(next.links, soundOrbs),
-  };
+  return changed ? touch(world, soundOrbs, now) : world;
 }
 
 export function setSoundOrbMuted(
@@ -236,5 +227,14 @@ export function replaceSoundOrb(
     };
   });
 
-  return changed ? touch(world, soundOrbs, now) : world;
+  if (!changed) {
+    return world;
+  }
+
+  const next = touch(world, soundOrbs, now);
+
+  return {
+    ...next,
+    links: pruneInvalidLinks(next.links, soundOrbs),
+  };
 }
