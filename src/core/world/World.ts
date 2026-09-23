@@ -1,4 +1,13 @@
-export const WORLD_SCHEMA_VERSION = 1 as const;
+import type { ScaleId } from '../music/Harmony';
+
+export const WORLD_SCHEMA_VERSION = 2 as const;
+
+export interface WorldMusicSettings {
+  readonly bpm: number;
+  readonly tonic: number;
+  readonly scale: ScaleId;
+  readonly seed: number;
+}
 
 export interface WorldDocument {
   readonly schemaVersion: typeof WORLD_SCHEMA_VERSION;
@@ -6,6 +15,7 @@ export interface WorldDocument {
   readonly name: string;
   readonly createdAt: number;
   readonly updatedAt: number;
+  readonly music: WorldMusicSettings;
   readonly soundOrbs: readonly string[];
   readonly effectFields: readonly string[];
   readonly links: readonly string[];
@@ -16,6 +26,7 @@ export interface CreateWorldOptions {
   readonly id?: string;
   readonly now?: number;
   readonly name?: string;
+  readonly music?: Partial<WorldMusicSettings>;
 }
 
 function createWorldId(): string {
@@ -35,6 +46,12 @@ export function createEmptyWorld(options: CreateWorldOptions = {}): WorldDocumen
     name: options.name?.trim() || 'Untitled World',
     createdAt: now,
     updatedAt: now,
+    music: {
+      bpm: options.music?.bpm ?? 108,
+      tonic: options.music?.tonic ?? 0,
+      scale: options.music?.scale ?? 'minor-pentatonic',
+      seed: options.music?.seed ?? 1,
+    },
     soundOrbs: [],
     effectFields: [],
     links: [],
