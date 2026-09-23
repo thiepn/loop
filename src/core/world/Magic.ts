@@ -216,13 +216,19 @@ function chooseMagicSound(
     return current;
   }
 
-  if (
-    intent === 'more-energy'
-    || intent === 'busier'
-    || intent === 'calmer'
-    || intent === 'simpler'
-    || intent === 'stranger'
-  ) {
+  if (intent === 'more-energy' || intent === 'busier') {
+    return candidates.find(
+      (candidate) => candidate.energy > current.energy + 0.01,
+    ) ?? current;
+  }
+
+  if (intent === 'calmer' || intent === 'simpler') {
+    return candidates.find(
+      (candidate) => candidate.energy < current.energy - 0.01,
+    ) ?? current;
+  }
+
+  if (intent === 'stranger') {
     return candidates[0] ?? current;
   }
 
