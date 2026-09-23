@@ -163,7 +163,7 @@ export function applyPlaygroundToys(
   return result;
 }
 
-function applyCopyMovementLinks(
+export function applyCopyMovementLinks(
   world: WorldDocument,
   positions: Map<string, NormalizedPoint>,
 ): void {
@@ -254,11 +254,6 @@ export function worldHasActiveMotion(world: WorldDocument): boolean {
     return false;
   }
 
-  const copyMovementNeedsFrames = world.links.some(
-    (link) => link.type === 'copy-movement',
-  );
-
   return world.playgroundToys.length > 0
-    || copyMovementNeedsFrames
     || world.soundOrbs.some((orb) => (orb.motion?.mode ?? 'still') !== 'still');
 }
