@@ -13,9 +13,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete and CI-verified**
 - **Phase 5 — Playful Beat & Melody Creation: complete and CI-verified**
 - **Phase 6 — Effect Fields: complete and CI-verified**
-- **Next: Phase 7 — Motion Playground**
+- **Phase 7 — Motion Playground: complete; final CI verification pending**
+- **Next: Phase 8 — Links & Reactive Music**
 
-Loop now opens on a simple starter screen, enters a spatial Sound Orb playground immediately, lets users shape what editable orbs play, and makes effects physical. Space, Echo, Heat, Frost, and Filter are visible fields: drag a Sound Orb through them and the sound changes continuously with depth; move or resize the fields themselves to reshape the World.
+Loop now opens on a simple starter screen and becomes a living spatial playground: users can shape patterns, move sounds through visible Effect Fields, give Sound Orbs simple Motion (Orbit/Bounce/Drift/Follow/Wander), and add Spinner/Magnet/Repulsor/Portal toys that continuously alter live positions and therefore the sound.
 
 ## Product contract
 
@@ -33,12 +34,14 @@ The authoritative specifications live in `docs/`:
 - [ENTRY_FLOW.md](docs/ENTRY_FLOW.md) — starter Home, palette, Add/Change, Surprise Me, and onboarding
 - [PATTERN_PLAY.md](docs/PATTERN_PLAY.md) — rhythm/melody pattern state, Shape editor, density, groove, and variation
 - [EFFECT_FIELDS.md](docs/EFFECT_FIELDS.md) — field geometry, direct manipulation, DSP behavior, overlap, and safety
+- [MOTION_PLAYGROUND.md](docs/MOTION_PLAYGROUND.md) — Motion presets, live-position runtime, playground toys, previews, and performance boundaries
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
 - [PHASE_4_ACCEPTANCE.md](docs/PHASE_4_ACCEPTANCE.md) — Phase 4 verification gate
 - [PHASE_5_ACCEPTANCE.md](docs/PHASE_5_ACCEPTANCE.md) — Phase 5 verification gate
 - [PHASE_6_ACCEPTANCE.md](docs/PHASE_6_ACCEPTANCE.md) — Phase 6 verification gate
+- [PHASE_7_ACCEPTANCE.md](docs/PHASE_7_ACCEPTANCE.md) — Phase 7 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -59,14 +62,9 @@ npm run build
 
 ## Current automated verification
 
-The final Phase 6 implementation passed CI with:
+Phase 6 remains fully verified.
 
-- **17 test files**
-- **68 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The Phase 6 suite covers field depth geometry, overlap, dominant visual effects, safe size/position clamping, field actions, starter-field integrity, and every prior Phase 1–5 regression test.
+The integrated Phase 7 implementation includes dedicated Motion/toy regression suites. The exact final Phase 7 documentation/status head is verified before the phase is marked CI-complete.
 
 ## Product rule
 
