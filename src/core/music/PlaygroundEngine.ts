@@ -6,6 +6,7 @@ import {
   effectAmountsAtPoint,
   type EffectFieldDocument,
 } from '../world/EffectField';
+import type { PlaygroundToyDocument } from '../world/PlaygroundToy';
 import type { WorldDocument } from '../world/World';
 import type { NormalizedPoint, SoundOrbDocument } from '../world/SoundOrb';
 import { recommendedVoiceGain } from './MixPolicy';
@@ -58,6 +59,7 @@ export class PlaygroundEngine {
   private readonly runtimes = new Map<string, OrbRuntime>();
   private readonly activityListeners = new Set<OrbActivityListener>();
   private readonly manualPositionOverrides = new Map<string, NormalizedPoint>();
+  private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
   private lastMotionFrame: MotionFrame = new Map();
   private lastMotionTimeSeconds = 0;
   private world: WorldDocument;
@@ -214,7 +216,10 @@ export class PlaygroundEngine {
 
   public tickMotion(timeSeconds: number): MotionFrame {
     this.lastMotionTimeSeconds = Math.max(0, timeSeconds);
-    const computed = evaluateMotionFrame(this.world, this.lastMotionTimeSeconds);
+    const computed = evaluateMotionFrame(
+      this.worldWithToyPreviews(),
+      this.lastMotionTimeSeconds,
+    );
     const resolved = new Map<string, NormalizedPoint>();
 
     for (const orb of this.world.soundOrbs) {
@@ -238,6 +243,18 @@ export class PlaygroundEngine {
 
     this.lastMotionFrame = resolved;
     return resolved;
+  }
+
+  public previewPlaygroundToy(toy: PlaygroundToyDocument): void {
+    this.toyPreviewOverrides.set(toy.id, toy);
+
+    if (this.lastMotionTimeSeconds > 0) {
+      this.tickMotion(this.lastMotionTimeSeconds);
+    }
+  }
+
+  public releasePlaygroundToyPreview(toyId: string): void {
+    this.toyPreviewOverrides.delete(toyId);
   }
 
   public previewEffectField(field: EffectFieldDocument): void {
@@ -279,8 +296,22 @@ export class PlaygroundEngine {
     }
 
     this.manualPositionOverrides.clear();
+    this.toyPreviewOverrides.clear();
     this.runtimes.clear();
     this.activityListeners.clear();
+  }
+
+  private worldWithToyPreviews(): WorldDocument {
+    if (this.toyPreviewOverrides.size === 0) {
+      return this.world;
+    }
+
+    return {
+      ...this.world,
+      playgroundToys: this.world.playgroundToys.map(
+        (toy) => this.toyPreviewOverrides.get(toy.id) ?? toy,
+      ),
+    };
   }
 
   private scheduleTick(tick: ScheduledTick): void {
