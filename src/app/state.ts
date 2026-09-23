@@ -27,11 +27,14 @@ export interface AppState {
   readonly selectedOrbId: string | null;
   readonly selectedFieldId: string | null;
   readonly selectedToyId: string | null;
+  readonly selectedLinkId: string | null;
   readonly palette: PaletteState | null;
   readonly effectPaletteOpen: boolean;
   readonly toyPaletteOpen: boolean;
   readonly patternEditorOrbId: string | null;
   readonly motionEditorOrbId: string | null;
+  readonly linkEditorSourceOrbId: string | null;
+  readonly linkEditorTargetOrbId: string | null;
   readonly onboardingStep: OnboardingStep;
   readonly playing: boolean;
   readonly message: string;
@@ -45,11 +48,14 @@ export const appStore = new Store<AppState>({
   selectedOrbId: null,
   selectedFieldId: null,
   selectedToyId: null,
+  selectedLinkId: null,
   palette: null,
   effectPaletteOpen: false,
   toyPaletteOpen: false,
   patternEditorOrbId: null,
   motionEditorOrbId: null,
+  linkEditorSourceOrbId: null,
+  linkEditorTargetOrbId: null,
   onboardingStep: 'move',
   playing: false,
   message: 'Pick a starting point.',
