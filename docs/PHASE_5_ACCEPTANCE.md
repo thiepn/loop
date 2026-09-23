@@ -108,11 +108,20 @@ Tests cover:
 - [x] No Motion implemented early.
 - [x] No Phase 9 global Magic implemented early.
 
-## Exit condition
-Phase 5 is complete only when the exact final main head passes:
+## Final CI verification
+
+GitHub Actions passed on the completed Phase 5 implementation with:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **15 test files**;
+- **57 tests**;
 - production Vite build.
 
-Final CI result is recorded after the status/documentation commits.
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+
+**Phase 5 status: complete and CI-verified.**
