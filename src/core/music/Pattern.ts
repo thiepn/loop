@@ -133,17 +133,17 @@ export function effectivePattern(
   return createDefaultPattern(sound.pattern);
 }
 
-export function normalizePattern(pattern: OrbPatternDocument): OrbPatternDocument {
-  if (pattern.kind === 'rhythm') {
-    return {
-      ...pattern,
-      steps: Array.from(
-        { length: PATTERN_STEPS },
-        (_, index) => Boolean(pattern.steps[index]),
-      ),
-    };
-  }
+function normalizeRhythmPattern(pattern: RhythmPatternDocument): RhythmPatternDocument {
+  return {
+    ...pattern,
+    steps: Array.from(
+      { length: PATTERN_STEPS },
+      (_, index) => Boolean(pattern.steps[index]),
+    ),
+  };
+}
 
+function normalizeMelodyPattern(pattern: MelodyPatternDocument): MelodyPatternDocument {
   return {
     ...pattern,
     notes: Array.from({ length: PATTERN_STEPS }, (_, index) => {
@@ -157,13 +157,19 @@ export function normalizePattern(pattern: OrbPatternDocument): OrbPatternDocumen
   };
 }
 
+export function normalizePattern(pattern: OrbPatternDocument): OrbPatternDocument {
+  return pattern.kind === 'rhythm'
+    ? normalizeRhythmPattern(pattern)
+    : normalizeMelodyPattern(pattern);
+}
+
 export function setRhythmStep(
   pattern: RhythmPatternDocument,
   step: number,
   active: boolean,
 ): RhythmPatternDocument {
   const index = Math.max(0, Math.min(PATTERN_STEPS - 1, Math.floor(step)));
-  const steps = [...normalizePattern(pattern).steps];
+  const steps = [...normalizeRhythmPattern(pattern).steps];
   steps[index] = active;
 
   return {
@@ -178,7 +184,7 @@ export function setMelodyNote(
   degree: number | null,
 ): MelodyPatternDocument {
   const index = Math.max(0, Math.min(PATTERN_STEPS - 1, Math.floor(step)));
-  const notes = [...normalizePattern(pattern).notes];
+  const notes = [...normalizeMelodyPattern(pattern).notes];
   notes[index] = degree === null
     ? null
     : Math.max(0, Math.min(MELODY_ROWS - 1, Math.floor(degree)));
@@ -234,7 +240,7 @@ export function setPatternDensity(
   const target = targetCount(level, pattern.kind);
 
   if (pattern.kind === 'rhythm') {
-    const normalized = normalizePattern(pattern) as RhythmPatternDocument;
+    const normalized = normalizeRhythmPattern(pattern);
     const active = new Set(
       normalized.steps.flatMap((value, index) => value ? [index] : []),
     );
@@ -256,7 +262,7 @@ export function setPatternDensity(
     };
   }
 
-  const normalized = normalizePattern(pattern) as MelodyPatternDocument;
+  const normalized = normalizeMelodyPattern(pattern);
   const occupied = normalized.notes
     .map((degree, step) => degree === null ? null : { step, degree })
     .filter((item): item is { step: number; degree: number } => item !== null);
