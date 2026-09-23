@@ -15,9 +15,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 6 — Effect Fields: complete and CI-verified**
 - **Phase 7 — Motion Playground: complete and CI-verified**
 - **Phase 8 — Links & Reactive Music: complete and CI-verified**
-- **Next: Phase 9 — Magic, Mutation & Controlled Randomness**
+- **Phase 9 — Magic, Mutation & Controlled Randomness: complete; final CI verification pending**
+- **Next: Phase 10 — Worlds, Snapshots & Persistence**
 
-Loop now behaves as a living reactive music playground: users can shape patterns, move sounds through Effect Fields, animate them with Motion and toys, then Link Sound Orbs with plain-language relationships such as Pulse Together, Take Turns, Follow, Kick Pushes Bass, and Copy Movement.
+Loop now behaves as a living reactive music playground with controlled experimentation: users can shape patterns, move sounds through Effect Fields, animate them with Motion/toys, create reactive Links, then use per-object ✦ Magic or global ✦ Remix to generate seeded compatible variations with Retry/Keep/Revert safety.
 
 ## Product contract
 
@@ -37,6 +38,7 @@ The authoritative specifications live in `docs/`:
 - [EFFECT_FIELDS.md](docs/EFFECT_FIELDS.md) — field geometry, direct manipulation, DSP behavior, overlap, and safety
 - [MOTION_PLAYGROUND.md](docs/MOTION_PLAYGROUND.md) — Motion presets, live-position runtime, playground toys, previews, and performance boundaries
 - [LINKS_REACTIVE_MUSIC.md](docs/LINKS_REACTIVE_MUSIC.md) — Link vocabulary, reactive timing, relationship safety, visual connections, and lifecycle rules
+- [MAGIC.md](docs/MAGIC.md) — seeded mutation, intents, per-object Magic, Remix, preview transactions, and undo safety
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
@@ -45,6 +47,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_6_ACCEPTANCE.md](docs/PHASE_6_ACCEPTANCE.md) — Phase 6 verification gate
 - [PHASE_7_ACCEPTANCE.md](docs/PHASE_7_ACCEPTANCE.md) — Phase 7 verification gate
 - [PHASE_8_ACCEPTANCE.md](docs/PHASE_8_ACCEPTANCE.md) — Phase 8 verification gate
+- [PHASE_9_ACCEPTANCE.md](docs/PHASE_9_ACCEPTANCE.md) — Phase 9 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -65,14 +68,9 @@ npm run build
 
 ## Current automated verification
 
-The final Phase 8 implementation passed CI with:
+Phase 8 remains fully verified.
 
-- **23 test files**
-- **112 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The Link suite covers bounded relationship validation, Pulse/Follow/Take Turns timing, Kick Pushes Bass role safety, Copy Movement geometry, lifecycle cleanup, starter relationships, and every prior Phase 1–7 regression test.
+The integrated Phase 9 implementation passed its pre-documentation gate with **24 test files / 124 tests**, strict TypeScript, and a production build. The exact final Phase 9 documentation/status head is verified before the phase is marked CI-complete.
 
 ## Product rule
 
