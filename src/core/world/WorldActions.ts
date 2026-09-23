@@ -11,6 +11,10 @@ import {
 } from '../music/Pattern';
 import type { SoundDefinition } from '../sounds/SoundDefinition';
 import { soundById } from '../sounds/coreCatalog';
+import {
+  deleteLinksForOrb,
+  pruneInvalidLinks,
+} from './LinkActions';
 import type { WorldDocument } from './World';
 
 function touch(world: WorldDocument, soundOrbs: readonly SoundOrbDocument[], now: number): WorldDocument {
@@ -53,7 +57,16 @@ export function moveSoundOrb(
     };
   });
 
-  return changed ? touch(world, soundOrbs, now) : world;
+  if (!changed) {
+    return world;
+  }
+
+  const next = touch(world, soundOrbs, now);
+
+  return {
+    ...next,
+    links: pruneInvalidLinks(next.links, soundOrbs),
+  };
 }
 
 export function setSoundOrbMuted(
@@ -94,9 +107,15 @@ export function deleteSoundOrb(
   now = Date.now(),
 ): WorldDocument {
   const soundOrbs = world.soundOrbs.filter((orb) => orb.id !== orbId);
-  return soundOrbs.length === world.soundOrbs.length
-    ? world
-    : touch(world, soundOrbs, now);
+
+  if (soundOrbs.length === world.soundOrbs.length) {
+    return world;
+  }
+
+  return {
+    ...touch(world, soundOrbs, now),
+    links: deleteLinksForOrb(world.links, orbId),
+  };
 }
 
 export function duplicateSoundOrb(
