@@ -124,11 +124,11 @@ export function duplicateSoundOrb(
     },
   };
 
-  const duplicate = createSoundOrb(
-    source.pattern
-      ? { ...duplicateOptions, pattern: source.pattern }
-      : duplicateOptions,
-  );
+  const duplicate = createSoundOrb({
+    ...duplicateOptions,
+    ...(source.pattern ? { pattern: source.pattern } : {}),
+    ...(source.motion ? { motion: source.motion } : {}),
+  });
 
   return {
     world: touch(world, [...world.soundOrbs, duplicate], now),
@@ -213,6 +213,7 @@ export function replaceSoundOrb(
       role: base.role,
       position: base.position,
       muted: base.muted,
+      ...(base.motion ? { motion: base.motion } : {}),
     };
   });
 
