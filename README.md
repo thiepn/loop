@@ -8,9 +8,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 
 - **Phase 0 — Product Consolidation & Specification Lock: complete**
 - **Phase 1 — Clean Repository, Architecture & Deployment Foundation: complete and CI-verified**
-- **Next: Phase 2 — Musical Core & Smart Sound System**
+- **Phase 2 — Musical Core & Smart Sound System: complete and CI-verified**
+- **Next: Phase 3 — Sound Orbs & Core Playground**
 
-The repository now contains a runnable Vite + TypeScript application shell, strict typechecking, unit tests, browser-audio lifecycle handling, a versioned World boundary, GitHub Pages-safe asset resolution, and automated GitHub Actions verification.
+The repository now contains a runnable Vite + TypeScript application, a safe Web Audio lifecycle, a shared musical transport, audio-time lookahead scheduling, scale-aware pitch rules, smart sound metadata/compatibility, automatic headroom policy, and a tiny procedural sound catalog used by the temporary Foundation Groove.
 
 ## Product contract
 
@@ -22,8 +23,10 @@ The authoritative specifications live in `docs/`:
 - [AUDIO_SYSTEM.md](docs/AUDIO_SYSTEM.md) — timing, compatibility, automatic musical behavior, DSP boundaries
 - [V1_SCOPE.md](docs/V1_SCOPE.md) — hard V1 feature boundary and feature-complete definition
 - [NON_GOALS.md](docs/NON_GOALS.md) — explicit anti-goals preventing DAW/acoustics/platform scope creep
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Phase 1 runtime boundaries and dependency rules
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — runtime boundaries and dependency rules
+- [MUSICAL_CORE.md](docs/MUSICAL_CORE.md) — Phase 2 timing, harmony, catalog, compatibility, and mix contracts
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
+- [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
