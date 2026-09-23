@@ -1,4 +1,6 @@
 import { createEffectField, type EffectFieldType } from './EffectField';
+import { createMotion, type CreateMotionOptions } from './Motion';
+import { createPlaygroundToy } from './PlaygroundToy';
 import { createSoundOrb } from './SoundOrb';
 import { createEmptyWorld, type WorldDocument } from './World';
 
@@ -62,13 +64,20 @@ function orb(
   role: Parameters<typeof createSoundOrb>[0]['role'],
   x: number,
   y: number,
+  motion?: CreateMotionOptions,
 ) {
-  return createSoundOrb({
+  const base = {
     id,
     soundId,
     role,
     position: { x, y },
-  });
+  };
+
+  return createSoundOrb(
+    motion
+      ? { ...base, motion: createMotion(motion) }
+      : base,
+  );
 }
 
 function field(
@@ -101,7 +110,12 @@ export function createStarterWorld(
           orb('beat-clap', 'perc-soft-clap', 'percussion', 0.72, 0.64),
           orb('beat-hats', 'perc-glass-hat', 'percussion', 0.68, 0.26),
           orb('beat-bass', 'bass-warm', 'bass', 0.32, 0.31),
-          orb('beat-chords', 'harmony-dream', 'harmony', 0.76, 0.42),
+          orb('beat-chords', 'harmony-dream', 'harmony', 0.76, 0.42, {
+            mode: 'drift',
+            speed: 'slow',
+            range: 'tight',
+            seed: 111,
+          }),
         ],
         effectFields: [
           field('beat-echo', 'echo', 0.68, 0.26, 0.15),
@@ -118,7 +132,12 @@ export function createStarterWorld(
           orb('chill-shaker', 'perc-dust-shaker', 'percussion', 0.73, 0.28),
           orb('chill-bass', 'bass-warm', 'bass', 0.36, 0.3),
           orb('chill-chords', 'harmony-glow', 'harmony', 0.68, 0.66),
-          orb('chill-air', 'texture-air', 'texture', 0.83, 0.48),
+          orb('chill-air', 'texture-air', 'texture', 0.83, 0.48, {
+            mode: 'drift',
+            speed: 'slow',
+            range: 'medium',
+            seed: 223,
+          }),
         ],
         effectFields: [
           field('chill-space', 'space', 0.72, 0.64, 0.21),
@@ -134,7 +153,12 @@ export function createStarterWorld(
           orb('dream-kick', 'beat-round-kick', 'beat', 0.22, 0.6),
           orb('dream-bass', 'bass-warm', 'bass', 0.3, 0.32),
           orb('dream-chords', 'harmony-dream', 'harmony', 0.72, 0.67),
-          orb('dream-melody', 'melody-bell', 'melody', 0.58, 0.2),
+          orb('dream-melody', 'melody-bell', 'melody', 0.58, 0.2, {
+            mode: 'orbit',
+            speed: 'slow',
+            range: 'tight',
+            seed: 337,
+          }),
           orb('dream-air', 'texture-air', 'texture', 0.83, 0.5),
           orb('dream-hum', 'voice-soft-hum', 'voice', 0.48, 0.76),
         ],
@@ -152,7 +176,12 @@ export function createStarterWorld(
         soundOrbs: [
           orb('dance-kick', 'beat-punch-kick', 'beat', 0.22, 0.58),
           orb('dance-clap', 'perc-soft-clap', 'percussion', 0.76, 0.61),
-          orb('dance-hats', 'perc-glass-hat', 'percussion', 0.72, 0.25),
+          orb('dance-hats', 'perc-glass-hat', 'percussion', 0.72, 0.25, {
+            mode: 'bounce',
+            speed: 'medium',
+            range: 'tight',
+            seed: 451,
+          }),
           orb('dance-bass', 'bass-deep', 'bass', 0.33, 0.29),
           orb('dance-chords', 'harmony-glow', 'harmony', 0.69, 0.7),
           orb('dance-melody', 'melody-soft-pluck', 'melody', 0.52, 0.17),
@@ -174,12 +203,26 @@ export function createStarterWorld(
           orb('weird-bass', 'bass-deep', 'bass', 0.72, 0.78),
           orb('weird-chords', 'harmony-dream', 'harmony', 0.26, 0.24),
           orb('weird-bell', 'melody-bell', 'melody', 0.85, 0.56),
-          orb('weird-haze', 'texture-haze', 'texture', 0.45, 0.82),
+          orb('weird-haze', 'texture-haze', 'texture', 0.45, 0.82, {
+            mode: 'wander',
+            speed: 'slow',
+            range: 'medium',
+            seed: 579,
+          }),
           orb('weird-hum', 'voice-soft-hum', 'voice', 0.5, 0.16),
         ],
         effectFields: [
           field('weird-frost', 'frost', 0.85, 0.56, 0.16),
           field('weird-filter', 'filter', 0.26, 0.24, 0.18),
+        ],
+        playgroundToys: [
+          createPlaygroundToy({
+            id: 'weird-spinner',
+            type: 'spinner',
+            position: { x: 0.5, y: 0.52 },
+            radius: 0.14,
+            strength: 0.62,
+          }),
         ],
       });
 
