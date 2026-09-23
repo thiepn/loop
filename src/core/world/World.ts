@@ -1,5 +1,5 @@
 import type { ScaleId } from '../music/Harmony';
-import { createSoundOrb, type SoundOrbDocument } from './SoundOrb';
+import type { SoundOrbDocument } from './SoundOrb';
 
 export const WORLD_SCHEMA_VERSION = 3 as const;
 
@@ -59,56 +59,4 @@ export function createEmptyWorld(options: CreateWorldOptions = {}): WorldDocumen
     links: [],
     snapshots: [],
   };
-}
-
-export function createPhaseThreeWorld(now = Date.now()): WorldDocument {
-  return createEmptyWorld({
-    id: 'phase-3-playground',
-    name: 'First Orbit',
-    now,
-    music: {
-      bpm: 108,
-      tonic: 0,
-      scale: 'minor-pentatonic',
-      seed: 1,
-    },
-    soundOrbs: [
-      createSoundOrb({
-        id: 'orb-kick',
-        soundId: 'beat-round-kick',
-        role: 'beat',
-        position: { x: 0.22, y: 0.58 },
-      }),
-      createSoundOrb({
-        id: 'orb-hats',
-        soundId: 'perc-glass-hat',
-        role: 'percussion',
-        position: { x: 0.74, y: 0.28 },
-      }),
-      createSoundOrb({
-        id: 'orb-bass',
-        soundId: 'bass-warm',
-        role: 'bass',
-        position: { x: 0.31, y: 0.31 },
-      }),
-      createSoundOrb({
-        id: 'orb-chords',
-        soundId: 'harmony-dream',
-        role: 'harmony',
-        position: { x: 0.7, y: 0.67 },
-      }),
-      createSoundOrb({
-        id: 'orb-melody',
-        soundId: 'melody-soft-pluck',
-        role: 'melody',
-        position: { x: 0.56, y: 0.18 },
-      }),
-      createSoundOrb({
-        id: 'orb-air',
-        soundId: 'texture-air',
-        role: 'texture',
-        position: { x: 0.84, y: 0.53 },
-      }),
-    ],
-  });
 }
