@@ -557,6 +557,8 @@ export class App {
     const world = moveSoundOrb(current.world, orbId, position);
 
     if (world === current.world) {
+      this.liveOrbOverrides.delete(orbId);
+      this.playground?.releaseOrbMotionOverride(orbId);
       return;
     }
 
@@ -1125,6 +1127,8 @@ export class App {
   }
 
   private clearPlaygroundRuntime(): void {
+    this.cancelMotionLoop();
+
     this.unsubscribeActivity?.();
     this.unsubscribeActivity = null;
 
