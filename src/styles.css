@@ -2607,8 +2607,6 @@ a:focus-visible {
   --toy-color: #f472b6;
   position: absolute;
   translate: -50% -50%;
-  min-width: 58px;
-  min-height: 58px;
   border-radius: 50%;
   pointer-events: auto;
   touch-action: none;
