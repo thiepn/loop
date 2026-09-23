@@ -16,6 +16,13 @@ import {
   deleteLink,
 } from '../core/world/LinkActions';
 import {
+  magicTargetExists,
+  mutateWithMagic,
+  type MagicIntent,
+  type MagicStrength,
+  type MagicTarget,
+} from '../core/world/Magic';
+import {
   setOrbFollowTarget,
   setOrbMotionMode,
   setOrbMotionRange,
@@ -72,6 +79,7 @@ import { MAX_SOUND_ORBS, type NormalizedPoint } from '../core/world/SoundOrb';
 import { EffectFieldView } from './EffectFieldView';
 import { HomeView } from './HomeView';
 import { LinkView } from './LinkView';
+import { MagicView } from './MagicView';
 import { MotionView } from './MotionView';
 import { PatternEditorView } from './PatternEditorView';
 import { PlaygroundView } from './PlaygroundView';
@@ -85,6 +93,7 @@ export class App {
   private playgroundView: PlaygroundView | null = null;
   private effectFieldView: EffectFieldView | null = null;
   private linkView: LinkView | null = null;
+  private magicView: MagicView | null = null;
   private motionView: MotionView | null = null;
   private patternEditorView: PatternEditorView | null = null;
   private playground: PlaygroundEngine | null = null;
@@ -134,6 +143,9 @@ export class App {
     this.linkView?.destroy();
     this.linkView = null;
 
+    this.magicView?.destroy();
+    this.magicView = null;
+
     this.effectFieldView?.destroy();
     this.effectFieldView = null;
 
@@ -158,6 +170,9 @@ export class App {
       this.linkView?.destroy();
       this.linkView = null;
 
+      this.magicView?.destroy();
+      this.magicView = null;
+
       this.effectFieldView?.destroy();
       this.effectFieldView = null;
 
@@ -176,6 +191,7 @@ export class App {
     this.playgroundView?.render(state);
     this.effectFieldView?.render(state);
     this.linkView?.render(state);
+    this.magicView?.render(state);
     this.motionView?.render(state);
     this.patternEditorView?.render(state);
     this.syncMotionLoop(state);
@@ -295,6 +311,12 @@ export class App {
           message: 'Choose another sound to connect.',
         });
       },
+      onMagicOrb: (orbId) => {
+        this.startMagicPreview({
+          kind: 'orb',
+          id: orbId,
+        });
+      },
       onClosePalette: () => {
         appStore.patch({ palette: null });
       },
@@ -366,6 +388,12 @@ export class App {
       },
       onDeleteField: (fieldId) => {
         this.deleteField(fieldId);
+      },
+      onMagicField: (fieldId) => {
+        this.startMagicPreview({
+          kind: 'field',
+          id: fieldId,
+        });
       },
     });
 
@@ -483,6 +511,43 @@ export class App {
       onDeleteToy: (toyId) => {
         this.deleteToy(toyId);
       },
+      onMagicToy: (toyId) => {
+        this.startMagicPreview({
+          kind: 'toy',
+          id: toyId,
+        });
+      },
+    });
+
+    this.magicView = new MagicView(this.root, {
+      onOpenRemix: () => {
+        this.openRemixIntent();
+      },
+      onCloseRemix: () => {
+        appStore.patch({ magicIntentOpen: false });
+      },
+      onStartRemix: (intent) => {
+        this.startMagicPreview(
+          { kind: 'world' },
+          intent,
+          'playful',
+        );
+      },
+      onRetry: () => {
+        this.retryMagicPreview();
+      },
+      onKeep: () => {
+        this.keepMagicPreview();
+      },
+      onRevert: () => {
+        this.revertMagicPreview();
+      },
+      onStrength: (strength) => {
+        this.changeMagicStrength(strength);
+      },
+      onUndo: () => {
+        this.undoLastMagic();
+      },
     });
 
     this.patternEditorView = new PatternEditorView(this.root, {
@@ -557,6 +622,9 @@ export class App {
       motionEditorOrbId: null,
       linkEditorSourceOrbId: null,
       linkEditorTargetOrbId: null,
+      magicIntentOpen: false,
+      magicSession: null,
+      magicUndo: null,
       onboardingStep,
       playing: false,
       message: hasSounds
@@ -586,6 +654,9 @@ export class App {
       motionEditorOrbId: null,
       linkEditorSourceOrbId: null,
       linkEditorTargetOrbId: null,
+      magicIntentOpen: false,
+      magicSession: null,
+      magicUndo: null,
       playing: false,
       message: 'Pick a starting point.',
     });
@@ -934,6 +1005,203 @@ export class App {
     if (sound) {
       await this.chooseSound(sound.id);
     }
+  }
+
+  private openRemixIntent(): void {
+    const current = appStore.getState();
+
+    if (current.magicSession) {
+      return;
+    }
+
+    if (current.world.soundOrbs.length === 0) {
+      appStore.patch({
+        message: 'Add a sound before remixing the World.',
+      });
+      return;
+    }
+
+    appStore.patch({
+      magicIntentOpen: true,
+      palette: null,
+      effectPaletteOpen: false,
+      toyPaletteOpen: false,
+      patternEditorOrbId: null,
+      motionEditorOrbId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
+      selectedOrbId: null,
+      selectedFieldId: null,
+      selectedToyId: null,
+      selectedLinkId: null,
+      message: 'Choose a Remix direction.',
+    });
+  }
+
+  private startMagicPreview(
+    target: MagicTarget,
+    intent: MagicIntent = 'surprise',
+    strength: MagicStrength = 'playful',
+  ): void {
+    const current = appStore.getState();
+
+    if (current.magicSession) {
+      return;
+    }
+
+    if (!magicTargetExists(current.world, target)) {
+      appStore.patch({
+        message: 'That object is no longer available.',
+      });
+      return;
+    }
+
+    const result = mutateWithMagic(
+      current.world,
+      target,
+      {
+        intent,
+        strength,
+        attempt: 0,
+      },
+    );
+
+    appStore.patch({
+      world: result.world,
+      magicIntentOpen: false,
+      magicSession: {
+        baseWorld: current.world,
+        target,
+        intent,
+        strength,
+        attempt: 0,
+        seed: result.seed,
+        summary: result.summary,
+      },
+      magicUndo: null,
+      palette: null,
+      effectPaletteOpen: false,
+      toyPaletteOpen: false,
+      patternEditorOrbId: null,
+      motionEditorOrbId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
+      selectedOrbId: null,
+      selectedFieldId: null,
+      selectedToyId: null,
+      selectedLinkId: null,
+      message: 'Magic preview. Keep it, retry, or revert.',
+    });
+  }
+
+  private retryMagicPreview(): void {
+    const current = appStore.getState();
+    const session = current.magicSession;
+
+    if (!session) {
+      return;
+    }
+
+    const attempt = session.attempt + 1;
+    const result = mutateWithMagic(
+      session.baseWorld,
+      session.target,
+      {
+        intent: session.intent,
+        strength: session.strength,
+        attempt,
+      },
+    );
+
+    appStore.patch({
+      world: result.world,
+      magicSession: {
+        ...session,
+        attempt,
+        seed: result.seed,
+        summary: result.summary,
+      },
+      message: 'New Magic variation.',
+    });
+  }
+
+  private changeMagicStrength(strength: MagicStrength): void {
+    const current = appStore.getState();
+    const session = current.magicSession;
+
+    if (!session || session.strength === strength) {
+      return;
+    }
+
+    const result = mutateWithMagic(
+      session.baseWorld,
+      session.target,
+      {
+        intent: session.intent,
+        strength,
+        attempt: session.attempt,
+      },
+    );
+
+    appStore.patch({
+      world: result.world,
+      magicSession: {
+        ...session,
+        strength,
+        seed: result.seed,
+        summary: result.summary,
+      },
+      message: `${strength[0]?.toUpperCase() ?? ''}${strength.slice(1)} Magic.`,
+    });
+  }
+
+  private keepMagicPreview(): void {
+    const current = appStore.getState();
+    const session = current.magicSession;
+
+    if (!session) {
+      return;
+    }
+
+    appStore.patch({
+      magicSession: null,
+      magicUndo: {
+        beforeWorld: session.baseWorld,
+        afterWorld: current.world,
+      },
+      message: 'Magic kept. Undo is available until your next World edit.',
+    });
+  }
+
+  private revertMagicPreview(): void {
+    const current = appStore.getState();
+    const session = current.magicSession;
+
+    if (!session) {
+      return;
+    }
+
+    appStore.patch({
+      world: session.baseWorld,
+      magicSession: null,
+      magicUndo: null,
+      message: 'Magic reverted.',
+    });
+  }
+
+  private undoLastMagic(): void {
+    const current = appStore.getState();
+    const undo = current.magicUndo;
+
+    if (!undo || current.world !== undo.afterWorld) {
+      return;
+    }
+
+    appStore.patch({
+      world: undo.beforeWorld,
+      magicUndo: null,
+      message: 'Magic undone.',
+    });
   }
 
   private createLinkRelationship(type: LinkType): void {
