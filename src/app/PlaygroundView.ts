@@ -20,6 +20,7 @@ export interface PlaygroundCallbacks {
   readonly onOpenAdd: () => void;
   readonly onOpenChange: (orbId: string) => void;
   readonly onOpenPattern: (orbId: string) => void;
+  readonly onOpenMotion: (orbId: string) => void;
   readonly onClosePalette: () => void;
   readonly onSelectPaletteCategory: (category: SoundPaletteCategoryId) => void;
   readonly onChooseSound: (soundId: string) => void;
@@ -78,6 +79,7 @@ export class PlaygroundView {
   private readonly selectedRole: HTMLElement;
   private readonly muteButton: HTMLButtonElement;
   private readonly patternButton: HTMLButtonElement;
+  private readonly motionButton: HTMLButtonElement;
   private readonly addButton: HTMLButtonElement;
   private readonly palette: HTMLElement;
   private readonly paletteTitle: HTMLElement;
@@ -146,6 +148,7 @@ export class PlaygroundView {
           </div>
           <div class="selection-actions">
             <button type="button" data-action="pattern">Shape</button>
+            <button type="button" data-action="motion">Motion</button>
             <button type="button" data-action="change">Change</button>
             <button type="button" data-action="mute">Mute</button>
             <button type="button" data-action="duplicate">Duplicate</button>
@@ -187,6 +190,7 @@ export class PlaygroundView {
     const selectedRole = root.querySelector<HTMLElement>('[data-selected-role]');
     const muteButton = root.querySelector<HTMLButtonElement>('[data-action="mute"]');
     const patternButton = root.querySelector<HTMLButtonElement>('[data-action="pattern"]');
+    const motionButton = root.querySelector<HTMLButtonElement>('[data-action="motion"]');
     const addButton = root.querySelector<HTMLButtonElement>('[data-add]');
     const palette = root.querySelector<HTMLElement>('[data-palette]');
     const paletteTitle = root.querySelector<HTMLElement>('[data-palette-title]');
@@ -206,6 +210,7 @@ export class PlaygroundView {
       !selectedRole ||
       !muteButton ||
       !patternButton ||
+      !motionButton ||
       !addButton ||
       !palette ||
       !paletteTitle ||
@@ -227,6 +232,7 @@ export class PlaygroundView {
     this.selectedRole = selectedRole;
     this.muteButton = muteButton;
     this.patternButton = patternButton;
+    this.motionButton = motionButton;
     this.addButton = addButton;
     this.palette = palette;
     this.paletteTitle = paletteTitle;
@@ -249,6 +255,13 @@ export class PlaygroundView {
       const selected = this.selectedOrbId();
       if (selected) {
         callbacks.onOpenPattern(selected);
+      }
+    });
+
+    this.motionButton.addEventListener('click', () => {
+      const selected = this.selectedOrbId();
+      if (selected) {
+        callbacks.onOpenMotion(selected);
       }
     });
 
@@ -547,6 +560,9 @@ export class PlaygroundView {
     this.selectedRole.textContent = roleLabel(selected);
     this.muteButton.textContent = selected.muted ? 'Unmute' : 'Mute';
     this.patternButton.hidden = patternKindForRole(selected.role) === null;
+    this.motionButton.textContent = selected.motion?.mode && selected.motion.mode !== 'still'
+      ? 'Motion · On'
+      : 'Motion';
   }
 
   private renderPalette(state: Readonly<AppState>): void {
