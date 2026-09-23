@@ -1,7 +1,7 @@
 import type { ScaleId } from '../music/Harmony';
 import type { SoundOrbDocument } from './SoundOrb';
 
-export const WORLD_SCHEMA_VERSION = 3 as const;
+export const WORLD_SCHEMA_VERSION = 4 as const;
 
 export interface WorldMusicSettings {
   readonly bpm: number;
