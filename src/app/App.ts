@@ -1,11 +1,20 @@
 import { audioEngine } from '../core/audio/AudioEngine';
-import { PlaygroundEngine, type OrbActivity } from '../core/music/PlaygroundEngine';
+import {
+  PlaygroundEngine,
+  type LinkActivity,
+  type OrbActivity,
+} from '../core/music/PlaygroundEngine';
 import {
   evaluateMotionFrame,
   worldHasActiveMotion,
 } from '../core/music/MotionEngine';
 import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
 import type { MotionMode, MotionRange, MotionSpeed } from '../core/world/Motion';
+import type { LinkType } from '../core/world/Link';
+import {
+  addLink,
+  deleteLink,
+} from '../core/world/LinkActions';
 import {
   setOrbFollowTarget,
   setOrbMotionMode,
@@ -62,6 +71,7 @@ import {
 import { MAX_SOUND_ORBS, type NormalizedPoint } from '../core/world/SoundOrb';
 import { EffectFieldView } from './EffectFieldView';
 import { HomeView } from './HomeView';
+import { LinkView } from './LinkView';
 import { MotionView } from './MotionView';
 import { PatternEditorView } from './PatternEditorView';
 import { PlaygroundView } from './PlaygroundView';
@@ -70,9 +80,11 @@ import { appStore, type AppScreen, type AppState } from './state';
 export class App {
   private unsubscribeStore: (() => void) | null = null;
   private unsubscribeActivity: (() => void) | null = null;
+  private unsubscribeLinkActivity: (() => void) | null = null;
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
   private effectFieldView: EffectFieldView | null = null;
+  private linkView: LinkView | null = null;
   private motionView: MotionView | null = null;
   private patternEditorView: PatternEditorView | null = null;
   private playground: PlaygroundEngine | null = null;
@@ -119,6 +131,9 @@ export class App {
     this.motionView?.destroy();
     this.motionView = null;
 
+    this.linkView?.destroy();
+    this.linkView = null;
+
     this.effectFieldView?.destroy();
     this.effectFieldView = null;
 
@@ -140,6 +155,9 @@ export class App {
       this.motionView?.destroy();
       this.motionView = null;
 
+      this.linkView?.destroy();
+      this.linkView = null;
+
       this.effectFieldView?.destroy();
       this.effectFieldView = null;
 
@@ -157,6 +175,7 @@ export class App {
 
     this.playgroundView?.render(state);
     this.effectFieldView?.render(state);
+    this.linkView?.render(state);
     this.motionView?.render(state);
     this.patternEditorView?.render(state);
     this.syncMotionLoop(state);
@@ -186,6 +205,7 @@ export class App {
           selectedOrbId: orbId,
           selectedFieldId: null,
           selectedToyId: null,
+          selectedLinkId: null,
         });
       },
       onMovePreview: (orbId, position) => {
@@ -196,6 +216,7 @@ export class App {
           position,
           appStore.getState().world.effectFields,
         );
+        this.linkView?.previewOrbPosition(orbId, position);
       },
       onMoveCommit: (orbId, position) => {
         this.commitMove(orbId, position);
@@ -219,6 +240,9 @@ export class App {
         appStore.patch({
           patternEditorOrbId: orbId,
           motionEditorOrbId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
+          selectedLinkId: null,
           palette: null,
           effectPaletteOpen: false,
           toyPaletteOpen: false,
@@ -231,12 +255,30 @@ export class App {
         appStore.patch({
           motionEditorOrbId: orbId,
           patternEditorOrbId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
+          selectedLinkId: null,
           palette: null,
           effectPaletteOpen: false,
           toyPaletteOpen: false,
           selectedFieldId: null,
           selectedToyId: null,
           message: 'Give this sound some motion.',
+        });
+      },
+      onOpenLink: (orbId) => {
+        appStore.patch({
+          linkEditorSourceOrbId: orbId,
+          linkEditorTargetOrbId: null,
+          patternEditorOrbId: null,
+          motionEditorOrbId: null,
+          palette: null,
+          effectPaletteOpen: false,
+          toyPaletteOpen: false,
+          selectedFieldId: null,
+          selectedToyId: null,
+          selectedLinkId: null,
+          message: 'Choose another sound to connect.',
         });
       },
       onClosePalette: () => {
@@ -268,9 +310,12 @@ export class App {
           palette: null,
           patternEditorOrbId: null,
           motionEditorOrbId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
           selectedOrbId: null,
           selectedFieldId: null,
           selectedToyId: null,
+          selectedLinkId: null,
           message: 'Add a field, then move sounds through it.',
         });
       },
@@ -285,9 +330,12 @@ export class App {
           selectedFieldId: fieldId,
           selectedOrbId: null,
           selectedToyId: null,
+          selectedLinkId: null,
           palette: null,
           patternEditorOrbId: null,
           motionEditorOrbId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
         });
       },
       onMovePreview: (field) => {
@@ -304,6 +352,39 @@ export class App {
       },
       onDeleteField: (fieldId) => {
         this.deleteField(fieldId);
+      },
+    });
+
+    this.linkView = new LinkView(this.root, {
+      onCloseEditor: () => {
+        appStore.patch({
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
+        });
+      },
+      onChooseTarget: (targetOrbId) => {
+        appStore.patch({ linkEditorTargetOrbId: targetOrbId });
+      },
+      onCreateLink: (type) => {
+        this.createLinkRelationship(type);
+      },
+      onSelectLink: (linkId) => {
+        appStore.patch({
+          selectedLinkId: linkId,
+          selectedOrbId: null,
+          selectedFieldId: null,
+          selectedToyId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
+          patternEditorOrbId: null,
+          motionEditorOrbId: null,
+          palette: null,
+          effectPaletteOpen: false,
+          toyPaletteOpen: false,
+        });
+      },
+      onDeleteLink: (linkId) => {
+        this.deleteLinkRelationship(linkId);
       },
     });
 
@@ -345,6 +426,9 @@ export class App {
           selectedOrbId: null,
           selectedFieldId: null,
           selectedToyId: null,
+          selectedLinkId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
           message: 'Add a toy to change how sounds move.',
         });
       },
@@ -359,6 +443,9 @@ export class App {
           selectedToyId: toyId,
           selectedOrbId: null,
           selectedFieldId: null,
+          selectedLinkId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
           palette: null,
           effectPaletteOpen: false,
           patternEditorOrbId: null,
@@ -448,11 +535,14 @@ export class App {
       selectedOrbId: null,
       selectedFieldId: null,
       selectedToyId: null,
+      selectedLinkId: null,
       palette: null,
       effectPaletteOpen: false,
       toyPaletteOpen: false,
       patternEditorOrbId: null,
       motionEditorOrbId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
       onboardingStep,
       playing: false,
       message: hasSounds
@@ -474,11 +564,14 @@ export class App {
       selectedOrbId: null,
       selectedFieldId: null,
       selectedToyId: null,
+      selectedLinkId: null,
       palette: null,
       effectPaletteOpen: false,
       toyPaletteOpen: false,
       patternEditorOrbId: null,
       motionEditorOrbId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
       playing: false,
       message: 'Pick a starting point.',
     });
@@ -530,6 +623,9 @@ export class App {
         );
         this.unsubscribeActivity = this.playground.subscribeActivity((activity) => {
           this.scheduleVisualPulse(activity);
+        });
+        this.unsubscribeLinkActivity = this.playground.subscribeLinkActivity((activity) => {
+          this.scheduleLinkVisual(activity);
         });
       } else {
         this.playground.syncWorld(state.world);
@@ -636,8 +732,13 @@ export class App {
     appStore.patch({
       world,
       selectedOrbId: current.selectedOrbId === orbId ? null : current.selectedOrbId,
+      selectedLinkId: current.selectedLinkId && world.links.some((link) => link.id === current.selectedLinkId)
+        ? current.selectedLinkId
+        : null,
       patternEditorOrbId: current.patternEditorOrbId === orbId ? null : current.patternEditorOrbId,
       motionEditorOrbId: current.motionEditorOrbId === orbId ? null : current.motionEditorOrbId,
+      linkEditorSourceOrbId: current.linkEditorSourceOrbId === orbId ? null : current.linkEditorSourceOrbId,
+      linkEditorTargetOrbId: current.linkEditorTargetOrbId === orbId ? null : current.linkEditorTargetOrbId,
       message: world.soundOrbs.length > 0
         ? 'Sound removed.'
         : 'Your World is quiet. Add something.',
@@ -665,6 +766,9 @@ export class App {
       toyPaletteOpen: false,
       selectedFieldId: null,
       selectedToyId: null,
+      selectedLinkId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
       selectedOrbId: null,
       message: 'Pick anything that sounds interesting.',
     });
@@ -690,6 +794,9 @@ export class App {
       toyPaletteOpen: false,
       selectedFieldId: null,
       selectedToyId: null,
+      selectedLinkId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
       message: 'Choose a different sound.',
     });
   }
@@ -795,6 +902,54 @@ export class App {
     }
   }
 
+  private createLinkRelationship(type: LinkType): void {
+    const current = appStore.getState();
+    const sourceOrbId = current.linkEditorSourceOrbId;
+    const targetOrbId = current.linkEditorTargetOrbId;
+
+    if (!sourceOrbId || !targetOrbId) {
+      return;
+    }
+
+    const result = addLink(
+      current.world,
+      type,
+      sourceOrbId,
+      targetOrbId,
+    );
+
+    if (!result.createdId) {
+      appStore.patch({
+        message: 'That Link is not available for these sounds.',
+      });
+      return;
+    }
+
+    appStore.patch({
+      world: result.world,
+      selectedLinkId: result.createdId,
+      selectedOrbId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
+      message: 'Link created. Watch how the sounds react.',
+    });
+  }
+
+  private deleteLinkRelationship(linkId: string): void {
+    const current = appStore.getState();
+    const world = deleteLink(current.world, linkId);
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      selectedLinkId: current.selectedLinkId === linkId ? null : current.selectedLinkId,
+      message: 'Link removed.',
+    });
+  }
+
   private addField(type: EffectFieldType): void {
     const current = appStore.getState();
     const result = addEffectField(current.world, type);
@@ -814,6 +969,9 @@ export class App {
       selectedFieldId: result.createdId,
       selectedOrbId: null,
       selectedToyId: null,
+      selectedLinkId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
       effectPaletteOpen: false,
       toyPaletteOpen: false,
       palette: null,
@@ -896,6 +1054,9 @@ export class App {
       selectedToyId: result.createdId,
       selectedOrbId: null,
       selectedFieldId: null,
+      selectedLinkId: null,
+      linkEditorSourceOrbId: null,
+      linkEditorTargetOrbId: null,
       toyPaletteOpen: false,
       palette: null,
       effectPaletteOpen: false,
@@ -1104,6 +1265,17 @@ export class App {
       );
     }
 
+    this.linkView?.updateLivePositions(
+      new Map(
+        state.world.soundOrbs.map((orb) => [
+          orb.id,
+          this.liveOrbOverrides.get(orb.id)
+            ?? frame.get(orb.id)
+            ?? orb.position,
+        ]),
+      ),
+    );
+
     this.motionFrameRequest = requestAnimationFrame((nextTimestamp) => {
       this.runMotionFrame(nextTimestamp);
     });
@@ -1152,6 +1324,9 @@ export class App {
     this.unsubscribeActivity?.();
     this.unsubscribeActivity = null;
 
+    this.unsubscribeLinkActivity?.();
+    this.unsubscribeLinkActivity = null;
+
     this.playground?.dispose();
     this.playground = null;
   }
@@ -1161,6 +1336,34 @@ export class App {
       clearTimeout(timer);
     }
     this.activityTimers.clear();
+  }
+
+  private scheduleLinkVisual(activity: LinkActivity): void {
+    const runtime = audioEngine.getRuntime();
+
+    if (!runtime) {
+      return;
+    }
+
+    const delayMs = Math.max(
+      0,
+      (activity.time - runtime.context.currentTime) * 1000,
+    );
+
+    const timer = setTimeout(() => {
+      this.activityTimers.delete(timer);
+      this.linkView?.pulseLink(activity.linkId);
+
+      if (activity.type === 'kick-pushes-bass') {
+        this.linkView?.pushOrb(
+          activity.sourceOrbId,
+          activity.targetOrbId,
+          activity.intensity,
+        );
+      }
+    }, delayMs);
+
+    this.activityTimers.add(timer);
   }
 
   private scheduleVisualPulse(activity: OrbActivity): void {
