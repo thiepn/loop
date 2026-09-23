@@ -16,6 +16,7 @@ interface DragSession {
   readonly orbId: string;
   readonly pointerId: number;
   moved: boolean;
+  lastPosition: NormalizedPoint;
 }
 
 function roleLabel(orb: SoundOrbDocument): string {
@@ -196,6 +197,8 @@ export class PlaygroundView {
     const point = clampPoint(position);
     element.style.left = `${point.x * 100}%`;
     element.style.top = `${point.y * 100}%`;
+    element.dataset.x = String(point.x);
+    element.dataset.y = String(point.y);
   }
 
   public pulseOrb(orbId: string, intensity: number): void {
@@ -225,6 +228,7 @@ export class PlaygroundView {
   }
 
   public destroy(): void {
+    this.drag = null;
     this.orbElements.clear();
     this.root.replaceChildren();
   }
@@ -283,10 +287,17 @@ export class PlaygroundView {
 
       this.callbacks.onSelectOrb(orb.id);
       element.setPointerCapture(event.pointerId);
+
+      const currentPosition = {
+        x: Number.parseFloat(element.dataset.x ?? String(orb.position.x)),
+        y: Number.parseFloat(element.dataset.y ?? String(orb.position.y)),
+      };
+
       this.drag = {
         orbId: orb.id,
         pointerId: event.pointerId,
         moved: false,
+        lastPosition: clampPoint(currentPosition),
       };
       element.classList.add('is-dragging');
     });
@@ -298,17 +309,18 @@ export class PlaygroundView {
 
       const position = this.positionFromPointer(event);
       this.drag.moved = true;
+      this.drag.lastPosition = position;
       this.previewOrbPosition(orb.id, position);
       this.callbacks.onMovePreview(orb.id, position);
     });
 
-    const finishDrag = (event: PointerEvent) => {
+    const finishDrag = (event: PointerEvent, cancelled: boolean) => {
       if (!this.drag || this.drag.orbId !== orb.id || this.drag.pointerId !== event.pointerId) {
         return;
       }
 
-      const position = this.positionFromPointer(event);
-      const moved = this.drag.moved;
+      const session = this.drag;
+      const position = cancelled ? session.lastPosition : this.positionFromPointer(event);
       this.drag = null;
       element.classList.remove('is-dragging');
 
@@ -316,14 +328,14 @@ export class PlaygroundView {
         element.releasePointerCapture(event.pointerId);
       }
 
-      if (moved) {
+      if (session.moved) {
         this.previewOrbPosition(orb.id, position);
         this.callbacks.onMoveCommit(orb.id, position);
       }
     };
 
-    element.addEventListener('pointerup', finishDrag);
-    element.addEventListener('pointercancel', finishDrag);
+    element.addEventListener('pointerup', (event) => finishDrag(event, false));
+    element.addEventListener('pointercancel', (event) => finishDrag(event, true));
 
     element.addEventListener('keydown', (event) => {
       const step = event.shiftKey ? 0.06 : 0.025;
