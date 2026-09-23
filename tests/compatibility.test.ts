@@ -12,6 +12,7 @@ const tonalBass: SoundDefinition = {
   brightness: 0.3,
   nominalDb: -18,
   loopBars: 1,
+  pattern: 'bass-pulse',
   sourceBpm: 120,
   tonal: {
     root: 0,
