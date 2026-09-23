@@ -10,7 +10,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 1 — Clean Repository, Architecture & Deployment Foundation: complete and CI-verified**
 - **Phase 2 — Musical Core & Smart Sound System: complete and CI-verified**
 - **Phase 3 — Sound Orbs & Core Playground: complete and CI-verified**
-- **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete**
+- **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete and CI-verified**
 - **Next: Phase 5 — Playful Beat & Melody Creation**
 
 Loop now opens on a simple starter screen. Pick Beat, Chill, Dreamy, Dance, Weird, Empty, or Surprise Me; non-empty Worlds enter the playground and begin playing immediately when browser audio permission allows it. The playground includes plain-language Add/Change sound choices and a three-step interaction-first onboarding.
@@ -53,14 +53,14 @@ npm run build
 
 ## Current automated verification
 
-The integrated Phase 4 code passed CI before final documentation cleanup with:
+The final cleaned Phase 4 implementation passed CI with:
 
-- **14 test files**
-- **44 tests**
+- **13 test files**
+- **41 tests**
 - strict TypeScript typecheck
 - production Vite build
 
-The obsolete Phase 3-only starter test/factory was then removed; the exact final main head is re-verified before Phase 4 is considered closed.
+The obsolete Phase 3-only fixed starter factory/test has been removed, leaving the starter Home as the single canonical entry path.
 
 ## Product rule
 
