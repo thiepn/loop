@@ -53,8 +53,8 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
   const beatSeconds = transport.secondsPerBeat;
   const velocityTrim = roleVelocityTrim(sound.role);
 
-  switch (sound.id) {
-    case 'beat-round-kick':
+  switch (sound.pattern) {
+    case 'kick-steady':
       if (step === 0 || step === 8) {
         const velocity = (step === 0 ? 0.96 : 0.84) * velocityTrim;
         instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
@@ -62,7 +62,7 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       }
       return null;
 
-    case 'perc-soft-clap':
+    case 'clap-backbeat':
       if (step === 4 || step === 12) {
         const velocity = 0.82 * velocityTrim;
         instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
@@ -70,7 +70,7 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       }
       return null;
 
-    case 'perc-glass-hat':
+    case 'hat-eighths':
       if (step % 2 === 0) {
         const velocity = (step % 4 === 2 ? 0.56 : 0.38) * velocityTrim;
         instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
@@ -78,7 +78,15 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       }
       return null;
 
-    case 'bass-warm': {
+    case 'shaker-offbeats':
+      if (step === 2 || step === 6 || step === 10 || step === 14) {
+        const velocity = (step === 6 || step === 14 ? 0.64 : 0.48) * velocityTrim;
+        instrument.schedule(sound.source.preset, tick.time, { velocity, gain });
+        return velocity;
+      }
+      return null;
+
+    case 'bass-pulse': {
       const degrees: Readonly<Record<number, number>> = {
         0: 0,
         3: 0,
@@ -102,7 +110,7 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       return velocity;
     }
 
-    case 'harmony-dream':
+    case 'harmony-pad':
       if ((step === 0 || step === 8) && tick.bar % 2 === 0) {
         const rootDegree = step === 0 ? 0 : 3;
         const velocity = 0.7 * velocityTrim;
@@ -120,7 +128,7 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       }
       return null;
 
-    case 'melody-soft-pluck': {
+    case 'melody-spark': {
       const degrees: Readonly<Record<number, number>> = {
         3: 4,
         7: 3,
@@ -143,7 +151,7 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       return velocity;
     }
 
-    case 'texture-air':
+    case 'texture-bed':
       if (step === 0 && tick.bar % 4 === 0) {
         const velocity = 0.52 * velocityTrim;
         instrument.schedule(sound.source.preset, tick.time, {
@@ -155,7 +163,20 @@ export function scheduleOrbPattern(context: OrbPatternContext): number | null {
       }
       return null;
 
-    default:
+    case 'voice-hum':
+      if (step === 0 && tick.bar % 2 === 1) {
+        const velocity = 0.5 * velocityTrim;
+        instrument.schedule(sound.source.preset, tick.time, {
+          midiNotes: [
+            midiForScaleDegree(48, harmony, 2),
+            midiForScaleDegree(48, harmony, 4),
+          ],
+          duration: beatSeconds * 2.6,
+          velocity,
+          gain,
+        });
+        return velocity;
+      }
       return null;
   }
 }
