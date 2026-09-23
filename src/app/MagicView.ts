@@ -89,7 +89,7 @@ export class MagicView {
   private readonly undoButton: HTMLButtonElement;
 
   public constructor(
-    private readonly root: HTMLElement,
+    root: HTMLElement,
     private readonly callbacks: MagicViewCallbacks,
   ) {
     const dock = root.querySelector<HTMLElement>('.playground-dock');
