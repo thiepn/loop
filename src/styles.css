@@ -1433,3 +1433,324 @@ a:focus-visible {
     max-width: calc(100% - 24px);
   }
 }
+
+
+/* Phase 5 — playful pattern creation */
+
+.pattern-backdrop {
+  position: absolute;
+  z-index: 72;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(3, 3, 7, 0.56);
+  backdrop-filter: blur(7px);
+}
+
+.pattern-backdrop[hidden] {
+  display: none;
+}
+
+.pattern-sheet {
+  width: min(820px, 100%);
+  max-height: min(84vh, 760px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 78% 0%, rgba(52, 211, 153, 0.065), transparent 32%),
+    linear-gradient(160deg, rgba(27, 27, 39, 0.99), rgba(12, 12, 19, 0.99));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+}
+
+.pattern-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pattern-kicker {
+  color: #777782;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.pattern-header h2 {
+  margin: 3px 0 0;
+  color: #f4f4f5;
+  font-size: 25px;
+  letter-spacing: -0.04em;
+}
+
+.pattern-header p {
+  margin: 5px 0 0;
+  color: #858590;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.pattern-close {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.pattern-grid-wrap {
+  margin-top: 18px;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.pattern-grid {
+  touch-action: none;
+  user-select: none;
+}
+
+.rhythm-grid {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(28px, 1fr));
+  gap: 6px;
+  min-width: 560px;
+}
+
+.rhythm-step {
+  position: relative;
+  aspect-ratio: 0.82;
+  min-height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  touch-action: none;
+  transition:
+    transform 100ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.rhythm-step::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  width: 7px;
+  height: 7px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.rhythm-step.is-beat-start {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.rhythm-step.is-on {
+  border-color: rgba(251, 113, 133, 0.38);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(251, 113, 133, 0.35), transparent 52%),
+    rgba(251, 113, 133, 0.09);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 0 20px rgba(251, 113, 133, 0.08);
+}
+
+.rhythm-step.is-on::after {
+  background: #fb7185;
+  box-shadow: 0 0 12px rgba(251, 113, 133, 0.62);
+}
+
+.rhythm-step:active,
+.melody-cell:active {
+  transform: scale(0.94);
+}
+
+.melody-grid {
+  display: grid;
+  grid-template-columns: 34px repeat(16, minmax(25px, 1fr));
+  gap: 5px;
+  min-width: 650px;
+  align-items: center;
+}
+
+.melody-row-label {
+  color: #575763;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: right;
+  padding-right: 5px;
+}
+
+.melody-cell {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.052);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.melody-cell.is-beat-start {
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+.melody-cell::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 5px;
+  height: 5px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.095);
+}
+
+.melody-cell.is-on {
+  border-color: rgba(52, 211, 153, 0.3);
+  background:
+    radial-gradient(circle, rgba(52, 211, 153, 0.3), transparent 60%),
+    rgba(52, 211, 153, 0.065);
+}
+
+.melody-cell.is-on::after {
+  width: 10px;
+  height: 10px;
+  background: #34d399;
+  box-shadow:
+    0 0 0 4px rgba(52, 211, 153, 0.08),
+    0 0 17px rgba(52, 211, 153, 0.5);
+}
+
+.pattern-macros {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.macro-group {
+  display: grid;
+  gap: 7px;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.macro-group > span {
+  color: #686873;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.macro-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.macro-options button {
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 10px;
+  color: #888893;
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.macro-options button.is-active {
+  color: #f4f4f5;
+  border-color: rgba(196, 181, 253, 0.19);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.pattern-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.pattern-footer button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 11px;
+  color: #9b9ba6;
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.pattern-footer .pattern-vary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #e9e5ff;
+  border-color: rgba(167, 139, 250, 0.15);
+  background: rgba(139, 92, 246, 0.075);
+}
+
+.pattern-vary span {
+  color: #c4b5fd;
+}
+
+@media (max-width: 620px) {
+  .pattern-backdrop {
+    padding: 8px;
+  }
+
+  .pattern-sheet {
+    max-height: 86vh;
+    padding: 15px;
+    border-radius: 20px;
+  }
+
+  .pattern-macros {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .rhythm-grid {
+    min-width: 510px;
+  }
+
+  .melody-grid {
+    min-width: 610px;
+  }
+
+  .pattern-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .selection-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .selection-actions button {
+    padding-inline: 7px;
+  }
+}
