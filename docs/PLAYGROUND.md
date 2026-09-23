@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 5.
+Introduced in Phase 3 and updated through Phase 6.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -10,9 +10,10 @@ Loop's main product surface is a bounded spatial World containing living Sound O
 The main screen contains:
 - a central listener;
 - draggable Sound Orbs;
+- directly manipulable Effect Fields;
 - one shared musical clock;
 - minimal top-level controls;
-- contextual controls only for the selected orb.
+- contextual controls for the selected orb or field.
 
 The canvas remains the primary interface.
 
@@ -52,7 +53,7 @@ This is musical spatialization, not physical room simulation.
 
 Each Sound Orb owns a runtime channel:
 
-ProceduralInstrument → spatial gain → StereoPannerNode → master audio graph
+ProceduralInstrument → EffectRack → spatial gain → StereoPannerNode → master audio graph
 
 The shared PlaygroundEngine owns:
 - MusicalTransport;
@@ -61,7 +62,7 @@ The shared PlaygroundEngine owns:
 - synchronization with the serializable World;
 - audio activity events for visual feedback.
 
-Adding, removing, muting, moving, or editing an orb updates the same runtime without creating another AudioContext.
+Adding, removing, muting, moving, editing an orb, or changing field geometry updates the same runtime without creating another AudioContext.
 
 ## Musical behavior
 
@@ -183,11 +184,31 @@ Starter choices are:
 
 Every non-empty starter is an ordinary WorldDocument and enters this same playground.
 
+## Effect Fields
+
+Phase 6 adds five visible regions:
+
+- Space
+- Echo
+- Heat
+- Frost
+- Filter
+
+A field can be dragged directly. Select it to reveal a corner resize handle and Delete action.
+
+Effect depth is spatial: entering the edge starts subtly and moving toward the center strengthens the transformation.
+
+The **Effects** button in the playground dock adds missing field types. A World supports at most one of each type in Phase 6.
+
+Sound Orbs visually pick up their strongest active field treatment, while audio can combine multiple overlapping fields at once.
+
 ## World schema
 
-World schema version 4 includes full SoundOrbDocument objects with optional serializable pattern state.
+World schema version 5 includes:
+- full SoundOrbDocument objects with optional serializable pattern state;
+- full EffectFieldDocument objects.
 
-Effect Fields, Links, and Snapshots remain placeholders until their roadmap phases.
+Links and Snapshots remain placeholders until their roadmap phases.
 
 ## Current scope boundary
 
@@ -198,10 +219,12 @@ The playground currently includes:
 - selection/mute/duplicate/delete;
 - rhythm editing;
 - scale-locked melody editing;
-- density/groove/variation macros.
+- density/groove/variation macros;
+- Space/Echo/Heat/Frost/Filter Effect Fields;
+- field drag/resize/delete;
+- overlapping field processing.
 
 It does not yet include:
-- Effect Fields;
 - Motion;
 - Links;
 - Phase 9 Magic;
