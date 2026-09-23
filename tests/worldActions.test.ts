@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { soundById } from '../src/core/sounds/coreCatalog';
 import { createEmptyWorld } from '../src/core/world/World';
 import { createSoundOrb, MAX_SOUND_ORBS } from '../src/core/world/SoundOrb';
 import {
+  addSoundOrb,
   deleteSoundOrb,
   duplicateSoundOrb,
   moveSoundOrb,
+  replaceSoundOrb,
   toggleSoundOrbMuted,
 } from '../src/core/world/WorldActions';
 
@@ -71,5 +74,33 @@ describe('WorldActions', () => {
 
     expect(cleaned.soundOrbs).toHaveLength(1);
     expect(cleaned.soundOrbs[0]?.id).toBe(duplicateId);
+  });
+
+  it('adds a palette sound at a safe suggested position', () => {
+    const bass = soundById('bass-warm');
+    expect(bass).toBeDefined();
+
+    const result = addSoundOrb(makeWorld(), bass!, 200);
+
+    expect(result.createdId).not.toBeNull();
+    expect(result.world.soundOrbs).toHaveLength(2);
+    expect(result.world.soundOrbs[1]?.soundId).toBe('bass-warm');
+    expect(result.world.soundOrbs[1]?.role).toBe('bass');
+  });
+
+  it('replaces sound identity while preserving the orb itself', () => {
+    const bass = soundById('bass-deep');
+    expect(bass).toBeDefined();
+
+    const original = makeWorld();
+    const replaced = replaceSoundOrb(original, 'orb-a', bass!, 200);
+
+    expect(replaced.soundOrbs[0]).toMatchObject({
+      id: 'orb-a',
+      soundId: 'bass-deep',
+      role: 'bass',
+      position: { x: 0.2, y: 0.3 },
+      muted: false,
+    });
   });
 });
