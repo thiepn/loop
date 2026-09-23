@@ -134,11 +134,20 @@ Tests cover:
 - [x] No Link graph randomization.
 - [x] No studio parameter randomizer.
 
-## Exit condition
-Phase 9 is complete only when the exact final main head passes:
+## Final CI verification
+
+GitHub Actions passed on the completed Phase 9 implementation with:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **24 test files**;
+- **124 tests**;
 - production Vite build.
 
-Final CI result is recorded after documentation/status commits.
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+
+**Phase 9 status: complete and CI-verified.**
