@@ -38,7 +38,10 @@ export class ProceduralInstrument {
 
     switch (preset) {
       case 'round-kick':
-        this.scheduleKick(time, velocity * gain);
+        this.scheduleKick(time, velocity * gain, 145, 48, 0.28);
+        break;
+      case 'punch-kick':
+        this.scheduleKick(time, velocity * gain * 0.92, 190, 55, 0.19);
         break;
       case 'soft-clap':
         this.scheduleNoiseHit(time, velocity * gain * 0.72, 1250, 0.18, 'bandpass');
@@ -46,42 +49,35 @@ export class ProceduralInstrument {
       case 'glass-hat':
         this.scheduleNoiseHit(time, velocity * gain * 0.42, 7200, 0.065, 'highpass');
         break;
+      case 'dust-shaker':
+        this.scheduleNoiseHit(time, velocity * gain * 0.34, 4200, 0.11, 'highpass');
+        break;
       case 'warm-bass':
-        this.scheduleTone(
-          time,
-          options.midi ?? 36,
-          options.duration ?? 0.32,
-          velocity * gain * 0.5,
-          'triangle',
-          640,
-        );
+        this.scheduleTone(time, options.midi ?? 36, options.duration ?? 0.32, velocity * gain * 0.5, 'triangle', 640);
+        break;
+      case 'deep-bass':
+        this.scheduleTone(time, options.midi ?? 36, options.duration ?? 0.38, velocity * gain * 0.38, 'sawtooth', 390);
         break;
       case 'dream-chord':
-        this.scheduleChord(
-          time,
-          options.midiNotes ?? [48, 51, 55],
-          options.duration ?? 1.4,
-          velocity * gain * 0.19,
-        );
+        this.scheduleChord(time, options.midiNotes ?? [48, 51, 55], options.duration ?? 1.4, velocity * gain * 0.19, 1500);
+        break;
+      case 'glow-chord':
+        this.scheduleChord(time, options.midiNotes ?? [48, 51, 55], options.duration ?? 1.55, velocity * gain * 0.16, 2400);
         break;
       case 'soft-pluck':
-        this.scheduleTone(
-          time,
-          options.midi ?? 60,
-          options.duration ?? 0.22,
-          velocity * gain * 0.34,
-          'sine',
-          2400,
-        );
+        this.scheduleTone(time, options.midi ?? 60, options.duration ?? 0.22, velocity * gain * 0.34, 'sine', 2400);
+        break;
+      case 'bell-pluck':
+        this.scheduleTone(time, options.midi ?? 60, options.duration ?? 0.42, velocity * gain * 0.24, 'triangle', 5200);
         break;
       case 'air-texture':
-        this.scheduleNoiseHit(
-          time,
-          velocity * gain * 0.12,
-          1800,
-          options.duration ?? 2.2,
-          'bandpass',
-        );
+        this.scheduleNoiseHit(time, velocity * gain * 0.12, 1800, options.duration ?? 2.2, 'bandpass');
+        break;
+      case 'haze-texture':
+        this.scheduleNoiseHit(time, velocity * gain * 0.14, 950, options.duration ?? 2.8, 'bandpass');
+        break;
+      case 'soft-hum':
+        this.scheduleChord(time, options.midiNotes ?? [55, 62], options.duration ?? 1.8, velocity * gain * 0.11, 1100);
         break;
     }
   }
@@ -97,17 +93,23 @@ export class ProceduralInstrument {
     }
   }
 
-  private scheduleKick(time: number, amount: number): void {
+  private scheduleKick(
+    time: number,
+    amount: number,
+    startFrequency: number,
+    endFrequency: number,
+    duration: number,
+  ): void {
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
 
     oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(145, time);
-    oscillator.frequency.exponentialRampToValueAtTime(48, time + 0.12);
+    oscillator.frequency.setValueAtTime(startFrequency, time);
+    oscillator.frequency.exponentialRampToValueAtTime(endFrequency, time + duration * 0.45);
 
     gain.gain.setValueAtTime(0.0001, time);
     gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, amount), time + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.28);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
 
     oscillator.connect(gain);
     gain.connect(this.destination);
@@ -118,7 +120,7 @@ export class ProceduralInstrument {
     });
 
     oscillator.start(time);
-    oscillator.stop(time + 0.3);
+    oscillator.stop(time + duration + 0.02);
   }
 
   private scheduleNoiseHit(
@@ -197,6 +199,7 @@ export class ProceduralInstrument {
     midiNotes: readonly number[],
     duration: number,
     amountPerVoice: number,
+    cutoff: number,
   ): void {
     for (const [index, midi] of midiNotes.entries()) {
       const oscillator = this.context.createOscillator();
@@ -208,7 +211,7 @@ export class ProceduralInstrument {
       oscillator.detune.setValueAtTime(index === 1 ? 3 : -2, time);
 
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1500, time);
+      filter.frequency.setValueAtTime(cutoff, time);
       filter.Q.setValueAtTime(0.45, time);
 
       gain.gain.setValueAtTime(0.0001, time);
