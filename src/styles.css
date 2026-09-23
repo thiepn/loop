@@ -1754,3 +1754,540 @@ a:focus-visible {
     padding-inline: 7px;
   }
 }
+
+
+/* Phase 6 — spatial Effect Fields */
+
+.playground-dock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.effects-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #d9d9df;
+  background: rgba(18, 18, 27, 0.76);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(18px);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.effects-button span {
+  color: #67e8f9;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.effects-button:hover:not(:disabled) {
+  background: rgba(31, 31, 43, 0.9);
+}
+
+.effects-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.effect-field-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.effect-field {
+  --field-color: #a78bfa;
+  --field-soft: rgba(167, 139, 250, 0.18);
+  position: absolute;
+  translate: -50% -50%;
+  min-width: 90px;
+  min-height: 70px;
+  border: 0;
+  border-radius: 50%;
+  outline: 0;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+.effect-field:active,
+.effect-field.is-dragging,
+.effect-field.is-resizing {
+  cursor: grabbing;
+  z-index: 4;
+}
+
+.effect-field[data-field-type="space"] {
+  --field-color: #a78bfa;
+  --field-soft: rgba(139, 92, 246, 0.18);
+}
+
+.effect-field[data-field-type="echo"] {
+  --field-color: #22d3ee;
+  --field-soft: rgba(34, 211, 238, 0.16);
+}
+
+.effect-field[data-field-type="heat"] {
+  --field-color: #fb7185;
+  --field-soft: rgba(251, 113, 133, 0.18);
+}
+
+.effect-field[data-field-type="frost"] {
+  --field-color: #93c5fd;
+  --field-soft: rgba(147, 197, 253, 0.18);
+}
+
+.effect-field[data-field-type="filter"] {
+  --field-color: #34d399;
+  --field-soft: rgba(52, 211, 153, 0.15);
+}
+
+.field-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--field-color) 32%, transparent);
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at center, var(--field-soft), transparent 68%);
+  box-shadow:
+    inset 0 0 54px var(--field-soft),
+    0 0 36px color-mix(in srgb, var(--field-color) 10%, transparent);
+  backdrop-filter: blur(1.5px);
+}
+
+.effect-field[data-field-type="space"] .field-surface {
+  background:
+    radial-gradient(circle at 38% 44%, rgba(196, 181, 253, 0.17), transparent 22%),
+    radial-gradient(circle at 65% 58%, rgba(96, 165, 250, 0.1), transparent 28%),
+    radial-gradient(circle at center, rgba(139, 92, 246, 0.11), transparent 72%);
+  animation: field-breathe 5.4s ease-in-out infinite;
+}
+
+.effect-field[data-field-type="echo"] .field-surface {
+  background:
+    repeating-radial-gradient(
+      circle at center,
+      rgba(34, 211, 238, 0.16) 0 1px,
+      transparent 2px 17px
+    ),
+    radial-gradient(circle, rgba(34, 211, 238, 0.06), transparent 70%);
+  animation: echo-ripple 4.4s linear infinite;
+}
+
+.effect-field[data-field-type="heat"] .field-surface {
+  background:
+    radial-gradient(circle at 38% 66%, rgba(251, 146, 60, 0.19), transparent 24%),
+    radial-gradient(circle at 64% 36%, rgba(244, 63, 94, 0.16), transparent 27%),
+    radial-gradient(circle, rgba(251, 113, 133, 0.09), transparent 70%);
+  filter: saturate(1.18);
+  animation: heat-warp 3.4s ease-in-out infinite;
+}
+
+.effect-field[data-field-type="frost"] .field-surface {
+  background:
+    conic-gradient(
+      from 30deg,
+      transparent,
+      rgba(191, 219, 254, 0.12),
+      transparent 18%,
+      rgba(147, 197, 253, 0.09),
+      transparent 36%,
+      rgba(224, 242, 254, 0.1),
+      transparent 60%
+    ),
+    radial-gradient(circle, rgba(147, 197, 253, 0.08), transparent 72%);
+}
+
+.effect-field[data-field-type="filter"] .field-surface {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.17),
+      rgba(52, 211, 153, 0.11),
+      rgba(103, 232, 249, 0.09)
+    );
+}
+
+.field-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: min(150px, 72%);
+  pointer-events: none;
+  text-align: center;
+}
+
+.field-label strong {
+  color: color-mix(in srgb, var(--field-color) 76%, white 24%);
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px var(--field-soft);
+}
+
+.field-label small {
+  color: rgba(210, 210, 220, 0.46);
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.effect-field.is-selected .field-surface {
+  border-color: color-mix(in srgb, var(--field-color) 62%, white 12%);
+  box-shadow:
+    inset 0 0 54px var(--field-soft),
+    0 0 0 4px color-mix(in srgb, var(--field-color) 7%, transparent),
+    0 0 42px color-mix(in srgb, var(--field-color) 17%, transparent);
+}
+
+.field-resize-handle {
+  position: absolute;
+  right: 7%;
+  bottom: 8%;
+  display: none;
+  width: 17px;
+  height: 17px;
+  border: 1px solid color-mix(in srgb, var(--field-color) 55%, white 18%);
+  border-radius: 50%;
+  background: rgba(10, 10, 16, 0.86);
+  box-shadow: 0 0 15px var(--field-soft);
+  cursor: nwse-resize;
+  pointer-events: auto;
+}
+
+.effect-field.is-selected .field-resize-handle {
+  display: block;
+}
+
+.field-selection-panel {
+  position: absolute;
+  z-index: 31;
+  left: 50%;
+  bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: min(580px, calc(100% - 32px));
+  padding: 12px 13px 12px 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.38),
+    inset 0 1px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+}
+
+.field-selection-panel[hidden] {
+  display: none;
+}
+
+.field-selection-copy {
+  display: grid;
+  min-width: 100px;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.field-selection-copy span {
+  color: #71717a;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.field-selection-copy strong {
+  color: #f4f4f5;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.field-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-help {
+  color: #666672;
+  font-size: 10px;
+}
+
+.field-selection-actions button {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 11px;
+  color: #b8b8c2;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.field-selection-actions .danger-action:hover {
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.09);
+}
+
+.effect-palette-backdrop {
+  position: absolute;
+  z-index: 75;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(3, 3, 7, 0.58);
+  backdrop-filter: blur(7px);
+}
+
+.effect-palette-backdrop[hidden] {
+  display: none;
+}
+
+.effect-palette-sheet {
+  width: min(760px, 100%);
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 75% 0%, rgba(34, 211, 238, 0.055), transparent 34%),
+    linear-gradient(160deg, rgba(28, 27, 39, 0.99), rgba(13, 13, 20, 0.99));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+}
+
+.effect-palette-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.effect-palette-header > div > span {
+  color: #777782;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.effect-palette-header h2 {
+  margin: 3px 0 0;
+  font-size: 24px;
+  letter-spacing: -0.035em;
+}
+
+.effect-palette-header p {
+  margin: 5px 0 0;
+  color: #777782;
+  font-size: 11px;
+}
+
+.effect-palette-close {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.effect-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.effect-choice {
+  --choice-field: #a78bfa;
+  display: grid;
+  gap: 10px;
+  min-height: 142px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 17px;
+  color: #e4e4e7;
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  text-align: left;
+}
+
+.effect-choice[data-field-type="space"] { --choice-field: #a78bfa; }
+.effect-choice[data-field-type="echo"] { --choice-field: #22d3ee; }
+.effect-choice[data-field-type="heat"] { --choice-field: #fb7185; }
+.effect-choice[data-field-type="frost"] { --choice-field: #93c5fd; }
+.effect-choice[data-field-type="filter"] { --choice-field: #34d399; }
+
+.effect-choice:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--choice-field) 28%, transparent);
+  background: color-mix(in srgb, var(--choice-field) 6%, rgba(255, 255, 255, 0.025));
+}
+
+.effect-choice:disabled {
+  opacity: 0.34;
+  cursor: default;
+}
+
+.effect-choice-art {
+  width: 100%;
+  min-height: 70px;
+  border: 1px solid color-mix(in srgb, var(--choice-field) 24%, transparent);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--choice-field) 20%, transparent), transparent 66%);
+  box-shadow: inset 0 0 28px color-mix(in srgb, var(--choice-field) 10%, transparent);
+}
+
+.effect-choice-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.effect-choice-copy strong {
+  font-size: 12px;
+}
+
+.effect-choice-copy small {
+  color: #747480;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+/* A Sound Orb visibly picks up the strongest field it is inside. */
+
+.sound-orb {
+  --effect-depth: 0;
+}
+
+.sound-orb[data-effect] .orb-visual::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 13%;
+  border-radius: 50%;
+  opacity: calc(0.12 + var(--effect-depth) * 0.75);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.sound-orb[data-effect="space"] .orb-visual::before {
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.38), transparent 64%);
+  box-shadow: 0 0 28px rgba(139, 92, 246, calc(var(--effect-depth) * 0.38));
+}
+
+.sound-orb[data-effect="echo"] .orb-visual::before {
+  inset: 5%;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  background: repeating-radial-gradient(
+    circle,
+    transparent 0 7px,
+    rgba(34, 211, 238, 0.16) 8px 9px
+  );
+}
+
+.sound-orb[data-effect="heat"] .orb-visual::before {
+  background:
+    radial-gradient(circle at 42% 68%, rgba(251, 146, 60, 0.46), transparent 38%),
+    radial-gradient(circle at 62% 36%, rgba(244, 63, 94, 0.4), transparent 45%);
+}
+
+.sound-orb[data-effect="frost"] .orb-visual::before {
+  background:
+    conic-gradient(
+      transparent,
+      rgba(191, 219, 254, 0.45),
+      transparent 14%,
+      rgba(147, 197, 253, 0.35),
+      transparent 32%,
+      rgba(224, 242, 254, 0.36),
+      transparent 56%
+    );
+}
+
+.sound-orb[data-effect="filter"] .orb-visual::before {
+  background: rgba(15, 23, 42, 0.46);
+  mix-blend-mode: multiply;
+}
+
+@keyframes field-breathe {
+  0%, 100% { scale: 0.985; opacity: 0.78; }
+  50% { scale: 1.018; opacity: 1; }
+}
+
+@keyframes echo-ripple {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 16px 16px, 0 0; }
+}
+
+@keyframes heat-warp {
+  0%, 100% { filter: saturate(1.08) blur(0); }
+  50% { filter: saturate(1.32) blur(0.4px); }
+}
+
+@media (max-width: 760px) {
+  .effect-palette-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .effect-choice {
+    min-height: 112px;
+  }
+
+  .field-help {
+    display: none;
+  }
+
+  .field-selection-panel {
+    bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
+  }
+}
+
+@media (max-width: 430px) {
+  .effect-palette-backdrop {
+    padding: 8px;
+  }
+
+  .effect-palette-sheet {
+    max-height: 82vh;
+    overflow: auto;
+    padding: 15px;
+    border-radius: 20px;
+  }
+
+  .effect-palette-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .effect-choice {
+    grid-template-columns: 72px 1fr;
+    align-items: center;
+    min-height: 86px;
+  }
+
+  .effect-choice-art {
+    min-height: 58px;
+  }
+
+  .field-selection-panel {
+    width: calc(100% - 20px);
+  }
+}
