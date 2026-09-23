@@ -122,6 +122,41 @@ describe('LinkActions', () => {
     expect(blocked.reason).toBe('take-turns-conflict');
   });
 
+  it('prevents reactive playback-driver chains', () => {
+    let world = addLink(
+      makeWorld(),
+      'pulse-together',
+      'kick',
+      'melody',
+    ).world;
+
+    expect(
+      addLink(
+        world,
+        'follow',
+        'melody',
+        'harmony',
+      ).reason,
+    ).toBe('target-driven');
+
+    world = makeWorld();
+    world = addLink(
+      world,
+      'follow',
+      'bass',
+      'harmony',
+    ).world;
+
+    expect(
+      addLink(
+        world,
+        'pulse-together',
+        'kick',
+        'bass',
+      ).reason,
+    ).toBe('target-driven');
+  });
+
   it('restricts Kick Pushes Bass to beat/percussion → bass', () => {
     const world = makeWorld();
 
@@ -164,7 +199,7 @@ describe('LinkActions', () => {
     ).toBe('incompatible');
   });
 
-  it('prevents multiple Copy Movement drivers and cycles', () => {
+  it('prevents multiple Copy Movement drivers and chains', () => {
     let world = addLink(
       makeWorld(),
       'copy-movement',
@@ -181,21 +216,14 @@ describe('LinkActions', () => {
       ).reason,
     ).toBe('copy-target-conflict');
 
-    world = addLink(
-      world,
-      'copy-movement',
-      'bass',
-      'harmony',
-    ).world;
-
     expect(
       addLink(
         world,
         'copy-movement',
+        'bass',
         'harmony',
-        'melody',
       ).reason,
-    ).toBe('copy-cycle');
+    ).toBe('copy-chain-conflict');
   });
 
   it('deletes only the requested Link', () => {
