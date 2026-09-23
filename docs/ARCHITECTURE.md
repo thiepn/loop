@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 8.
+Updated through Phase 9.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -49,7 +49,8 @@ Owns musical behavior independent of UI:
 - OrbPattern — schedules each orb’s effective editable pattern and exposes actual event time;
 - ReactiveLinks — pure base-event gating and reactive Link timing rules;
 - MotionEngine — deterministic live-position evaluation for Motion presets, playground toys, and Copy Movement Links;
-- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb, with two-pass Link scheduling and live positions applied to EffectRack + SpatialVoice.
+- PlaygroundEngine — shared transport/scheduler plus one runtime audio channel per Sound Orb, with two-pass Link scheduling and live positions applied to EffectRack + SpatialVoice;
+- Magic — deterministic role-aware mutation over existing World structures.
 
 The old one-off FoundationGroove runtime was removed in Phase 3. There is now one playback architecture.
 
@@ -119,6 +120,8 @@ PlaygroundToyActions owns immutable toy Add/move/Portal OUT/delete operations.
 
 LinkActions owns bounded Link validation, Add/Delete, and lifecycle cleanup.
 
+Magic owns seeded mutation of existing Sound Orbs, Effect Fields, toys, and coherent whole-World Remix without changing structural caps or roles.
+
 EffectField geometry maps normalized orb/field positions into smooth 0–1 effect amounts.
 
 SpatialMapping translates normalized position into bounded stereo pan and listener-distance presence.
@@ -152,6 +155,7 @@ Examples:
 - sound metadata belongs to the catalog;
 - serializable creative state belongs to World;
 - transient selection/playback UI state belongs to AppState/Store;
+- Magic preview/session/undo metadata is transient AppState;
 - rendered DOM is a projection of state, not a second persistent data model.
 
 During a drag, DOM position and spatial audio may preview continuously. The normalized position is committed back to World state when the drag ends.
@@ -220,6 +224,8 @@ Phase 7 adds contextual Motion plus directly manipulable playground toys. Motion
 
 Phase 8 adds visible one-way Links between Sound Orbs. Link creation is vocabulary-driven rather than port/routing driven, and reactive audio is deliberately non-recursive.
 
+Phase 9 adds ✦ Magic and ✦ Remix as bounded mutation operations over the existing World model. Preview transactions live in AppState; World schema remains unchanged.
+
 ## GitHub Pages
 The production URL is expected to use the repository path:
 https://thiepn.github.io/loop/
@@ -271,7 +277,12 @@ Current automated coverage includes:
 - Pulse/Follow/Take Turns timing/gating;
 - Copy Movement geometry;
 - Link lifecycle cleanup;
-- starter Link integrity.
+- starter Link integrity;
+- deterministic Magic seeding;
+- role/id/position preservation;
+- intent-aware sound/density/tempo behavior;
+- Effect Field and toy bounds under Magic;
+- Remix structure/Link validity preservation.
 
 Future phases add tests at their domain boundaries.
 
@@ -415,3 +426,49 @@ saved anchors
 SpatialVoice owns a separate reactiveGain node for Kick Pushes Bass so reactive pumping does not overwrite listener-distance gain automation.
 
 LinkView owns only visual relationship rendering and editor interaction. It receives the same live Sound Orb positions used by the runtime, keeping Link curves aligned with Motion and manual drag.
+
+
+## Phase 9 Magic rule
+
+Magic is an operation over the existing World document, not a new persistent object type.
+
+World schema remains version 7.
+
+Per-object Magic targets:
+- Sound Orb;
+- Effect Field;
+- playground toy.
+
+Global Remix targets the World.
+
+Mutation seed derives from:
+- World musical seed;
+- target identity;
+- intent;
+- strength;
+- attempt number.
+
+Wall-clock time does not influence creative randomness.
+
+Sound Orb Magic preserves:
+- id;
+- role;
+- anchor position;
+- mute state;
+- existing Link structure.
+
+Same-role sound changes, pattern changes, and Motion changes are allowed.
+
+Global Remix preserves object counts, IDs, roles, and Link definitions. It may mutate a deterministic subset of sounds/patterns/Motion/field geometry/toy geometry and bounded BPM.
+
+Magic preview is transactional AppState:
+
+base World → live preview World → Keep / Retry / Revert
+
+Retry and strength changes always regenerate from the base World, never from the previous preview.
+
+Keep stores a one-step transient Magic undo pair. Undo remains available only while the current World is the exact kept World, preventing later unrelated edits from being accidentally reverted.
+
+During an active preview, the main canvas is pointer-locked while audio/Motion/Links continue running. This prevents hidden edits from being destroyed by Retry/Revert.
+
+Magic creates no additional audio graph, scheduler, worker, or animation loop.
