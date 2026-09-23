@@ -10,9 +10,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 1 — Clean Repository, Architecture & Deployment Foundation: complete and CI-verified**
 - **Phase 2 — Musical Core & Smart Sound System: complete and CI-verified**
 - **Phase 3 — Sound Orbs & Core Playground: complete and CI-verified**
-- **Next: Phase 4 — Zero-Friction Home, Sound Palette & Onboarding**
+- **Phase 4 — Zero-Friction Home, Sound Palette & Onboarding: complete**
+- **Next: Phase 5 — Playful Beat & Melody Creation**
 
-Loop now opens directly into a playable spatial World containing six living Sound Orbs. Users can play the shared groove, drag sounds around the listener to change stereo position/presence, select them, mute/unmute, duplicate, delete, and see sound-synchronized visual reactions.
+Loop now opens on a simple starter screen. Pick Beat, Chill, Dreamy, Dance, Weird, Empty, or Surprise Me; non-empty Worlds enter the playground and begin playing immediately when browser audio permission allows it. The playground includes plain-language Add/Change sound choices and a three-step interaction-first onboarding.
 
 ## Product contract
 
@@ -27,9 +28,11 @@ The authoritative specifications live in `docs/`:
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — current runtime boundaries and dependency rules
 - [MUSICAL_CORE.md](docs/MUSICAL_CORE.md) — timing, harmony, catalog, compatibility, and mix contracts
 - [PLAYGROUND.md](docs/PLAYGROUND.md) — Sound Orb model, spatial behavior, direct manipulation, and runtime
+- [ENTRY_FLOW.md](docs/ENTRY_FLOW.md) — starter Home, palette, Add/Change, Surprise Me, and onboarding
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
+- [PHASE_4_ACCEPTANCE.md](docs/PHASE_4_ACCEPTANCE.md) — Phase 4 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -50,12 +53,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 3's integrated verification passed:
+The integrated Phase 4 code passed CI before final documentation cleanup with:
 
-- **12 test files**
-- **35 tests**
+- **14 test files**
+- **44 tests**
 - strict TypeScript typecheck
 - production Vite build
+
+The obsolete Phase 3-only starter test/factory was then removed; the exact final main head is re-verified before Phase 4 is considered closed.
 
 ## Product rule
 
