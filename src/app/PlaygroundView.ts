@@ -21,6 +21,7 @@ export interface PlaygroundCallbacks {
   readonly onOpenChange: (orbId: string) => void;
   readonly onOpenPattern: (orbId: string) => void;
   readonly onOpenMotion: (orbId: string) => void;
+  readonly onOpenLink: (orbId: string) => void;
   readonly onClosePalette: () => void;
   readonly onSelectPaletteCategory: (category: SoundPaletteCategoryId) => void;
   readonly onChooseSound: (soundId: string) => void;
@@ -149,6 +150,7 @@ export class PlaygroundView {
           <div class="selection-actions">
             <button type="button" data-action="pattern">Shape</button>
             <button type="button" data-action="motion">Motion</button>
+            <button type="button" data-action="link">Link</button>
             <button type="button" data-action="change">Change</button>
             <button type="button" data-action="mute">Mute</button>
             <button type="button" data-action="duplicate">Duplicate</button>
@@ -262,6 +264,13 @@ export class PlaygroundView {
       const selected = this.selectedOrbId();
       if (selected) {
         callbacks.onOpenMotion(selected);
+      }
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-action="link"]')?.addEventListener('click', () => {
+      const selected = this.selectedOrbId();
+      if (selected) {
+        callbacks.onOpenLink(selected);
       }
     });
 
