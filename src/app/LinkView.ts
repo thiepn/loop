@@ -54,6 +54,8 @@ function validationReasonText(reason?: LinkValidationReason): string {
       return 'One of these sounds already Takes Turns elsewhere';
     case 'copy-target-conflict':
       return 'That target already copies another movement';
+    case 'copy-chain-conflict':
+      return 'Copy Movement stays one level deep';
     case 'copy-cycle':
       return 'That would create a movement loop';
     case undefined:
