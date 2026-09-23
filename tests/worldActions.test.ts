@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultPattern } from '../src/core/music/Pattern';
+import { createLink } from '../src/core/world/Link';
 import { createMotion } from '../src/core/world/Motion';
 import { soundById } from '../src/core/sounds/coreCatalog';
 import { createEmptyWorld } from '../src/core/world/World';
@@ -154,6 +155,81 @@ describe('WorldActions', () => {
 
     expect(cleaned.soundOrbs).toHaveLength(1);
     expect(cleaned.soundOrbs[0]?.id).toBe(duplicateId);
+  });
+
+  it('removes attached Links when deleting a Sound Orb', () => {
+    const world = createEmptyWorld({
+      id: 'linked-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'kick',
+          soundId: 'beat-round-kick',
+          role: 'beat',
+          position: { x: 0.2, y: 0.3 },
+        }),
+        createSoundOrb({
+          id: 'bass',
+          soundId: 'bass-warm',
+          role: 'bass',
+          position: { x: 0.7, y: 0.3 },
+        }),
+      ],
+      links: [
+        createLink({
+          id: 'push',
+          type: 'kick-pushes-bass',
+          sourceOrbId: 'kick',
+          targetOrbId: 'bass',
+        }),
+      ],
+    });
+
+    const cleaned = deleteSoundOrb(world, 'kick', 200);
+
+    expect(cleaned.soundOrbs).toHaveLength(1);
+    expect(cleaned.links).toHaveLength(0);
+  });
+
+  it('prunes only role-incompatible Links after changing a sound', () => {
+    const world = createEmptyWorld({
+      id: 'linked-world',
+      now: 100,
+      soundOrbs: [
+        createSoundOrb({
+          id: 'kick',
+          soundId: 'beat-round-kick',
+          role: 'beat',
+          position: { x: 0.2, y: 0.3 },
+        }),
+        createSoundOrb({
+          id: 'bass',
+          soundId: 'bass-warm',
+          role: 'bass',
+          position: { x: 0.7, y: 0.3 },
+        }),
+      ],
+      links: [
+        createLink({
+          id: 'push',
+          type: 'kick-pushes-bass',
+          sourceOrbId: 'kick',
+          targetOrbId: 'bass',
+        }),
+        createLink({
+          id: 'copy',
+          type: 'copy-movement',
+          sourceOrbId: 'kick',
+          targetOrbId: 'bass',
+        }),
+      ],
+    });
+    const melody = soundById('melody-soft-pluck');
+    expect(melody).toBeDefined();
+
+    const changed = replaceSoundOrb(world, 'bass', melody!, 200);
+
+    expect(changed.links.map((link) => link.id)).toEqual(['copy']);
   });
 
   it('adds a palette sound at a safe suggested position', () => {
