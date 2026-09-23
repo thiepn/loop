@@ -1,3 +1,4 @@
+import { createEffectField, type EffectFieldType } from './EffectField';
 import { createSoundOrb } from './SoundOrb';
 import { createEmptyWorld, type WorldDocument } from './World';
 
@@ -70,6 +71,21 @@ function orb(
   });
 }
 
+function field(
+  id: string,
+  type: EffectFieldType,
+  x: number,
+  y: number,
+  radius: number,
+) {
+  return createEffectField({
+    id,
+    type,
+    position: { x, y },
+    radius,
+  });
+}
+
 export function createStarterWorld(
   starterId: StarterWorldId,
   now = Date.now(),
@@ -87,6 +103,9 @@ export function createStarterWorld(
           orb('beat-bass', 'bass-warm', 'bass', 0.32, 0.31),
           orb('beat-chords', 'harmony-dream', 'harmony', 0.76, 0.42),
         ],
+        effectFields: [
+          field('beat-echo', 'echo', 0.68, 0.26, 0.15),
+        ],
       });
 
     case 'chill':
@@ -100,6 +119,9 @@ export function createStarterWorld(
           orb('chill-bass', 'bass-warm', 'bass', 0.36, 0.3),
           orb('chill-chords', 'harmony-glow', 'harmony', 0.68, 0.66),
           orb('chill-air', 'texture-air', 'texture', 0.83, 0.48),
+        ],
+        effectFields: [
+          field('chill-space', 'space', 0.72, 0.64, 0.21),
         ],
       });
 
@@ -116,6 +138,10 @@ export function createStarterWorld(
           orb('dream-air', 'texture-air', 'texture', 0.83, 0.5),
           orb('dream-hum', 'voice-soft-hum', 'voice', 0.48, 0.76),
         ],
+        effectFields: [
+          field('dream-frost', 'frost', 0.58, 0.2, 0.14),
+          field('dream-space', 'space', 0.76, 0.62, 0.2),
+        ],
       });
 
     case 'dance':
@@ -130,6 +156,10 @@ export function createStarterWorld(
           orb('dance-bass', 'bass-deep', 'bass', 0.33, 0.29),
           orb('dance-chords', 'harmony-glow', 'harmony', 0.69, 0.7),
           orb('dance-melody', 'melody-soft-pluck', 'melody', 0.52, 0.17),
+        ],
+        effectFields: [
+          field('dance-echo', 'echo', 0.72, 0.25, 0.16),
+          field('dance-heat', 'heat', 0.33, 0.29, 0.13),
         ],
       });
 
@@ -146,6 +176,10 @@ export function createStarterWorld(
           orb('weird-bell', 'melody-bell', 'melody', 0.85, 0.56),
           orb('weird-haze', 'texture-haze', 'texture', 0.45, 0.82),
           orb('weird-hum', 'voice-soft-hum', 'voice', 0.5, 0.16),
+        ],
+        effectFields: [
+          field('weird-frost', 'frost', 0.85, 0.56, 0.16),
+          field('weird-filter', 'filter', 0.26, 0.24, 0.18),
         ],
       });
 
