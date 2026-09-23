@@ -3,6 +3,7 @@ import type { NormalizedPoint } from '../world/SoundOrb';
 
 export class SpatialVoice {
   private readonly gain: GainNode;
+  private readonly reactiveGain: GainNode;
   private readonly panner: StereoPannerNode;
   private position: NormalizedPoint;
   private muted: boolean;
@@ -17,9 +18,12 @@ export class SpatialVoice {
     this.muted = muted;
 
     this.gain = context.createGain();
+    this.reactiveGain = context.createGain();
+    this.reactiveGain.gain.value = 1;
     this.panner = context.createStereoPanner();
 
-    this.gain.connect(this.panner);
+    this.gain.connect(this.reactiveGain);
+    this.reactiveGain.connect(this.panner);
     this.panner.connect(destination);
 
     this.applySpatialState(context.currentTime, true);
@@ -39,8 +43,20 @@ export class SpatialVoice {
     this.applySpatialState(this.context.currentTime, immediate);
   }
 
+  public schedulePush(time: number, intensity = 1): void {
+    const amount = Math.max(0, Math.min(1, intensity));
+    const start = Math.max(time, this.context.currentTime + 0.001);
+    const minimum = 1 - amount * 0.58;
+
+    this.reactiveGain.gain.cancelScheduledValues(start);
+    this.reactiveGain.gain.setValueAtTime(1, start);
+    this.reactiveGain.gain.linearRampToValueAtTime(minimum, start + 0.012);
+    this.reactiveGain.gain.exponentialRampToValueAtTime(1, start + 0.22);
+  }
+
   public dispose(): void {
     this.gain.disconnect();
+    this.reactiveGain.disconnect();
     this.panner.disconnect();
   }
 
