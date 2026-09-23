@@ -8,6 +8,7 @@ export interface AppState {
   readonly boot: AppBootState;
   readonly audio: AudioEngineState;
   readonly world: WorldDocument;
+  readonly previewPlaying: boolean;
   readonly message: string;
 }
 
@@ -15,8 +16,15 @@ export const appStore = new Store<AppState>({
   boot: 'booting',
   audio: 'idle',
   world: createEmptyWorld({
-    id: 'phase-1-empty-world',
-    name: 'New World',
+    id: 'phase-2-foundation-world',
+    name: 'Foundation Groove',
+    music: {
+      bpm: 108,
+      tonic: 0,
+      scale: 'minor-pentatonic',
+      seed: 1,
+    },
   }),
-  message: 'Preparing the playground…',
+  previewPlaying: false,
+  message: 'Preparing the musical core…',
 });
