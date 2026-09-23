@@ -93,11 +93,22 @@ Tests cover:
 - [x] No persistent project library added early.
 - [x] No DAW-style browser or mixer added.
 
-## Exit condition
-Phase 4 is complete only when the exact final main head passes:
+## Final CI verification
+
+The cleaned Phase 4 implementation passed GitHub Actions with:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **13 test files**;
+- **41 tests**;
 - production Vite build.
 
-CI result is recorded after final cleanup/status commits.
+The obsolete Phase 3-only fixed starter factory/test was removed before this verification.
+
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+
+**Phase 4 status: complete and CI-verified.**
