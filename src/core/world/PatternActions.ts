@@ -97,8 +97,7 @@ export function paintMelodyNote(
       return pattern;
     }
 
-    const current = pattern.notes[step] ?? null;
-    return setMelodyNote(pattern, step, current === degree ? null : degree);
+    return setMelodyNote(pattern, step, degree);
   }, now);
 }
 
