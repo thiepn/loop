@@ -1,8 +1,9 @@
 import type { ScaleId } from '../music/Harmony';
 import type { EffectFieldDocument } from './EffectField';
+import type { PlaygroundToyDocument } from './PlaygroundToy';
 import type { SoundOrbDocument } from './SoundOrb';
 
-export const WORLD_SCHEMA_VERSION = 5 as const;
+export const WORLD_SCHEMA_VERSION = 6 as const;
 
 export interface WorldMusicSettings {
   readonly bpm: number;
@@ -20,6 +21,7 @@ export interface WorldDocument {
   readonly music: WorldMusicSettings;
   readonly soundOrbs: readonly SoundOrbDocument[];
   readonly effectFields: readonly EffectFieldDocument[];
+  readonly playgroundToys: readonly PlaygroundToyDocument[];
   readonly links: readonly string[];
   readonly snapshots: readonly string[];
 }
@@ -31,6 +33,7 @@ export interface CreateWorldOptions {
   readonly music?: Partial<WorldMusicSettings>;
   readonly soundOrbs?: readonly SoundOrbDocument[];
   readonly effectFields?: readonly EffectFieldDocument[];
+  readonly playgroundToys?: readonly PlaygroundToyDocument[];
 }
 
 function createWorldId(): string {
@@ -58,6 +61,7 @@ export function createEmptyWorld(options: CreateWorldOptions = {}): WorldDocumen
     },
     soundOrbs: options.soundOrbs ?? [],
     effectFields: options.effectFields ?? [],
+    playgroundToys: options.playgroundToys ?? [],
     links: [],
     snapshots: [],
   };
