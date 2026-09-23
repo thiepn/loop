@@ -59,6 +59,7 @@ export class PlaygroundEngine {
   private readonly runtimes = new Map<string, OrbRuntime>();
   private readonly activityListeners = new Set<OrbActivityListener>();
   private readonly manualPositionOverrides = new Map<string, NormalizedPoint>();
+  private readonly effectFieldPreviewOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
   private lastMotionFrame: MotionFrame = new Map();
   private lastMotionTimeSeconds = 0;
@@ -161,7 +162,7 @@ export class PlaygroundEngine {
       const position = this.manualPositionOverrides.get(orb.id)
         ?? motionFrame.get(orb.id)
         ?? orb.position;
-      const amounts = effectAmountsAtPoint(world.effectFields, position);
+      const amounts = effectAmountsAtPoint(this.effectiveEffectFields(), position);
 
       if (existing) {
         existing.orb = orb;
@@ -206,7 +207,7 @@ export class PlaygroundEngine {
 
     runtime.spatial.setPosition(position);
     runtime.effects.setAmounts(
-      effectAmountsAtPoint(this.world.effectFields, position),
+      effectAmountsAtPoint(this.effectiveEffectFields(), position),
     );
   }
 
@@ -237,7 +238,7 @@ export class PlaygroundEngine {
 
       runtime.spatial.setPosition(position);
       runtime.effects.setAmounts(
-        effectAmountsAtPoint(this.world.effectFields, position),
+        effectAmountsAtPoint(this.effectiveEffectFields(), position),
       );
     }
 
@@ -258,9 +259,8 @@ export class PlaygroundEngine {
   }
 
   public previewEffectField(field: EffectFieldDocument): void {
-    const fields = this.world.effectFields.some((candidate) => candidate.id === field.id)
-      ? this.world.effectFields.map((candidate) => candidate.id === field.id ? field : candidate)
-      : [...this.world.effectFields, field];
+    this.effectFieldPreviewOverrides.set(field.id, field);
+    const fields = this.effectiveEffectFields();
 
     for (const runtime of this.runtimes.values()) {
       const position = this.manualPositionOverrides.get(runtime.orb.id)
@@ -271,6 +271,10 @@ export class PlaygroundEngine {
         effectAmountsAtPoint(fields, position),
       );
     }
+  }
+
+  public releaseEffectFieldPreview(fieldId: string): void {
+    this.effectFieldPreviewOverrides.delete(fieldId);
   }
 
   public setOrbMuted(orbId: string, muted: boolean): void {
@@ -296,9 +300,20 @@ export class PlaygroundEngine {
     }
 
     this.manualPositionOverrides.clear();
+    this.effectFieldPreviewOverrides.clear();
     this.toyPreviewOverrides.clear();
     this.runtimes.clear();
     this.activityListeners.clear();
+  }
+
+  private effectiveEffectFields(): readonly EffectFieldDocument[] {
+    if (this.effectFieldPreviewOverrides.size === 0) {
+      return this.world.effectFields;
+    }
+
+    return this.world.effectFields.map(
+      (field) => this.effectFieldPreviewOverrides.get(field.id) ?? field,
+    );
   }
 
   private worldWithToyPreviews(): WorldDocument {
