@@ -31,6 +31,7 @@ export interface MotionViewCallbacks {
   readonly onPortalExitCommit: (toyId: string, position: NormalizedPoint) => void;
   readonly onToyPreviewEnd: (toyId: string) => void;
   readonly onDeleteToy: (toyId: string) => void;
+  readonly onMagicToy: (toyId: string) => void;
 }
 
 type ToyGesture =
@@ -187,6 +188,7 @@ export class MotionView {
       </div>
       <div class="toy-selection-actions">
         <span data-toy-help>Drag to move</span>
+        <button class="magic-action" type="button" data-toy-magic>✦ Magic</button>
         <button class="danger-action" type="button" data-toy-delete>Delete</button>
       </div>
     `;
@@ -198,6 +200,13 @@ export class MotionView {
       throw new Error('Toy selection panel failed to mount.');
     }
     this.toyPanelName = toyPanelName;
+
+    toyPanel.querySelector<HTMLButtonElement>('[data-toy-magic]')?.addEventListener('click', () => {
+      const toyId = this.root.dataset.selectedToyId || null;
+      if (toyId) {
+        callbacks.onMagicToy(toyId);
+      }
+    });
 
     toyPanel.querySelector<HTMLButtonElement>('[data-toy-delete]')?.addEventListener('click', () => {
       const toyId = this.root.dataset.selectedToyId || null;
