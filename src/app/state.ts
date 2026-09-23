@@ -1,4 +1,9 @@
 import type { AudioEngineState } from '../core/audio/AudioEngine';
+import type {
+  MagicIntent,
+  MagicStrength,
+  MagicTarget,
+} from '../core/world/Magic';
 import type { SoundPaletteCategoryId } from '../core/sounds/SoundPalette';
 import { Store } from '../core/state/Store';
 import { createStarterWorld } from '../core/world/StarterWorlds';
@@ -19,6 +24,21 @@ export type PaletteState =
       readonly category: SoundPaletteCategoryId;
     };
 
+export interface MagicSessionState {
+  readonly baseWorld: WorldDocument;
+  readonly target: MagicTarget;
+  readonly intent: MagicIntent;
+  readonly strength: MagicStrength;
+  readonly attempt: number;
+  readonly seed: number;
+  readonly summary: string;
+}
+
+export interface MagicUndoState {
+  readonly beforeWorld: WorldDocument;
+  readonly afterWorld: WorldDocument;
+}
+
 export interface AppState {
   readonly boot: AppBootState;
   readonly audio: AudioEngineState;
@@ -35,6 +55,9 @@ export interface AppState {
   readonly motionEditorOrbId: string | null;
   readonly linkEditorSourceOrbId: string | null;
   readonly linkEditorTargetOrbId: string | null;
+  readonly magicIntentOpen: boolean;
+  readonly magicSession: MagicSessionState | null;
+  readonly magicUndo: MagicUndoState | null;
   readonly onboardingStep: OnboardingStep;
   readonly playing: boolean;
   readonly message: string;
@@ -56,6 +79,9 @@ export const appStore = new Store<AppState>({
   motionEditorOrbId: null,
   linkEditorSourceOrbId: null,
   linkEditorTargetOrbId: null,
+  magicIntentOpen: false,
+  magicSession: null,
+  magicUndo: null,
   onboardingStep: 'move',
   playing: false,
   message: 'Pick a starting point.',
