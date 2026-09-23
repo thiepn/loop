@@ -5,6 +5,11 @@ export interface AudioEngineSnapshot {
   readonly sampleRate: number | null;
 }
 
+export interface AudioRuntime {
+  readonly context: AudioContext;
+  readonly destination: AudioNode;
+}
+
 type BrowserAudioContextConstructor = new (options?: AudioContextOptions) => AudioContext;
 
 function getAudioContextConstructor(): BrowserAudioContextConstructor | null {
@@ -34,6 +39,17 @@ export class AudioEngine {
     return {
       state: this.context.state,
       sampleRate: this.context.sampleRate,
+    };
+  }
+
+  public getRuntime(): AudioRuntime | null {
+    if (!this.context || !this.masterGain) {
+      return null;
+    }
+
+    return {
+      context: this.context,
+      destination: this.masterGain,
     };
   }
 
