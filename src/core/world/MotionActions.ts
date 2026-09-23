@@ -18,12 +18,14 @@ function createMotionForOrb(
   } = {},
 ) {
   const targetOrbId = overrides.targetOrbId ?? orb.motion?.targetOrbId;
+  const speed = overrides.speed ?? orb.motion?.speed;
+  const range = overrides.range ?? orb.motion?.range;
 
   return createMotion({
     mode,
-    speed: overrides.speed ?? orb.motion?.speed,
-    range: overrides.range ?? orb.motion?.range,
     seed: orb.motion?.seed ?? world.music.seed + orb.id.length * 17,
+    ...(speed ? { speed } : {}),
+    ...(range ? { range } : {}),
     ...(targetOrbId ? { targetOrbId } : {}),
   });
 }
