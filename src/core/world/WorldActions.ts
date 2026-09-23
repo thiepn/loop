@@ -114,16 +114,21 @@ export function duplicateSoundOrb(
     return { world, createdId: null };
   }
 
-  const duplicate = createSoundOrb({
+  const duplicateOptions = {
     soundId: source.soundId,
     role: source.role,
     muted: source.muted,
-    pattern: source.pattern,
     position: {
       x: Math.min(0.94, source.position.x + 0.07),
       y: Math.min(0.94, source.position.y + 0.06),
     },
-  });
+  };
+
+  const duplicate = createSoundOrb(
+    source.pattern
+      ? { ...duplicateOptions, pattern: source.pattern }
+      : duplicateOptions,
+  );
 
   return {
     world: touch(world, [...world.soundOrbs, duplicate], now),
@@ -198,12 +203,17 @@ export function replaceSoundOrb(
       role: sound.role,
     };
 
-    return preservedPattern
-      ? { ...base, pattern: preservedPattern }
-      : (() => {
-          const { pattern: _pattern, ...withoutPattern } = base;
-          return withoutPattern;
-        })();
+    if (preservedPattern) {
+      return { ...base, pattern: preservedPattern };
+    }
+
+    return {
+      id: base.id,
+      soundId: base.soundId,
+      role: base.role,
+      position: base.position,
+      muted: base.muted,
+    };
   });
 
   return changed ? touch(world, soundOrbs, now) : world;
