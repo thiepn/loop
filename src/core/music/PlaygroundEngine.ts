@@ -12,6 +12,7 @@ import type { WorldDocument } from '../world/World';
 import type { NormalizedPoint, SoundOrbDocument } from '../world/SoundOrb';
 import { recommendedVoiceGain } from './MixPolicy';
 import {
+  applyCopyMovementLinks,
   evaluateMotionFrame,
   type MotionFrame,
 } from './MotionEngine';
@@ -228,19 +229,63 @@ export class PlaygroundEngine {
     }
   }
 
-  public updateOrbSpatial(orbId: string, position: NormalizedPoint): void {
+  public updateOrbSpatial(
+    orbId: string,
+    position: NormalizedPoint,
+  ): MotionFrame {
     const runtime = this.runtimes.get(orbId);
-
     this.manualPositionOverrides.set(orbId, position);
 
-    if (!runtime) {
-      return;
+    const updates = new Map<string, NormalizedPoint>([
+      [orbId, position],
+    ]);
+
+    if (runtime) {
+      runtime.spatial.setPosition(position);
+      runtime.effects.setAmounts(
+        effectAmountsAtPoint(this.effectiveEffectFields(), position),
+      );
     }
 
-    runtime.spatial.setPosition(position);
-    runtime.effects.setAmounts(
-      effectAmountsAtPoint(this.effectiveEffectFields(), position),
-    );
+    const copyFrame = new Map<string, NormalizedPoint>();
+
+    for (const orb of this.world.soundOrbs) {
+      copyFrame.set(
+        orb.id,
+        orb.id === orbId
+          ? position
+          : this.lastMotionFrame.get(orb.id) ?? orb.position,
+      );
+    }
+
+    applyCopyMovementLinks(this.world, copyFrame);
+
+    for (const link of this.world.links) {
+      if (link.type !== 'copy-movement' || link.sourceOrbId !== orbId) {
+        continue;
+      }
+
+      const copiedPosition = copyFrame.get(link.targetOrbId);
+      const targetRuntime = this.runtimes.get(link.targetOrbId);
+
+      if (!copiedPosition) {
+        continue;
+      }
+
+      updates.set(link.targetOrbId, copiedPosition);
+
+      if (targetRuntime) {
+        targetRuntime.spatial.setPosition(copiedPosition);
+        targetRuntime.effects.setAmounts(
+          effectAmountsAtPoint(
+            this.effectiveEffectFields(),
+            copiedPosition,
+          ),
+        );
+      }
+    }
+
+    return updates;
   }
 
   public releaseOrbMotionOverride(orbId: string): void {
