@@ -1,15 +1,28 @@
+import {
+  SOUND_PALETTE_CATEGORIES,
+  soundsForCategory,
+  type SoundPaletteCategoryId,
+} from '../core/sounds/SoundPalette';
 import { soundById } from '../core/sounds/coreCatalog';
 import { clampPoint, type NormalizedPoint, type SoundOrbDocument } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 
 export interface PlaygroundCallbacks {
   readonly onTogglePlayback: () => void;
+  readonly onOpenHome: () => void;
   readonly onSelectOrb: (orbId: string | null) => void;
   readonly onMovePreview: (orbId: string, position: NormalizedPoint) => void;
   readonly onMoveCommit: (orbId: string, position: NormalizedPoint) => void;
   readonly onToggleMute: (orbId: string) => void;
   readonly onDuplicate: (orbId: string) => void;
   readonly onDelete: (orbId: string) => void;
+  readonly onOpenAdd: () => void;
+  readonly onOpenChange: (orbId: string) => void;
+  readonly onClosePalette: () => void;
+  readonly onSelectPaletteCategory: (category: SoundPaletteCategoryId) => void;
+  readonly onChooseSound: (soundId: string) => void;
+  readonly onSurpriseSound: () => void;
+  readonly onSkipOnboarding: () => void;
 }
 
 interface DragSession {
@@ -38,16 +51,37 @@ function roleLabel(orb: SoundOrbDocument): string {
   }
 }
 
+function onboardingCopy(step: AppState['onboardingStep']): string {
+  switch (step) {
+    case 'move':
+      return '1 of 3 · Drag any sound';
+    case 'near':
+      return '2 of 3 · Bring it closer to YOU';
+    case 'add':
+      return '3 of 3 · Add something new';
+    case 'done':
+      return '';
+  }
+}
+
 export class PlaygroundView {
   private readonly orbElements = new Map<string, HTMLButtonElement>();
   private readonly canvas: HTMLElement;
   private readonly playButton: HTMLButtonElement;
   private readonly status: HTMLElement;
   private readonly worldName: HTMLElement;
+  private readonly tempo: HTMLElement;
   private readonly selectedPanel: HTMLElement;
   private readonly selectedName: HTMLElement;
   private readonly selectedRole: HTMLElement;
   private readonly muteButton: HTMLButtonElement;
+  private readonly addButton: HTMLButtonElement;
+  private readonly palette: HTMLElement;
+  private readonly paletteTitle: HTMLElement;
+  private readonly paletteCategories: HTMLElement;
+  private readonly paletteSounds: HTMLElement;
+  private readonly onboarding: HTMLElement;
+  private readonly onboardingText: HTMLElement;
   private drag: DragSession | null = null;
 
   public constructor(
@@ -60,14 +94,14 @@ export class PlaygroundView {
         <div class="world-glow world-glow-b" aria-hidden="true"></div>
 
         <header class="playground-topbar">
-          <a class="brand" href="${import.meta.env.BASE_URL}" aria-label="Loop home">
+          <button class="brand brand-button" type="button" data-home aria-label="Choose another World">
             <span class="brand-mark" aria-hidden="true"><span></span></span>
             <span>Loop</span>
-          </a>
+          </button>
 
           <div class="world-heading">
-            <strong data-world-name>First Orbit</strong>
-            <span>108 BPM</span>
+            <strong data-world-name>World</strong>
+            <span data-tempo>108 BPM</span>
           </div>
 
           <button class="play-toggle" type="button" data-play aria-pressed="false">
@@ -81,13 +115,25 @@ export class PlaygroundView {
           <div class="listener-rings" aria-hidden="true">
             <span></span><span></span><span></span>
           </div>
-          <div class="listener-core" aria-label="You are here">
+          <div class="listener-core" data-listener aria-label="You are here">
             <span class="listener-dot"></span>
             <small>YOU</small>
           </div>
           <div class="orb-layer" data-orb-layer></div>
 
-          <p class="world-hint" data-status aria-live="polite">Tap play, then move a sound.</p>
+          <p class="world-hint" data-status aria-live="polite"></p>
+
+          <div class="onboarding-tip" data-onboarding hidden>
+            <span data-onboarding-text></span>
+            <button type="button" data-skip-onboarding>Skip</button>
+          </div>
+
+          <div class="playground-dock">
+            <button class="add-sound-button" type="button" data-add>
+              <span aria-hidden="true">＋</span>
+              Add
+            </button>
+          </div>
         </section>
 
         <aside class="selection-panel" data-selection hidden>
@@ -96,11 +142,34 @@ export class PlaygroundView {
             <strong data-selected-name>Sound</strong>
           </div>
           <div class="selection-actions">
+            <button type="button" data-action="change">Change</button>
             <button type="button" data-action="mute">Mute</button>
             <button type="button" data-action="duplicate">Duplicate</button>
             <button class="danger-action" type="button" data-action="delete">Delete</button>
           </div>
         </aside>
+
+        <div class="palette-backdrop" data-palette hidden>
+          <section class="palette-sheet" role="dialog" aria-modal="true" aria-labelledby="palette-title">
+            <header class="palette-header">
+              <div>
+                <span>Sound palette</span>
+                <h2 id="palette-title" data-palette-title>Add something</h2>
+              </div>
+              <button class="palette-close" type="button" data-close-palette aria-label="Close sound palette">×</button>
+            </header>
+
+            <div class="palette-categories" data-palette-categories></div>
+
+            <button class="surprise-sound" type="button" data-surprise-sound>
+              <span aria-hidden="true">✦</span>
+              <strong>Surprise Me</strong>
+              <small>Choose something that fits</small>
+            </button>
+
+            <div class="palette-sounds" data-palette-sounds></div>
+          </section>
+        </div>
       </main>
     `;
 
@@ -108,20 +177,36 @@ export class PlaygroundView {
     const playButton = root.querySelector<HTMLButtonElement>('[data-play]');
     const status = root.querySelector<HTMLElement>('[data-status]');
     const worldName = root.querySelector<HTMLElement>('[data-world-name]');
+    const tempo = root.querySelector<HTMLElement>('[data-tempo]');
     const selectedPanel = root.querySelector<HTMLElement>('[data-selection]');
     const selectedName = root.querySelector<HTMLElement>('[data-selected-name]');
     const selectedRole = root.querySelector<HTMLElement>('[data-selected-role]');
     const muteButton = root.querySelector<HTMLButtonElement>('[data-action="mute"]');
+    const addButton = root.querySelector<HTMLButtonElement>('[data-add]');
+    const palette = root.querySelector<HTMLElement>('[data-palette]');
+    const paletteTitle = root.querySelector<HTMLElement>('[data-palette-title]');
+    const paletteCategories = root.querySelector<HTMLElement>('[data-palette-categories]');
+    const paletteSounds = root.querySelector<HTMLElement>('[data-palette-sounds]');
+    const onboarding = root.querySelector<HTMLElement>('[data-onboarding]');
+    const onboardingText = root.querySelector<HTMLElement>('[data-onboarding-text]');
 
     if (
       !canvas ||
       !playButton ||
       !status ||
       !worldName ||
+      !tempo ||
       !selectedPanel ||
       !selectedName ||
       !selectedRole ||
-      !muteButton
+      !muteButton ||
+      !addButton ||
+      !palette ||
+      !paletteTitle ||
+      !paletteCategories ||
+      !paletteSounds ||
+      !onboarding ||
+      !onboardingText
     ) {
       throw new Error('Playground view failed to mount required controls.');
     }
@@ -130,37 +215,64 @@ export class PlaygroundView {
     this.playButton = playButton;
     this.status = status;
     this.worldName = worldName;
+    this.tempo = tempo;
     this.selectedPanel = selectedPanel;
     this.selectedName = selectedName;
     this.selectedRole = selectedRole;
     this.muteButton = muteButton;
+    this.addButton = addButton;
+    this.palette = palette;
+    this.paletteTitle = paletteTitle;
+    this.paletteCategories = paletteCategories;
+    this.paletteSounds = paletteSounds;
+    this.onboarding = onboarding;
+    this.onboardingText = onboardingText;
 
-    this.playButton.addEventListener('click', () => this.callbacks.onTogglePlayback());
+    root.querySelector<HTMLButtonElement>('[data-home]')?.addEventListener('click', () => callbacks.onOpenHome());
+    this.playButton.addEventListener('click', () => callbacks.onTogglePlayback());
+    this.addButton.addEventListener('click', () => callbacks.onOpenAdd());
 
     this.canvas.addEventListener('pointerdown', (event) => {
       if (event.target === this.canvas || (event.target as HTMLElement).classList.contains('world-grid')) {
-        this.callbacks.onSelectOrb(null);
+        callbacks.onSelectOrb(null);
+      }
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-action="change"]')?.addEventListener('click', () => {
+      const selected = this.selectedOrbId();
+      if (selected) {
+        callbacks.onOpenChange(selected);
       }
     });
 
     root.querySelector<HTMLButtonElement>('[data-action="mute"]')?.addEventListener('click', () => {
       const selected = this.selectedOrbId();
       if (selected) {
-        this.callbacks.onToggleMute(selected);
+        callbacks.onToggleMute(selected);
       }
     });
 
     root.querySelector<HTMLButtonElement>('[data-action="duplicate"]')?.addEventListener('click', () => {
       const selected = this.selectedOrbId();
       if (selected) {
-        this.callbacks.onDuplicate(selected);
+        callbacks.onDuplicate(selected);
       }
     });
 
     root.querySelector<HTMLButtonElement>('[data-action="delete"]')?.addEventListener('click', () => {
       const selected = this.selectedOrbId();
       if (selected) {
-        this.callbacks.onDelete(selected);
+        callbacks.onDelete(selected);
+      }
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-close-palette]')?.addEventListener('click', () => callbacks.onClosePalette());
+    root.querySelector<HTMLButtonElement>('[data-surprise-sound]')?.addEventListener('click', () => callbacks.onSurpriseSound());
+    root.querySelector<HTMLButtonElement>('[data-skip-onboarding]')?.addEventListener('click', () => callbacks.onSkipOnboarding());
+
+    this.palette.addEventListener('pointerdown', (event) => {
+      if (event.target === this.palette) {
+        callbacks.onClosePalette();
       }
     });
   }
@@ -168,6 +280,7 @@ export class PlaygroundView {
   public render(state: Readonly<AppState>): void {
     this.root.dataset.selectedOrbId = state.selectedOrbId ?? '';
     this.worldName.textContent = state.world.name;
+    this.tempo.textContent = `${state.world.music.bpm} BPM`;
     this.status.textContent = state.message;
 
     const playLabel = this.playButton.querySelector<HTMLElement>('[data-play-label]');
@@ -186,6 +299,8 @@ export class PlaygroundView {
 
     this.syncOrbs(state);
     this.renderSelection(state);
+    this.renderPalette(state);
+    this.renderOnboarding(state);
   }
 
   public previewOrbPosition(orbId: string, position: NormalizedPoint): void {
@@ -417,6 +532,63 @@ export class PlaygroundView {
     this.selectedName.textContent = sound?.name ?? roleLabel(selected);
     this.selectedRole.textContent = roleLabel(selected);
     this.muteButton.textContent = selected.muted ? 'Unmute' : 'Mute';
+  }
+
+  private renderPalette(state: Readonly<AppState>): void {
+    const paletteState = state.palette;
+    this.palette.hidden = paletteState === null;
+
+    if (!paletteState) {
+      return;
+    }
+
+    this.paletteTitle.textContent = paletteState.mode === 'replace'
+      ? 'Change this sound'
+      : 'Add something';
+
+    this.paletteCategories.replaceChildren();
+
+    for (const category of SOUND_PALETTE_CATEGORIES) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'palette-category';
+      button.classList.toggle('is-active', category.id === paletteState.category);
+      button.textContent = category.name;
+      button.title = category.description;
+      button.addEventListener('click', () => this.callbacks.onSelectPaletteCategory(category.id));
+      this.paletteCategories.append(button);
+    }
+
+    this.paletteSounds.replaceChildren();
+    const currentSoundId = paletteState.mode === 'replace'
+      ? state.world.soundOrbs.find((orb) => orb.id === paletteState.orbId)?.soundId
+      : null;
+
+    for (const sound of soundsForCategory(paletteState.category)) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sound-choice';
+      button.classList.toggle('is-current', sound.id === currentSoundId);
+      button.innerHTML = `
+        <span class="sound-choice-orb" data-role="${sound.role}" aria-hidden="true"></span>
+        <span class="sound-choice-copy">
+          <strong>${sound.name}</strong>
+          <small>${sound.description}</small>
+        </span>
+      `;
+      button.addEventListener('click', () => this.callbacks.onChooseSound(sound.id));
+      this.paletteSounds.append(button);
+    }
+  }
+
+  private renderOnboarding(state: Readonly<AppState>): void {
+    const step = state.onboardingStep;
+    this.onboarding.hidden = step === 'done';
+    this.onboardingText.textContent = onboardingCopy(step);
+
+    this.canvas.classList.toggle('onboarding-move', step === 'move');
+    this.canvas.classList.toggle('onboarding-near', step === 'near');
+    this.addButton.classList.toggle('onboarding-add', step === 'add');
   }
 
   private selectedOrbId(): string | null {
