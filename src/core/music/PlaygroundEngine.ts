@@ -158,6 +158,7 @@ export class PlaygroundEngine {
 
     for (const runtime of this.runtimes.values()) {
       runtime.instrument.stopAll(this.context.currentTime + 0.015);
+      runtime.spatial.resetReactiveGain();
     }
 
     this.transport.stop(this.context.currentTime);
