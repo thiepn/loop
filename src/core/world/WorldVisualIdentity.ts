@@ -77,11 +77,14 @@ function primaryRole(world: WorldDocument): SoundRole | null {
     ))[0]?.[0] ?? null;
 }
 
-function stableSeed(world: WorldDocument): number {
+function stableSeed(
+  world: WorldDocument,
+  identityKey: string,
+): number {
   let hash = (world.music.seed >>> 0) || 2166136261;
 
   for (const value of [
-    world.id,
+    identityKey,
     world.name,
     String(world.soundOrbs.length),
     String(world.effectFields.length),
@@ -99,8 +102,9 @@ function stableSeed(world: WorldDocument): number {
 
 export function deriveWorldVisualIdentity(
   world: WorldDocument,
+  identityKey = world.id,
 ): WorldVisualIdentity {
-  const seed = stableSeed(world);
+  const seed = stableSeed(world, identityKey);
 
   return {
     seed,

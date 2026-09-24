@@ -96,6 +96,7 @@ const STARTER_VISUALS = new Map(
     starter.id,
     deriveWorldVisualIdentity(
       createStarterWorld(starter.id, 0),
+      'starter:' + starter.id,
     ),
   ]),
 );
