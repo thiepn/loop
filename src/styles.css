@@ -6608,6 +6608,18 @@ a:focus-visible,
   }
 }
 
+@media (pointer: coarse) and (orientation: portrait) {
+  .selection-panel,
+  .field-selection-panel,
+  .toy-selection-panel,
+  .link-selection-panel {
+    bottom: max(
+      84px,
+      calc(env(safe-area-inset-bottom) + 76px)
+    );
+  }
+}
+
 @media (forced-colors: active) {
   button:focus-visible,
   a:focus-visible,
