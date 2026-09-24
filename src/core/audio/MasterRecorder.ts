@@ -124,7 +124,12 @@ export class MasterRecorder {
       }
     }, limit);
 
-    recorder.start(1_000);
+    try {
+      recorder.start(1_000);
+    } catch (error) {
+      this.cleanup();
+      throw error;
+    }
   }
 
   public stop(): Promise<RecordingResult> {
