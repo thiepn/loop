@@ -597,17 +597,18 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     dpr: number,
   ): void {
     const fade = 1 - sample.progress;
+    const event = sample.event;
 
-    if (sample.event.kind === 'orb-pulse') {
+    if (event.kind === 'orb-pulse') {
       const orb = scene.orbs.find(
-        (candidate) => candidate.id === sample.event.orbId,
+        (candidate) => candidate.id === event.orbId,
       );
 
       if (!orb) {
         return;
       }
 
-      const position = sample.event.position ?? orb.position;
+      const position = event.position ?? orb.position;
       const diameter = orbDiameterPixels(
         orb.role,
         minDimension,
@@ -623,14 +624,14 @@ export class WebGL2WorldRenderer implements WorldRenderer {
         radius,
         withAlpha(
           ROLE_RENDER_COLORS[orb.role],
-          fade * 0.22 * sample.event.intensity,
+          fade * 0.22 * event.intensity,
         ),
       );
       return;
     }
 
     const link = scene.links.find(
-      (candidate) => candidate.id === sample.event.linkId,
+      (candidate) => candidate.id === event.linkId,
     );
 
     if (!link) {
@@ -660,7 +661,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       radius,
       withAlpha(
         LINK_RENDER_COLORS[link.type],
-        fade * 0.5 * sample.event.intensity,
+        fade * 0.5 * event.intensity,
       ),
     );
   }
