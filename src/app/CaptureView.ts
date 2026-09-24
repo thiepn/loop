@@ -2,6 +2,7 @@ import {
   MAX_RECORDING_MS,
 } from '../core/audio/MasterRecorder';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface CaptureViewCallbacks {
   readonly onStart: () => void;
@@ -25,6 +26,7 @@ export class CaptureView {
   private readonly liveBar: HTMLElement;
   private readonly liveDuration: HTMLElement;
   private readonly resultBackdrop: HTMLElement;
+  private readonly resultFocus: ModalFocusController;
   private readonly resultAudio: HTMLAudioElement;
   private readonly resultDuration: HTMLElement;
   private readonly resultFormat: HTMLElement;
@@ -111,7 +113,7 @@ export class CaptureView {
           <span data-capture-result-format>Browser Audio</span>
         </div>
 
-        <audio controls preload="metadata" data-capture-audio></audio>
+        <audio controls preload="metadata" data-capture-audio aria-label="Recorded performance preview"></audio>
 
         <div class="capture-result-actions">
           <button class="capture-download-primary" type="button" data-capture-download>
@@ -131,6 +133,9 @@ export class CaptureView {
     `;
     shell.append(resultBackdrop);
     this.resultBackdrop = resultBackdrop;
+    this.resultFocus = new ModalFocusController(resultBackdrop, {
+      initialFocusSelector: '[data-capture-audio]',
+    });
 
     const resultAudio = resultBackdrop.querySelector<HTMLAudioElement>(
       '[data-capture-audio]',
@@ -200,6 +205,7 @@ export class CaptureView {
     }
 
     this.resultBackdrop.hidden = !ready;
+    this.resultFocus.sync(ready);
 
     if (!ready) {
       if (this.resultAudio.src) {
@@ -224,6 +230,7 @@ export class CaptureView {
   }
 
   public destroy(): void {
+    this.resultFocus.destroy();
     this.resultAudio.pause();
     this.recordButton.remove();
     this.liveBar.remove();
