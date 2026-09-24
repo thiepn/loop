@@ -6615,8 +6615,8 @@ a:focus-visible,
   .toy-selection-panel,
   .link-selection-panel {
     bottom: max(
-      84px,
-      calc(env(safe-area-inset-bottom) + 76px)
+      88px,
+      calc(env(safe-area-inset-bottom) + 80px)
     );
   }
 }
@@ -6628,8 +6628,8 @@ a:focus-visible,
   .link-selection-panel,
   .magic-undo-button {
     bottom: max(
-      84px,
-      calc(env(safe-area-inset-bottom) + 76px)
+      88px,
+      calc(env(safe-area-inset-bottom) + 80px)
     );
   }
 }
