@@ -73,7 +73,7 @@ Implement:
 - pointer/touch disturbance;
 - density-aware ambience.
 
-## Phase 4 — Sound Orb Material Engine
+## Phase 4 — Sound Orb Material Engine — implemented; certification pending
 
 Implement:
 - procedural Orb bodies;

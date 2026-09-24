@@ -29,7 +29,8 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Post-V1 Visual V2 Phase 1 — Specification & Art Direction Lock: complete (documentation only; runtime unchanged)**
 - **Post-V1 Visual V2 Phase 2 — Rendering Architecture V2: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 3 — World Environment, Atmosphere & Depth: complete and CI-verified**
-- **Next Visual V2 phase after certification: Phase 4 — Sound Orb Material Engine**
+- **Post-V1 Visual V2 Phase 4 — Sound Orb Material Engine: implemented; certification pending**
+- **Next Visual V2 phase after certification: Phase 5 — Physical Interaction & Object Game Feel**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
@@ -68,6 +69,8 @@ The authoritative specifications live in `docs/`:
 - [VISUAL_V2_PHASE_2_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_2_ACCEPTANCE.md) — Phase 2 renderer foundation gate
 - [VISUAL_V2_ENVIRONMENT.md](docs/VISUAL_V2_ENVIRONMENT.md) — derived World palette, procedural atmosphere, depth bands, parallax, silence, and environmental energy
 - [VISUAL_V2_PHASE_3_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_3_ACCEPTANCE.md) — Phase 3 environment/depth gate
+- [VISUAL_V2_ORB_MATERIALS.md](docs/VISUAL_V2_ORB_MATERIALS.md) — role-specific procedural bodies, fingerprints, pulse deformation, state treatment, and Field hooks
+- [VISUAL_V2_PHASE_4_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_4_ACCEPTANCE.md) — Phase 4 Orb material gate
 
 ## Development
 
