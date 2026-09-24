@@ -156,7 +156,12 @@ export class PersistenceView {
 
     saveButton.addEventListener('click', () => {
       const name = prompt('Snapshot name', '');
-      callbacks.onSaveSnapshot(name?.trim() || undefined);
+
+      if (name === null) {
+        return;
+      }
+
+      callbacks.onSaveSnapshot(name.trim() || undefined);
     });
 
     backdrop.querySelector<HTMLButtonElement>('[data-world-rename]')?.addEventListener(
