@@ -8,6 +8,7 @@ import { patternKindForRole } from '../core/music/Pattern';
 import { clampPoint, type NormalizedPoint, type SoundOrbDocument } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface PlaygroundCallbacks {
   readonly onTogglePlayback: () => void;
@@ -115,7 +116,7 @@ export class PlaygroundView {
 
           <div class="playground-topbar-actions" data-topbar-actions>
             <button class="play-toggle" type="button" data-play aria-pressed="false">
-              <span class="play-icon" aria-hidden="true">▶</span>
+              <span class="play-icon" data-play-icon>${loopIcon('play')}</span>
               <span data-play-label>Play</span>
             </button>
           </div>
@@ -141,8 +142,8 @@ export class PlaygroundView {
 
           <div class="playground-dock">
             <button class="add-sound-button" type="button" data-add aria-haspopup="dialog" aria-expanded="false">
-              <span aria-hidden="true">＋</span>
-              Add
+              ${loopIcon('add')}
+              <span>Add</span>
             </button>
           </div>
         </section>
@@ -153,14 +154,14 @@ export class PlaygroundView {
             <strong data-selected-name>Sound</strong>
           </div>
           <div class="selection-actions">
-            <button type="button" data-action="pattern" aria-haspopup="dialog" aria-expanded="false">Shape</button>
-            <button type="button" data-action="motion" aria-haspopup="dialog" aria-expanded="false">Motion</button>
-            <button type="button" data-action="link" aria-haspopup="dialog" aria-expanded="false">Link</button>
-            <button class="magic-action" type="button" data-action="magic">✦ Magic</button>
-            <button type="button" data-action="change" aria-haspopup="dialog" aria-expanded="false">Change</button>
-            <button type="button" data-action="mute">Mute</button>
-            <button type="button" data-action="duplicate">Duplicate</button>
-            <button class="danger-action" type="button" data-action="delete">Delete</button>
+            <button type="button" data-action="pattern" aria-haspopup="dialog" aria-expanded="false">${loopIcon('shape')}<span>Shape</span></button>
+            <button type="button" data-action="motion" aria-haspopup="dialog" aria-expanded="false">${loopIcon('motion')}<span>Motion</span></button>
+            <button type="button" data-action="link" aria-haspopup="dialog" aria-expanded="false">${loopIcon('link')}<span>Link</span></button>
+            <button class="magic-action" type="button" data-action="magic">${loopIcon('magic')}<span>Magic</span></button>
+            <button type="button" data-action="change" aria-haspopup="dialog" aria-expanded="false">${loopIcon('swap')}<span>Change</span></button>
+            <button type="button" data-action="mute">${loopIcon('mute')}<span>Mute</span></button>
+            <button type="button" data-action="duplicate">${loopIcon('copy')}<span>Duplicate</span></button>
+            <button class="danger-action" type="button" data-action="delete">${loopIcon('trash')}<span>Delete</span></button>
           </div>
         </aside>
 
@@ -171,13 +172,13 @@ export class PlaygroundView {
                 <span>Sound palette</span>
                 <h2 id="palette-title" data-palette-title>Add something</h2>
               </div>
-              <button class="palette-close" type="button" data-close-palette aria-label="Close sound palette">×</button>
+              <button class="palette-close" type="button" data-close-palette aria-label="Close sound palette">${loopIcon('close')}</button>
             </header>
 
             <div class="palette-categories" data-palette-categories role="group" aria-label="Sound categories"></div>
 
             <button class="surprise-sound" type="button" data-surprise-sound>
-              <span aria-hidden="true">✦</span>
+              ${loopIcon('magic')}
               <strong>Surprise Me</strong>
               <small>Choose something that fits</small>
             </button>
@@ -337,14 +338,14 @@ export class PlaygroundView {
     this.status.textContent = state.message;
 
     const playLabel = this.playButton.querySelector<HTMLElement>('[data-play-label]');
-    const playIcon = this.playButton.querySelector<HTMLElement>('.play-icon');
+    const playIcon = this.playButton.querySelector<HTMLElement>('[data-play-icon]');
 
     if (playLabel) {
       playLabel.textContent = state.playing ? 'Stop' : 'Play';
     }
 
     if (playIcon) {
-      playIcon.textContent = state.playing ? '■' : '▶';
+      playIcon.innerHTML = loopIcon(state.playing ? 'stop' : 'play');
     }
 
     this.playButton.setAttribute('aria-pressed', String(state.playing));
@@ -734,13 +735,18 @@ export class PlaygroundView {
     const sound = soundById(selected.soundId);
 
     this.selectedPanel.hidden = false;
+    this.selectedPanel.dataset.role = selected.role;
     this.selectedName.textContent = sound?.name ?? roleLabel(selected);
     this.selectedRole.textContent = roleLabel(selected);
-    this.muteButton.textContent = selected.muted ? 'Unmute' : 'Mute';
+    this.muteButton.innerHTML = loopIcon(selected.muted ? 'sound' : 'mute')
+      + '<span>' + (selected.muted ? 'Unmute' : 'Mute') + '</span>';
     this.patternButton.hidden = patternKindForRole(selected.role) === null;
-    this.motionButton.textContent = selected.motion?.mode && selected.motion.mode !== 'still'
-      ? 'Motion · On'
-      : 'Motion';
+    this.motionButton.innerHTML = loopIcon('motion')
+      + '<span>' + (
+        selected.motion?.mode && selected.motion.mode !== 'still'
+          ? 'Motion · On'
+          : 'Motion'
+      ) + '</span>';
   }
 
   private renderPalette(state: Readonly<AppState>): void {
