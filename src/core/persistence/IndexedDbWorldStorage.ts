@@ -37,8 +37,10 @@ export class IndexedDbWorldStorage implements WorldStorage {
       const transaction = database.transaction(WORLDS_STORE, 'readonly');
       const done = transactionDone(transaction);
       const request = transaction.objectStore(WORLDS_STORE).getAll();
-      const records = await requestResult(request) as StoredWorldRecord[];
-      await done;
+      const [records] = await Promise.all([
+        requestResult(request) as Promise<StoredWorldRecord[]>,
+        done,
+      ]);
       return records;
     });
   }
@@ -48,8 +50,10 @@ export class IndexedDbWorldStorage implements WorldStorage {
       const transaction = database.transaction(WORLDS_STORE, 'readonly');
       const done = transactionDone(transaction);
       const request = transaction.objectStore(WORLDS_STORE).get(id);
-      const record = await requestResult(request) as StoredWorldRecord | undefined;
-      await done;
+      const [record] = await Promise.all([
+        requestResult(request) as Promise<StoredWorldRecord | undefined>,
+        done,
+      ]);
       return record ?? null;
     });
   }
@@ -77,8 +81,10 @@ export class IndexedDbWorldStorage implements WorldStorage {
       const transaction = database.transaction(META_STORE, 'readonly');
       const done = transactionDone(transaction);
       const request = transaction.objectStore(META_STORE).get('active-world');
-      const meta = await requestResult(request) as PersistenceMeta | undefined;
-      await done;
+      const [meta] = await Promise.all([
+        requestResult(request) as Promise<PersistenceMeta | undefined>,
+        done,
+      ]);
       return meta?.worldId ?? null;
     });
   }
@@ -106,8 +112,15 @@ export class IndexedDbWorldStorage implements WorldStorage {
   }
 
   public close(): void {
-    void this.databasePromise?.then((database) => database.close());
+    const pending = this.databasePromise;
     this.databasePromise = null;
+
+    if (pending) {
+      void pending.then(
+        (database) => database.close(),
+        () => undefined,
+      );
+    }
   }
 
   private async run<T>(
@@ -130,7 +143,11 @@ export class IndexedDbWorldStorage implements WorldStorage {
       );
     }
 
-    this.databasePromise ??= new Promise((resolve, reject) => {
+    if (this.databasePromise) {
+      return this.databasePromise;
+    }
+
+    const openPromise = new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.addEventListener('upgradeneeded', () => {
@@ -151,7 +168,13 @@ export class IndexedDbWorldStorage implements WorldStorage {
 
       request.addEventListener('success', () => {
         const database = request.result;
-        database.addEventListener('versionchange', () => database.close());
+        database.addEventListener('versionchange', () => {
+          database.close();
+
+          if (this.databasePromise === openPromise) {
+            this.databasePromise = null;
+          }
+        });
         resolve(database);
       }, { once: true });
       request.addEventListener('error', () => reject(request.error), { once: true });
@@ -160,6 +183,14 @@ export class IndexedDbWorldStorage implements WorldStorage {
       }, { once: true });
     });
 
-    return this.databasePromise;
+    this.databasePromise = openPromise;
+
+    void openPromise.catch(() => {
+      if (this.databasePromise === openPromise) {
+        this.databasePromise = null;
+      }
+    });
+
+    return openPromise;
   }
 }
