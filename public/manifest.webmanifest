@@ -1,0 +1,33 @@
+{
+  "id": "/loop/",
+  "name": "Loop — Visual Music Playground",
+  "short_name": "Loop",
+  "description": "A visual music playground for making beats, loops, and soundscapes by playing with living sound objects.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07070b",
+  "theme_color": "#0a0a0f",
+  "orientation": "any",
+  "categories": ["music", "entertainment", "games"],
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
