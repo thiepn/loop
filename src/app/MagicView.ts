@@ -7,6 +7,7 @@ import { effectFieldLabel } from '../core/world/EffectField';
 import { playgroundToyLabel } from '../core/world/PlaygroundToy';
 import { soundById } from '../core/sounds/coreCatalog';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface MagicViewCallbacks {
   readonly onOpenRemix: () => void;
@@ -82,6 +83,7 @@ export class MagicView {
   private readonly shell: HTMLElement;
   private readonly remixButton: HTMLButtonElement;
   private readonly intentBackdrop: HTMLElement;
+  private readonly intentFocus: ModalFocusController;
   private readonly previewBar: HTMLElement;
   private readonly previewTitle: HTMLElement;
   private readonly previewSummary: HTMLElement;
@@ -127,6 +129,10 @@ export class MagicView {
     `;
     shell.append(intentBackdrop);
     this.intentBackdrop = intentBackdrop;
+    this.intentFocus = new ModalFocusController(intentBackdrop, {
+      onEscape: callbacks.onCloseRemix,
+      initialFocusSelector: '[data-magic-intent-close]',
+    });
 
     const intentGrid = intentBackdrop.querySelector<HTMLElement>('[data-magic-intents]');
     if (!intentGrid) {
@@ -163,7 +169,7 @@ export class MagicView {
     previewBar.className = 'magic-preview-bar';
     previewBar.hidden = true;
     previewBar.innerHTML = `
-      <div class="magic-preview-copy">
+      <div class="magic-preview-copy" role="status" aria-live="polite" aria-atomic="true">
         <span>Magic preview</span>
         <strong data-magic-preview-title>Magic</strong>
         <small data-magic-preview-summary>Variation ready</small>
@@ -215,6 +221,7 @@ export class MagicView {
 
   public render(state: Readonly<AppState>): void {
     this.intentBackdrop.hidden = !state.magicIntentOpen;
+    this.intentFocus.sync(state.magicIntentOpen);
     this.shell.classList.toggle(
       'magic-preview-active',
       Boolean(state.magicSession),
@@ -242,6 +249,7 @@ export class MagicView {
   }
 
   public destroy(): void {
+    this.intentFocus.destroy();
     this.shell.classList.remove('magic-preview-active');
     this.remixButton.remove();
     this.intentBackdrop.remove();
@@ -257,6 +265,7 @@ export class MagicView {
       button.type = 'button';
       button.textContent = strength.label;
       button.classList.toggle('is-active', strength.id === selected);
+      button.setAttribute('aria-pressed', String(strength.id === selected));
       button.addEventListener('click', () => {
         this.callbacks.onStrength(strength.id);
       });
