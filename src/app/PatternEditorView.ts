@@ -268,6 +268,7 @@ export class PatternEditorView {
       button.type = 'button';
       button.textContent = label;
       button.classList.toggle('is-active', value === selected);
+      button.setAttribute('aria-pressed', String(value === selected));
       button.addEventListener('click', () => this.callbacks.onGroove(orbId, value));
       this.grooveControls.append(button);
     }
