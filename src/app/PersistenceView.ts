@@ -50,12 +50,12 @@ export class PersistenceView {
     root: HTMLElement,
     private readonly callbacks: PersistenceViewCallbacks,
   ) {
-    const topbar = root.querySelector<HTMLElement>('.playground-topbar');
-    const playButton = topbar?.querySelector<HTMLElement>('[data-play]');
+    const topbarActions = root.querySelector<HTMLElement>('[data-topbar-actions]');
+    const playButton = topbarActions?.querySelector<HTMLElement>('[data-play]');
     const dock = root.querySelector<HTMLElement>('.playground-dock');
     const shell = root.querySelector<HTMLElement>('.playground-shell');
 
-    if (!topbar || !playButton || !dock || !shell) {
+    if (!topbarActions || !playButton || !dock || !shell) {
       throw new Error('Persistence view requires the playground shell.');
     }
 
@@ -67,7 +67,7 @@ export class PersistenceView {
       <button type="button" data-history-redo aria-label="Redo">↷</button>
     `;
 
-    topbar.insertBefore(status, playButton);
+    topbarActions.insertBefore(status, playButton);
 
     const autosaveStatus = status.querySelector<HTMLElement>('[data-autosave-status]');
     const undoButton = status.querySelector<HTMLButtonElement>('[data-history-undo]');
