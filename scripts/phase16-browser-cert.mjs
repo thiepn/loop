@@ -699,10 +699,19 @@ async function main() {
     client?.close();
     chrome.kill('SIGTERM');
     preview.kill('SIGTERM');
-    await rm(USER_DATA_DIR, {
-      recursive: true,
-      force: true,
-    });
+
+    await delay(250);
+
+    try {
+      await rm(USER_DATA_DIR, {
+        recursive: true,
+        force: true,
+        maxRetries: 3,
+        retryDelay: 100,
+      });
+    } catch {
+      // Runner cleanup is best-effort and is not a product certification signal.
+    }
   }
 }
 
