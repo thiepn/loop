@@ -26,7 +26,6 @@ import type {
   RenderOrbCrossInteraction,
   RenderOrbInteraction,
   RenderToyCrossInteraction,
-  RenderTrailToyInfluence,
   RenderVector,
 } from './RenderTypes';
 
@@ -336,7 +335,11 @@ function strongestFieldAtPoint(
     }
   }
 
-  return strongest && strongest.amount > 0.03
+  if (!strongest) {
+    return null;
+  }
+
+  return strongest.amount > 0.03
     ? strongest
     : null;
 }
@@ -348,6 +351,7 @@ export function deriveLinkCrossInteraction(
   fields: readonly EffectFieldDocument[],
   toys: readonly PlaygroundToyDocument[],
 ): RenderLinkCrossInteraction {
+  void link;
   const effects = sampleLinkEffects(
     source,
     target,
