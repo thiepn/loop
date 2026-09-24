@@ -20,6 +20,8 @@ function durationForEvent(event: VisualTransientEvent): number {
       return 520;
     case 'link-pulse':
       return 320;
+    case 'pointer-disturbance':
+      return 720;
   }
 }
 
@@ -30,6 +32,14 @@ export class VisualEventBridge {
     event: VisualTransientEvent,
     startedAtMs: number,
   ): void {
+    if (event.kind === 'pointer-disturbance') {
+      for (let index = this.events.length - 1; index >= 0; index -= 1) {
+        if (this.events[index]?.event.kind === 'pointer-disturbance') {
+          this.events.splice(index, 1);
+        }
+      }
+    }
+
     this.events.push({
       event,
       startedAtMs,

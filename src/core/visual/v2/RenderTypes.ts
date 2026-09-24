@@ -7,6 +7,42 @@ import type { SoundRole } from '../../sounds/SoundDefinition';
 
 export type RendererKind = 'webgl2' | 'canvas2d' | 'none';
 
+export type RenderRgb = readonly [
+  red: number,
+  green: number,
+  blue: number,
+];
+
+export interface RenderEnvironment {
+  readonly primary: RenderRgb;
+  readonly secondary: RenderRgb;
+  readonly density: number;
+  readonly ambience: number;
+  readonly particleDensity: number;
+  readonly seed: number;
+}
+
+export interface EnvironmentDynamics {
+  readonly energy: number;
+  readonly bassPressure: number;
+  readonly transient: number;
+  readonly eventPosition: NormalizedPoint;
+  readonly eventStrength: number;
+  readonly pointerPosition: NormalizedPoint;
+  readonly pointerDelta: NormalizedPoint;
+  readonly pointerStrength: number;
+}
+
+export interface EnvironmentParticle {
+  readonly x: number;
+  readonly y: number;
+  readonly depth: number;
+  readonly size: number;
+  readonly alpha: number;
+  readonly phase: number;
+  readonly near: boolean;
+}
+
 export interface RenderOrb {
   readonly id: string;
   readonly role: SoundRole;
@@ -51,6 +87,7 @@ export interface RenderScene {
   readonly toys: readonly RenderToy[];
   readonly links: readonly RenderLink[];
   readonly listener: NormalizedPoint;
+  readonly environment: RenderEnvironment;
 }
 
 export interface RenderViewport {
@@ -69,6 +106,12 @@ export type VisualTransientEvent =
   | {
       readonly kind: 'link-pulse';
       readonly linkId: string;
+      readonly intensity: number;
+    }
+  | {
+      readonly kind: 'pointer-disturbance';
+      readonly position: NormalizedPoint;
+      readonly delta: NormalizedPoint;
       readonly intensity: number;
     };
 

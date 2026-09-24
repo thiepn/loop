@@ -474,7 +474,11 @@ export class VisualSystemView {
 
   private syncAmbientParticles(): void {
     const profile = profileForVisualPreferences(this.preferences);
-    const desired = profile.ambientParticleCount;
+    const rendererActive = this.shell.dataset.rendererV2 === 'webgl2'
+      || this.shell.dataset.rendererV2 === 'canvas2d';
+    const desired = rendererActive
+      ? 0
+      : profile.ambientParticleCount;
     const current = this.ambientLayer.children.length;
 
     if (current > desired) {

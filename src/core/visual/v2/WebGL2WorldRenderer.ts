@@ -9,6 +9,8 @@ import {
   type RenderColor,
 } from './RenderPalette';
 import { curvedLinkPoints } from './LinkGeometry';
+import { deriveEnvironmentDynamics } from './EnvironmentModel';
+import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
 import {
   listenerDiameterPixels,
   orbDiameterPixels,
@@ -221,6 +223,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   public readonly kind = 'webgl2' as const;
   private disc: DiscProgramResources | null = null;
   private line: ProgramResources | null = null;
+  private environment: WebGLEnvironmentLayer | null = null;
   private viewport: RenderViewport = {
     width: 1,
     height: 1,
@@ -247,9 +250,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     events: readonly RenderEventSample[],
     timestampMs: number,
   ): void {
-    void preferences;
-    void timestampMs;
-
     const disc = this.disc;
     const line = this.line;
 
@@ -261,6 +261,11 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     const height = this.canvas.height;
     const dpr = this.viewport.dpr;
     const minDimension = Math.min(width, height);
+    const dynamics = deriveEnvironmentDynamics(
+      scene,
+      events,
+      preferences,
+    );
     const discVertices: number[] = [];
     const lineVertices: number[] = [];
 
@@ -432,10 +437,22 @@ export class WebGL2WorldRenderer implements WorldRenderer {
 
     const gl = this.gl;
     gl.disable(gl.DEPTH_TEST);
+    gl.clearColor(0.01, 0.011, 0.021, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    this.environment?.render(
+      scene.environment,
+      dynamics,
+      preferences,
+      timestampMs,
+      width,
+      height,
+      scene.playing,
+      scene.recording,
+    );
+
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
 
     if (lineVertices.length > 0) {
       this.drawLines(line, lineVertices, width, height);
@@ -485,9 +502,14 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       colorLocation: gl.getAttribLocation(lineProgram, 'a_color'),
       resolutionLocation: requiredUniform(gl, lineProgram, 'u_resolution'),
     };
+
+    this.environment = new WebGLEnvironmentLayer(gl);
   }
 
   private releaseResources(): void {
+    this.environment?.destroy();
+    this.environment = null;
+
     if (this.disc) {
       this.gl.deleteBuffer(this.disc.buffer);
       this.gl.deleteProgram(this.disc.program);
@@ -627,6 +649,10 @@ export class WebGL2WorldRenderer implements WorldRenderer {
           fade * 0.22 * event.intensity,
         ),
       );
+      return;
+    }
+
+    if (event.kind === 'pointer-disturbance') {
       return;
     }
 

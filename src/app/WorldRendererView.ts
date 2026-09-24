@@ -59,10 +59,64 @@ export class WorldRendererView {
   private currentWorldId: string | null = null;
   private lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
   private externalFrameDriverActive = false;
+  private lastPointerPosition: NormalizedPoint | null = null;
+  private lastPointerAtMs = 0;
 
   private readonly handleWindowResize = () => {
     this.syncViewport();
     this.requestRender();
+  };
+
+  private readonly handlePointerMove = (event: PointerEvent) => {
+    const rect = this.worldCanvas.getBoundingClientRect();
+
+    if (rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+
+    const position = {
+      x: Math.max(
+        0,
+        Math.min(1, (event.clientX - rect.left) / rect.width),
+      ),
+      y: Math.max(
+        0,
+        Math.min(1, (event.clientY - rect.top) / rect.height),
+      ),
+    };
+    const now = performance.now();
+    const previous = this.lastPointerPosition;
+    const elapsed = Math.max(8, now - this.lastPointerAtMs);
+    const delta = previous
+      ? {
+          x: Math.max(-0.12, Math.min(0.12, position.x - previous.x)),
+          y: Math.max(-0.12, Math.min(0.12, position.y - previous.y)),
+        }
+      : { x: 0, y: 0 };
+    const speed = previous
+      ? Math.hypot(delta.x, delta.y) * 1000 / elapsed
+      : 0;
+
+    this.lastPointerPosition = position;
+    this.lastPointerAtMs = now;
+    this.events.emit(
+      {
+        kind: 'pointer-disturbance',
+        position,
+        delta,
+        intensity: Math.max(
+          0.16,
+          Math.min(1, 0.18 + speed * 0.42),
+        ),
+      },
+      now,
+    );
+    this.requestRender();
+  };
+
+  private readonly handlePointerLeave = () => {
+    this.lastPointerPosition = null;
+    this.lastPointerAtMs = 0;
   };
 
   private readonly handleContextLost = (event: Event) => {
@@ -126,6 +180,21 @@ export class WorldRendererView {
     canvas.addEventListener(
       'webglcontextrestored',
       this.handleContextRestored,
+    );
+    worldCanvas.addEventListener(
+      'pointermove',
+      this.handlePointerMove,
+      { passive: true },
+    );
+    worldCanvas.addEventListener(
+      'pointerdown',
+      this.handlePointerMove,
+      { passive: true },
+    );
+    worldCanvas.addEventListener(
+      'pointerleave',
+      this.handlePointerLeave,
+      { passive: true },
     );
 
     if (typeof ResizeObserver !== 'undefined') {
@@ -292,6 +361,8 @@ export class WorldRendererView {
     this.toyOverrides.clear();
     this.events.clear();
     this.lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
+    this.lastPointerPosition = null;
+    this.lastPointerAtMs = 0;
     this.rebuildScene();
   }
 
@@ -321,6 +392,18 @@ export class WorldRendererView {
     this.canvas.removeEventListener(
       'webglcontextrestored',
       this.handleContextRestored,
+    );
+    this.worldCanvas.removeEventListener(
+      'pointermove',
+      this.handlePointerMove,
+    );
+    this.worldCanvas.removeEventListener(
+      'pointerdown',
+      this.handlePointerMove,
+    );
+    this.worldCanvas.removeEventListener(
+      'pointerleave',
+      this.handlePointerLeave,
     );
     this.renderer.destroy();
     this.canvas.remove();

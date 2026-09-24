@@ -3,6 +3,7 @@ import type { EffectFieldDocument } from '../../world/EffectField';
 import type { PlaygroundToyDocument } from '../../world/PlaygroundToy';
 import type { NormalizedPoint } from '../../world/SoundOrb';
 import type { RenderLink, RenderScene } from './RenderTypes';
+import { deriveWorldEnvironment } from './EnvironmentModel';
 
 export interface SceneProjectionOptions {
   readonly selectedOrbId: string | null;
@@ -112,5 +113,6 @@ export function projectWorldToRenderScene(
     toys,
     links,
     listener: { x: 0.5, y: 0.5 },
+    environment: deriveWorldEnvironment(world),
   };
 }
