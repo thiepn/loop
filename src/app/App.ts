@@ -1,5 +1,10 @@
 import { audioEngine } from '../core/audio/AudioEngine';
 import {
+  MasterRecorder,
+  type RecordingResult,
+} from '../core/audio/MasterRecorder';
+import { convertRecordingToWav } from '../core/audio/RecordingExport';
+import {
   decodeLoopBackup,
   encodeLoopBackup,
 } from '../core/persistence/Backup';
@@ -94,6 +99,7 @@ import {
   toggleSoundOrbMuted,
 } from '../core/world/WorldActions';
 import { MAX_SOUND_ORBS, type NormalizedPoint } from '../core/world/SoundOrb';
+import { CaptureView } from './CaptureView';
 import { EffectFieldView } from './EffectFieldView';
 import { HomeView } from './HomeView';
 import { LinkView } from './LinkView';
@@ -110,6 +116,7 @@ export class App {
   private unsubscribeLinkActivity: (() => void) | null = null;
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
+  private captureView: CaptureView | null = null;
   private effectFieldView: EffectFieldView | null = null;
   private linkView: LinkView | null = null;
   private magicView: MagicView | null = null;
@@ -125,6 +132,11 @@ export class App {
   private readonly fieldPreviewOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
   private readonly activityTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly masterRecorder = new MasterRecorder();
+  private captureResult: RecordingResult | null = null;
+  private captureWavBlob: Blob | null = null;
+  private capturePreviewUrl: string | null = null;
+  private captureTimer: ReturnType<typeof setInterval> | null = null;
   private readonly storage = new IndexedDbWorldStorage();
   private readonly repository = new WorldRepository(this.storage);
   private readonly history = new WorldHistory(appStore.getState().world);
@@ -139,6 +151,13 @@ export class App {
   private readonly handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
       void this.flushAutosave();
+
+      if (this.masterRecorder.isRecording) {
+        void this.stopCapture(
+          false,
+          'Recording stopped when Loop went into the background.',
+        );
+      }
     }
   };
   private readonly handleHistoryShortcut = (event: KeyboardEvent) => {
@@ -209,6 +228,7 @@ export class App {
 
   public destroy(): void {
     this.clearActivityTimers();
+    this.discardCapture();
     this.cancelAutosave();
     this.cancelSnapshotRecall();
     this.cancelMotionLoop();
@@ -225,6 +245,9 @@ export class App {
 
     this.persistenceView?.destroy();
     this.persistenceView = null;
+
+    this.captureView?.destroy();
+    this.captureView = null;
 
     this.motionView?.destroy();
     this.motionView = null;
@@ -265,6 +288,9 @@ export class App {
       this.persistenceView?.destroy();
       this.persistenceView = null;
 
+      this.captureView?.destroy();
+      this.captureView = null;
+
       this.motionView?.destroy();
       this.motionView = null;
 
@@ -295,6 +321,7 @@ export class App {
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
+    this.captureView?.render(state, this.root);
     this.effectFieldView?.render(state);
     this.linkView?.render(state);
     this.magicView?.render(state);
@@ -470,6 +497,31 @@ export class App {
         });
       },
     });
+
+    this.captureView = new CaptureView(
+      this.root,
+      this.capabilities.recording,
+      {
+        onStart: () => {
+          void this.startCapture();
+        },
+        onStop: () => {
+          void this.stopCapture();
+        },
+        onCancel: () => {
+          void this.cancelCapture();
+        },
+        onDownloadOriginal: () => {
+          this.downloadCapture(false);
+        },
+        onDownloadWav: () => {
+          this.downloadCapture(true);
+        },
+        onDiscard: () => {
+          this.discardCapture();
+        },
+      },
+    );
 
     this.effectFieldView = new EffectFieldView(this.root, {
       onOpenPalette: () => {
