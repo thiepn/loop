@@ -223,14 +223,26 @@ export class WorldRepository {
   ): Promise<readonly WorldDocument[]> {
     const imported: WorldDocument[] = [];
 
-    for (const [index, world] of worlds.entries()) {
-      const copy = duplicateWorldDocument(
-        world,
-        `${world.name} Imported`,
-        now + index,
-      );
-      await this.saveWorld(copy, now + index);
-      imported.push(copy);
+    try {
+      for (const [index, world] of worlds.entries()) {
+        const copy = duplicateWorldDocument(
+          world,
+          `${world.name} Imported`,
+          now + index,
+        );
+        await this.saveWorld(copy, now + index);
+        imported.push(copy);
+      }
+    } catch (error) {
+      for (const world of imported) {
+        try {
+          await this.storage.deleteWorldRecord(world.id);
+        } catch {
+          // Rollback is best-effort; preserve the original import failure.
+        }
+      }
+
+      throw error;
     }
 
     return imported;
