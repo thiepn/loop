@@ -13,6 +13,7 @@ import { soundById } from '../core/sounds/coreCatalog';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface LinkViewCallbacks {
   readonly onCloseEditor: () => void;
@@ -118,7 +119,7 @@ export class LinkView {
             <h2 id="link-editor-title" data-link-editor-title>Link a sound</h2>
             <p>Choose what this sound should react to.</p>
           </div>
-          <button class="link-editor-close" type="button" data-link-close aria-label="Close Link editor">×</button>
+          <button class="link-editor-close" type="button" data-link-close aria-label="Close Link editor">${loopIcon('close')}</button>
         </header>
 
         <div class="link-editor-section">
@@ -171,7 +172,7 @@ export class LinkView {
         <small data-link-selection-pair>Source → Target</small>
       </div>
       <div class="link-selection-actions">
-        <button class="danger-action" type="button" data-link-delete>Delete</button>
+        <button class="danger-action" type="button" data-link-delete>${loopIcon('trash')}<span>Delete</span></button>
       </div>
     `;
     shell.append(selectionPanel);
@@ -590,6 +591,7 @@ export class LinkView {
       return;
     }
 
+    this.selectionPanel.dataset.linkType = selected.type;
     this.selectionName.textContent = linkLabel(selected.type);
     this.selectionPair.textContent = `${orbName(state, selected.sourceOrbId)} → ${orbName(state, selected.targetOrbId)}`;
   }
