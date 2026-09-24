@@ -363,6 +363,25 @@ export class EffectFieldView {
       }
 
       const amount = event.shiftKey ? 0.035 : 0.015;
+
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        this.callbacks.onResizeCommit(
+          field.id,
+          current.radius + amount,
+        );
+        return;
+      }
+
+      if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        this.callbacks.onResizeCommit(
+          field.id,
+          current.radius - amount,
+        );
+        return;
+      }
+
       let dx = 0;
       let dy = 0;
 
@@ -408,7 +427,7 @@ export class EffectFieldView {
     element.setAttribute('aria-pressed', String(selected));
     element.setAttribute(
       'aria-label',
-      `${effectFieldLabel(field.type)} field. Drag to move. Use the corner to resize.`,
+      `${effectFieldLabel(field.type)} field. Drag or use arrow keys to move. Use plus and minus to resize.`,
     );
 
     const name = element.querySelector<HTMLElement>('.field-label strong');
