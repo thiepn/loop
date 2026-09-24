@@ -9,6 +9,7 @@ import {
 } from '../core/world/EffectField';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface EffectFieldCallbacks {
   readonly onOpenPalette: () => void;
@@ -51,6 +52,7 @@ export class EffectFieldView {
   private readonly layer: HTMLElement;
   private readonly fieldElements = new Map<string, HTMLElement>();
   private readonly palette: HTMLElement;
+  private readonly paletteFocus: ModalFocusController;
   private readonly fieldPanel: HTMLElement;
   private readonly fieldPanelName: HTMLElement;
   private readonly effectsButton: HTMLButtonElement;
@@ -139,6 +141,10 @@ export class EffectFieldView {
     `;
     root.querySelector<HTMLElement>('.playground-shell')?.append(palette);
     this.palette = palette;
+    this.paletteFocus = new ModalFocusController(palette, {
+      onEscape: callbacks.onClosePalette,
+      initialFocusSelector: '[data-effects-close]',
+    });
 
     palette.querySelector<HTMLButtonElement>('[data-effects-close]')?.addEventListener('click', callbacks.onClosePalette);
     palette.addEventListener('pointerdown', (event) => {
@@ -153,6 +159,7 @@ export class EffectFieldView {
     this.root.dataset.selectedFieldId = state.selectedFieldId ?? '';
     this.effectsButton.disabled = state.world.effectFields.length >= MAX_EFFECT_FIELDS;
     this.palette.hidden = !state.effectPaletteOpen;
+    this.paletteFocus.sync(state.effectPaletteOpen);
 
     this.syncFields(state);
     this.renderFieldPanel(state);
@@ -193,6 +200,7 @@ export class EffectFieldView {
   }
 
   public destroy(): void {
+    this.paletteFocus.destroy();
     this.gesture = null;
     this.fieldElements.clear();
     this.layer.remove();
@@ -242,6 +250,13 @@ export class EffectFieldView {
       </span>
       <span class="field-resize-handle" aria-hidden="true"></span>
     `;
+
+    element.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.callbacks.onSelectField(field.id);
+      }
+    });
 
     element.addEventListener('pointerdown', (event) => {
       if (event.button !== 0 && event.pointerType === 'mouse') {
@@ -390,6 +405,7 @@ export class EffectFieldView {
     element.style.width = `${diameterPercent}%`;
     element.style.height = `${diameterPercent}%`;
     element.classList.toggle('is-selected', selected);
+    element.setAttribute('aria-pressed', String(selected));
     element.setAttribute(
       'aria-label',
       `${effectFieldLabel(field.type)} field. Drag to move. Use the corner to resize.`,
