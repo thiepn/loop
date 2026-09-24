@@ -56,6 +56,30 @@ export interface EnvironmentParticle {
   readonly near: boolean;
 }
 
+export interface RenderTrailToyInfluence {
+  readonly type: PlaygroundToyType;
+  readonly amount: number;
+}
+
+export interface RenderTrailPoint {
+  readonly position: NormalizedPoint;
+  readonly timestampMs: number;
+  readonly speed: number;
+  readonly acceleration: number;
+  readonly turn: number;
+  readonly velocity: RenderVector;
+  readonly fieldInfluence: EffectAmounts;
+  readonly toyInfluence: RenderTrailToyInfluence | null;
+  readonly breakBefore: boolean;
+}
+
+export interface RenderTrail {
+  readonly orbId: string;
+  readonly role: SoundRole;
+  readonly muted: boolean;
+  readonly points: readonly RenderTrailPoint[];
+}
+
 export interface RenderOrbMaterial {
   readonly energy: number;
   readonly brightness: number;
@@ -131,6 +155,7 @@ export interface RenderScene {
   readonly fields: readonly RenderField[];
   readonly toys: readonly RenderToy[];
   readonly links: readonly RenderLink[];
+  readonly trails: readonly RenderTrail[];
   readonly listener: NormalizedPoint;
   readonly environment: RenderEnvironment;
 }
