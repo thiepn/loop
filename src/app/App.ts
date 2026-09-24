@@ -1738,12 +1738,6 @@ export class App {
   private async togglePlayback(): Promise<void> {
     const state = appStore.getState();
 
-    if (state.world.soundOrbs.length === 0) {
-      this.openAddPalette();
-      appStore.patch({ message: 'Add a sound first.' });
-      return;
-    }
-
     if (state.playing) {
       this.playground?.stop();
       this.clearActivityTimers();
@@ -1752,6 +1746,12 @@ export class App {
         message: 'Paused.',
       });
       this.completePendingSnapshotRecall();
+      return;
+    }
+
+    if (state.world.soundOrbs.length === 0) {
+      this.openAddPalette();
+      appStore.patch({ message: 'Add a sound first.' });
       return;
     }
 
@@ -1935,6 +1935,13 @@ export class App {
       return;
     }
 
+    const becameEmpty = world.soundOrbs.length === 0;
+
+    if (becameEmpty && current.playing) {
+      this.playground?.stop();
+      this.clearActivityTimers();
+    }
+
     appStore.patch({
       world,
       selectedOrbId: current.selectedOrbId === orbId ? null : current.selectedOrbId,
@@ -1945,9 +1952,10 @@ export class App {
       motionEditorOrbId: current.motionEditorOrbId === orbId ? null : current.motionEditorOrbId,
       linkEditorSourceOrbId: current.linkEditorSourceOrbId === orbId ? null : current.linkEditorSourceOrbId,
       linkEditorTargetOrbId: current.linkEditorTargetOrbId === orbId ? null : current.linkEditorTargetOrbId,
-      message: world.soundOrbs.length > 0
-        ? 'Sound removed.'
-        : 'Your World is quiet. Add something.',
+      playing: becameEmpty ? false : current.playing,
+      message: becameEmpty
+        ? 'Your World is quiet. Add something.'
+        : 'Sound removed.',
     });
   }
 
