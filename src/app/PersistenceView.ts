@@ -90,6 +90,8 @@ export class PersistenceView {
     snapshotButton.type = 'button';
     snapshotButton.className = 'snapshots-button';
     snapshotButton.innerHTML = '<span aria-hidden="true">◫</span> Snapshots';
+    snapshotButton.setAttribute('aria-haspopup', 'dialog');
+    snapshotButton.setAttribute('aria-expanded', 'false');
     snapshotButton.addEventListener('click', callbacks.onOpenSnapshots);
     dock.append(snapshotButton);
     this.snapshotButton = snapshotButton;
@@ -201,6 +203,7 @@ export class PersistenceView {
     this.snapshotButton.disabled = locked;
 
     this.backdrop.hidden = !state.snapshotsOpen;
+    this.snapshotButton.setAttribute('aria-expanded', String(state.snapshotsOpen));
     this.modalFocus.sync(state.snapshotsOpen);
     this.worldName.textContent = state.world.name;
 
