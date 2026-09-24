@@ -96,7 +96,7 @@ Implement:
 - selection spotlighting;
 - long-press visual feedback.
 
-## Phase 6 — Motion Trails & Kinetic Graphics
+## Phase 6 — Motion Trails & Kinetic Graphics — implemented; certification pending
 
 Implement:
 - spline/ribbon trails;
