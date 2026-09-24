@@ -107,7 +107,7 @@ Implement:
 - toy-modified trajectories;
 - reduced-motion fallback.
 
-## Phase 7 — Effect Fields V2
+## Phase 7 — Effect Fields V2 — implemented; certification pending
 
 Implement:
 - Space;
