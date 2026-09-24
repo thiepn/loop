@@ -4,13 +4,18 @@ import {
   encodeLoopBackup,
 } from '../src/core/persistence/Backup';
 import { PersistenceError } from '../src/core/persistence/PersistenceError';
+import { addSnapshot } from '../src/core/world/Snapshot';
 import { createStarterWorld } from '../src/core/world/StarterWorlds';
 import { WORLD_SCHEMA_VERSION } from '../src/core/world/World';
 
 describe('Loop backup', () => {
   it('round-trips current Worlds', () => {
     const worlds = [
-      createStarterWorld('beat', 100),
+      addSnapshot(
+        createStarterWorld('beat', 100),
+        'Groove',
+        150,
+      ).world,
       createStarterWorld('dreamy', 200),
     ];
 
