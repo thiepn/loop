@@ -89,6 +89,8 @@ export class MagicView {
   private readonly previewSummary: HTMLElement;
   private readonly strengthOptions: HTMLElement;
   private readonly undoButton: HTMLButtonElement;
+  private previewActive = false;
+  private previewReturnFocus: HTMLElement | null = null;
 
   public constructor(
     root: HTMLElement,
@@ -232,6 +234,7 @@ export class MagicView {
 
     const session = state.magicSession;
     this.previewBar.hidden = !session;
+    this.syncPreviewFocus(Boolean(session));
 
     if (session) {
       this.previewTitle.textContent = session.target.kind === 'world'
@@ -252,12 +255,54 @@ export class MagicView {
   }
 
   public destroy(): void {
+    this.previewActive = false;
+    this.previewReturnFocus = null;
     this.intentFocus.destroy();
     this.shell.classList.remove('magic-preview-active');
     this.remixButton.remove();
     this.intentBackdrop.remove();
     this.previewBar.remove();
     this.undoButton.remove();
+  }
+
+  private syncPreviewFocus(active: boolean): void {
+    if (active === this.previewActive) {
+      return;
+    }
+
+    this.previewActive = active;
+
+    if (active) {
+      const focused = document.activeElement;
+      this.previewReturnFocus = focused instanceof HTMLElement
+        ? focused
+        : null;
+
+      queueMicrotask(() => {
+        if (!this.previewActive) {
+          return;
+        }
+
+        this.previewBar
+          .querySelector<HTMLButtonElement>('[data-magic-keep]')
+          ?.focus();
+      });
+      return;
+    }
+
+    const previous = this.previewReturnFocus;
+    this.previewReturnFocus = null;
+
+    queueMicrotask(() => {
+      if (
+        !this.previewActive
+        && previous?.isConnected
+        && !previous.closest('[hidden]')
+        && !previous.hasAttribute('disabled')
+      ) {
+        previous.focus();
+      }
+    });
   }
 
   private renderStrengths(selected: MagicStrength): void {
