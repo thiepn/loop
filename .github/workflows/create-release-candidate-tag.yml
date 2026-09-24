@@ -3,15 +3,13 @@ name: Create Release Candidate Tag
 on:
   push:
     branches: [main]
-    paths:
-      - package.json
 
 permissions:
   contents: write
 
 concurrency:
   group: rc-tag-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   verify-and-tag:
@@ -19,7 +17,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout exact RC tree
+      - name: Checkout exact tree
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -34,45 +32,60 @@ jobs:
         shell: bash
         run: |
           VERSION="$(node -p "require('./package.json').version")"
-          if [[ ! "$VERSION" =~ ^1\.0\.0-rc\.[0-9]+$ ]]; then
-            echo "package.json version is not a Loop 1.0 release candidate: $VERSION" >&2
-            exit 1
+          if [[ "$VERSION" =~ ^1\.0\.0-rc\.[0-9]+$ ]]; then
+            echo "is_rc=true" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_rc=false" >> "$GITHUB_OUTPUT"
+            echo "Current package version is not an RC; tag workflow is a no-op."
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install release browsers
-        run: npx playwright install --with-deps chromium firefox webkit
-
-      - name: Unit, soak, type and build verification
-        run: |
-          npm run check
-          npm run build
-
-      - name: Browser performance certification
-        run: npm run cert:browser
-
-      - name: Release-candidate browser matrix
-        run: npm run test:rc
-
-      - name: Create annotated RC tag
+      - name: Check RC tag state
+        id: tag_state
+        if: steps.version.outputs.is_rc == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
         shell: bash
         run: |
+          git fetch --tags --force
+
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             EXISTING="$(git rev-list -n 1 "$TAG")"
-            if [[ "$EXISTING" != "$GITHUB_SHA" ]]; then
-              echo "$TAG already points to $EXISTING, not $GITHUB_SHA" >&2
-              exit 1
-            fi
-            echo "$TAG already exists on the certified commit."
-            exit 0
+            echo "needs_tag=false" >> "$GITHUB_OUTPUT"
+            echo "$TAG already exists at $EXISTING; no retagging will occur."
+          else
+            echo "needs_tag=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Install dependencies
+        if: steps.tag_state.outputs.needs_tag == 'true'
+        run: npm install
+
+      - name: Install release browsers
+        if: steps.tag_state.outputs.needs_tag == 'true'
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Unit, soak, type and build verification
+        if: steps.tag_state.outputs.needs_tag == 'true'
+        run: |
+          npm run check
+          npm run build
+
+      - name: Release-candidate browser matrix
+        if: steps.tag_state.outputs.needs_tag == 'true'
+        run: npm run test:rc
+
+      - name: Browser performance certification
+        if: steps.tag_state.outputs.needs_tag == 'true'
+        run: npm run cert:browser
+
+      - name: Create annotated RC tag
+        if: steps.tag_state.outputs.needs_tag == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" "$GITHUB_SHA" -m "Loop $TAG release candidate"
