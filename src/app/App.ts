@@ -178,6 +178,29 @@ export class App {
           'Recording stopped when Loop went into the background.',
         );
       }
+      return;
+    }
+
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+
+    const state = appStore.getState();
+    const runtime = audioEngine.getRuntime();
+
+    if (
+      state.playing
+      && runtime
+      && runtime.context.state !== 'running'
+    ) {
+      this.playground?.stop();
+      this.clearActivityTimers();
+      appStore.patch({
+        audio: runtime.context.state,
+        playing: false,
+        message: 'Playback was paused by the browser. Press Play to resume.',
+      });
+      this.completePendingSnapshotRecall();
     }
   };
   private readonly handleHistoryShortcut = (event: KeyboardEvent) => {
