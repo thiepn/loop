@@ -18,6 +18,13 @@ export type AppBootState = 'booting' | 'ready' | 'error';
 export type AppScreen = 'home' | 'playground';
 export type OnboardingStep = 'move' | 'near' | 'add' | 'done';
 
+export type CaptureStatus =
+  | 'idle'
+  | 'recording'
+  | 'processing'
+  | 'ready'
+  | 'error';
+
 export type PaletteState =
   | {
       readonly mode: 'add';
@@ -67,6 +74,14 @@ export interface AppState {
   readonly autosave: AutosaveStatus;
   readonly library: readonly WorldLibraryItem[];
   readonly snapshotsOpen: boolean;
+  readonly captureStatus: CaptureStatus;
+  readonly captureStartedAt: number | null;
+  readonly captureDurationMs: number;
+  readonly capturePreviewUrl: string | null;
+  readonly captureFormatLabel: string | null;
+  readonly captureWavAvailable: boolean;
+  readonly captureAutoStopped: boolean;
+  readonly captureError: string | null;
   readonly onboardingStep: OnboardingStep;
   readonly playing: boolean;
   readonly message: string;
@@ -95,6 +110,14 @@ export const appStore = new Store<AppState>({
   autosave: 'idle',
   library: [],
   snapshotsOpen: false,
+  captureStatus: 'idle',
+  captureStartedAt: null,
+  captureDurationMs: 0,
+  capturePreviewUrl: null,
+  captureFormatLabel: null,
+  captureWavAvailable: false,
+  captureAutoStopped: false,
+  captureError: null,
   onboardingStep: 'move',
   playing: false,
   message: 'Loading your Worlds…',
