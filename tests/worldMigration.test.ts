@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PersistenceError } from '../src/core/persistence/PersistenceError';
 import { migrateWorldDocument } from '../src/core/persistence/WorldMigration';
 import { WORLD_SCHEMA_VERSION } from '../src/core/world/World';
+import { addSnapshot } from '../src/core/world/Snapshot';
 import { createStarterWorld } from '../src/core/world/StarterWorlds';
 
 describe('WorldMigration', () => {
@@ -43,6 +44,22 @@ describe('WorldMigration', () => {
     expect(result.world.playgroundToys).toEqual([]);
     expect(result.world.links).toEqual([]);
     expect(result.world.snapshots).toEqual([]);
+  });
+
+  it('preserves typed v8 Snapshots during validation migration', () => {
+    const world = addSnapshot(
+      createStarterWorld('dreamy', 100),
+      'Keep me',
+      200,
+    ).world;
+
+    const result = migrateWorldDocument(world);
+
+    expect(result.world.snapshots).toHaveLength(1);
+    expect(result.world.snapshots[0]?.name).toBe('Keep me');
+    expect(result.world.snapshots[0]?.state.soundOrbs).toEqual(
+      world.soundOrbs,
+    );
   });
 
   it('drops a corrupt child record but preserves recoverable World data', () => {
