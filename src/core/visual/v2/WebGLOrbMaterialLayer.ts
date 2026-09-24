@@ -1,6 +1,7 @@
 import type { VisualPreferences } from '../VisualQuality';
 import type { SoundRole } from '../../sounds/SoundDefinition';
 import { ROLE_RENDER_COLORS } from './RenderPalette';
+import { transientOrbInteraction } from './InteractionModel';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import { orbDiameterPixels } from './RenderMetrics';
 import type {
@@ -23,9 +24,29 @@ const VERTEX_SOURCE = '#version 300 es\n'
   + 'uniform vec2 u_resolution;\n'
   + 'uniform vec2 u_center;\n'
   + 'uniform float u_radius;\n'
+  + 'uniform vec2 u_hover_offset;\n'
+  + 'uniform float u_hover;\n'
+  + 'uniform float u_grabbed;\n'
+  + 'uniform vec2 u_drag_dir;\n'
+  + 'uniform float u_drag_speed;\n'
+  + 'uniform vec2 u_settle_dir;\n'
+  + 'uniform float u_settle;\n'
+  + 'uniform float u_motion_scale;\n'
   + 'out vec2 v_local;\n'
   + 'void main() {\n'
-  + '  vec2 position = u_center + a_local * u_radius;\n'
+  + '  vec2 direction = length(u_drag_dir) > 0.001\n'
+  + '    ? normalize(u_drag_dir)\n'
+  + '    : vec2(1.0, 0.0);\n'
+  + '  vec2 perpendicular = vec2(-direction.y, direction.x);\n'
+  + '  float along = dot(a_local, direction);\n'
+  + '  float across = dot(a_local, perpendicular);\n'
+  + '  float stretch = u_drag_speed * u_motion_scale;\n'
+  + '  vec2 local = direction * along * (1.0 + stretch * 0.16)\n'
+  + '    + perpendicular * across * (1.0 - stretch * 0.07);\n'
+  + '  float lift = 1.0 + u_hover * 0.026 + u_grabbed * 0.055;\n'
+  + '  vec2 hoverShift = u_hover_offset * 4.0 * u_motion_scale;\n'
+  + '  vec2 settleShift = u_settle_dir * u_settle * u_radius * 0.11 * u_motion_scale;\n'
+  + '  vec2 position = u_center + hoverShift + settleShift + local * u_radius * lift;\n'
   + '  vec2 zeroToOne = position / u_resolution;\n'
   + '  vec2 clip = zeroToOne * 2.0 - 1.0;\n'
   + '  clip.y = -clip.y;\n'
@@ -49,10 +70,13 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_selected;\n'
   + 'uniform float u_focused;\n'
   + 'uniform float u_muted;\n'
+  + 'uniform float u_grabbed;\n'
+  + 'uniform float u_hover;\n'
+  + 'uniform float u_charge;\n'
+  + 'uniform float u_scene_selected;\n'
   + 'uniform float u_pulse;\n'
   + 'uniform float u_pulse_progress;\n'
   + 'uniform float u_detail;\n'
-  + 'uniform float u_motion_scale;\n'
   + 'uniform float u_time_ms;\n'
   + 'uniform float u_pattern[16];\n'
   + 'out vec4 out_color;\n'
@@ -167,7 +191,13 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '\n'
   + '  color += vec3(0.32, 0.34, 0.38)\n'
   + '    * (patternMark * (0.42 + u_detail * 0.58) + internal * 0.20 * u_detail);\n'
-  + '  color *= 1.0 + u_pulse * (0.16 + u_brightness * 0.16);\n'
+  + '  color *= 1.0\n'
+  + '    + u_pulse * (0.16 + u_brightness * 0.16)\n'
+  + '    + u_hover * 0.035\n'
+  + '    + u_grabbed * 0.075\n'
+  + '    + u_charge * 0.09;\n'
+  + '  color *= 1.0 - u_scene_selected * (1.0 - u_selected) * 0.10;\n'
+  + '  alpha *= 1.0 - u_scene_selected * (1.0 - u_selected) * 0.08;\n'
   + '  float pulseRing = u_pulse\n'
   + '    * smoothstep(0.035, 0.006, abs(d - (1.03 + u_pulse_progress * 0.24)));\n'
   + '  color += vec3(0.34, 0.38, 0.46) * pulseRing;\n'
@@ -181,6 +211,10 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '    alpha = max(alpha, satellites * 0.88);\n'
   + '  }\n'
   + '\n'
+  + '  float chargeRing = u_charge\n'
+  + '    * smoothstep(0.032, 0.005, abs(d - (1.06 + u_charge * 0.05)));\n'
+  + '  color += u_color.rgb * chargeRing * 0.48;\n'
+  + '  alpha = max(alpha, chargeRing * 0.72);\n'
   + '  float focusDash = step(0.0, sin(angle * 12.0));\n'
   + '  float focusRing = u_focused * focusDash\n'
   + '    * smoothstep(0.022, 0.004, abs(d - 1.10));\n'
@@ -319,6 +353,13 @@ export class WebGLOrbMaterialLayer {
   private readonly resolution: WebGLUniformLocation;
   private readonly center: WebGLUniformLocation;
   private readonly radius: WebGLUniformLocation;
+  private readonly hoverOffset: WebGLUniformLocation;
+  private readonly hover: WebGLUniformLocation;
+  private readonly grabbed: WebGLUniformLocation;
+  private readonly dragDir: WebGLUniformLocation;
+  private readonly dragSpeed: WebGLUniformLocation;
+  private readonly settleDir: WebGLUniformLocation;
+  private readonly settle: WebGLUniformLocation;
   private readonly color: WebGLUniformLocation;
   private readonly role: WebGLUniformLocation;
   private readonly energy: WebGLUniformLocation;
@@ -332,6 +373,8 @@ export class WebGLOrbMaterialLayer {
   private readonly selected: WebGLUniformLocation;
   private readonly focused: WebGLUniformLocation;
   private readonly muted: WebGLUniformLocation;
+  private readonly charge: WebGLUniformLocation;
+  private readonly sceneSelected: WebGLUniformLocation;
   private readonly pulse: WebGLUniformLocation;
   private readonly pulseProgress: WebGLUniformLocation;
   private readonly detail: WebGLUniformLocation;
@@ -356,6 +399,13 @@ export class WebGLOrbMaterialLayer {
     this.resolution = requiredUniform(gl, program, 'u_resolution');
     this.center = requiredUniform(gl, program, 'u_center');
     this.radius = requiredUniform(gl, program, 'u_radius');
+    this.hoverOffset = requiredUniform(gl, program, 'u_hover_offset');
+    this.hover = requiredUniform(gl, program, 'u_hover');
+    this.grabbed = requiredUniform(gl, program, 'u_grabbed');
+    this.dragDir = requiredUniform(gl, program, 'u_drag_dir');
+    this.dragSpeed = requiredUniform(gl, program, 'u_drag_speed');
+    this.settleDir = requiredUniform(gl, program, 'u_settle_dir');
+    this.settle = requiredUniform(gl, program, 'u_settle');
     this.color = requiredUniform(gl, program, 'u_color');
     this.role = requiredUniform(gl, program, 'u_role');
     this.energy = requiredUniform(gl, program, 'u_energy');
@@ -369,6 +419,8 @@ export class WebGLOrbMaterialLayer {
     this.selected = requiredUniform(gl, program, 'u_selected');
     this.focused = requiredUniform(gl, program, 'u_focused');
     this.muted = requiredUniform(gl, program, 'u_muted');
+    this.charge = requiredUniform(gl, program, 'u_charge');
+    this.sceneSelected = requiredUniform(gl, program, 'u_scene_selected');
     this.pulse = requiredUniform(gl, program, 'u_pulse');
     this.pulseProgress = requiredUniform(gl, program, 'u_pulse_progress');
     this.detail = requiredUniform(gl, program, 'u_detail');
@@ -428,6 +480,10 @@ export class WebGLOrbMaterialLayer {
       preferences.reduceMotion ? 0 : 1,
     );
     gl.uniform1f(this.detail, detail);
+    gl.uniform1f(
+      this.sceneSelected,
+      orbs.some((orb) => orb.selected) ? 1 : 0,
+    );
 
     for (const orb of orbs) {
       const diameter = orbDiameterPixels(
@@ -437,6 +493,10 @@ export class WebGLOrbMaterialLayer {
       );
       const base = ROLE_RENDER_COLORS[orb.role];
       const pulse = pulseForOrb(orb.id, events);
+      const transient = transientOrbInteraction(
+        orb.id,
+        events,
+      );
 
       gl.uniform2f(
         this.center,
@@ -444,6 +504,34 @@ export class WebGLOrbMaterialLayer {
         orb.position.y * height,
       );
       gl.uniform1f(this.radius, diameter * 0.52);
+      gl.uniform2f(
+        this.hoverOffset,
+        orb.interaction.hoverOffset.x,
+        orb.interaction.hoverOffset.y,
+      );
+      gl.uniform1f(
+        this.hover,
+        orb.interaction.hoverStrength,
+      );
+      gl.uniform1f(
+        this.grabbed,
+        orb.interaction.grabbed ? 1 : 0,
+      );
+      gl.uniform2f(
+        this.dragDir,
+        orb.interaction.dragVelocity.x,
+        orb.interaction.dragVelocity.y,
+      );
+      gl.uniform1f(
+        this.dragSpeed,
+        orb.interaction.dragSpeed,
+      );
+      gl.uniform2f(
+        this.settleDir,
+        transient.settleDirection.x,
+        transient.settleDirection.y,
+      );
+      gl.uniform1f(this.settle, transient.settle);
       gl.uniform4f(
         this.color,
         base[0],
@@ -463,6 +551,13 @@ export class WebGLOrbMaterialLayer {
       gl.uniform1f(this.selected, orb.selected ? 1 : 0);
       gl.uniform1f(this.focused, orb.focused ? 1 : 0);
       gl.uniform1f(this.muted, orb.muted ? 1 : 0);
+      gl.uniform1f(
+        this.charge,
+        Math.max(
+          transient.charge,
+          orb.interaction.charging ? 0.72 : 0,
+        ),
+      );
       gl.uniform1f(this.pulse, pulse.amount);
       gl.uniform1f(this.pulseProgress, pulse.progress);
       gl.uniform1fv(

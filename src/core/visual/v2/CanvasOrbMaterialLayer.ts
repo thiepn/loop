@@ -90,6 +90,8 @@ export class CanvasOrbMaterialLayer {
       ? 0
       : timestampMs * 0.001;
 
+    const hasSelection = orbs.some((orb) => orb.selected);
+
     for (const orb of orbs) {
       const diameter = orbDiameterPixels(
         orb.role,
@@ -97,11 +99,50 @@ export class CanvasOrbMaterialLayer {
         dpr,
       );
       const radius = diameter * 0.5;
-      const x = orb.position.x * width;
-      const y = orb.position.y * height;
+      const transient = transientOrbInteraction(
+        orb.id,
+        events,
+      );
+      const hoverShift = preferences.reduceMotion
+        ? { x: 0, y: 0 }
+        : {
+            x: orb.interaction.hoverOffset.x * 4 * dpr,
+            y: orb.interaction.hoverOffset.y * 4 * dpr,
+          };
+      const settleShift = preferences.reduceMotion
+        ? { x: 0, y: 0 }
+        : {
+            x: transient.settleDirection.x
+              * transient.settle
+              * radius
+              * 0.11,
+            y: transient.settleDirection.y
+              * transient.settle
+              * radius
+              * 0.11,
+          };
+      const x = orb.position.x * width
+        + hoverShift.x
+        + settleShift.x;
+      const y = orb.position.y * height
+        + hoverShift.y
+        + settleShift.y;
       const pulse = pulseForOrb(orb.id, events);
       const color = ROLE_RENDER_COLORS[orb.role];
 
+      this.context.save();
+      if (hasSelection && !orb.selected) {
+        this.context.globalAlpha *= 0.9;
+      }
+
+      this.drawLiftShadow(
+        orb,
+        x,
+        y,
+        radius,
+        dpr,
+        transient.charge,
+      );
       this.drawAura(
         x,
         y,
@@ -118,6 +159,7 @@ export class CanvasOrbMaterialLayer {
         color,
         pulse.amount,
         time,
+        transient.settle,
       );
 
       if (detail > 0.25) {
@@ -183,7 +225,66 @@ export class CanvasOrbMaterialLayer {
         this.context.lineWidth = Math.max(1, 1.25 * dpr);
         this.context.stroke();
       }
+
+      const charge = Math.max(
+        transient.charge,
+        orb.interaction.charging ? 0.72 : 0,
+      );
+
+      if (charge > 0.01) {
+        this.context.beginPath();
+        this.context.arc(
+          x,
+          y,
+          radius * (1.07 + charge * 0.05),
+          0,
+          Math.PI * 2,
+        );
+        this.context.strokeStyle = renderColorCss(
+          withAlpha(color, 0.24 + charge * 0.35),
+        );
+        this.context.lineWidth = Math.max(1, dpr * 1.4);
+        this.context.stroke();
+      }
+
+      this.context.restore();
     }
+  }
+
+  private drawLiftShadow(
+    orb: RenderOrb,
+    x: number,
+    y: number,
+    radius: number,
+    dpr: number,
+    charge: number,
+  ): void {
+    const lift = orb.interaction.hoverStrength * 0.35
+      + (orb.interaction.grabbed ? 0.75 : 0)
+      + Math.min(0.45, charge);
+
+    if (lift <= 0.01) {
+      return;
+    }
+
+    this.context.save();
+    this.context.beginPath();
+    this.context.ellipse(
+      x,
+      y + radius * (0.16 + lift * 0.08),
+      radius * (0.62 + lift * 0.08),
+      radius * (0.22 + lift * 0.03),
+      0,
+      0,
+      Math.PI * 2,
+    );
+    this.context.fillStyle = 'rgba(0, 0, 0, '
+      + Math.min(0.28, 0.08 + lift * 0.14).toFixed(3)
+      + ')';
+    this.context.shadowBlur = Math.max(0, 8 * dpr * lift);
+    this.context.shadowColor = 'rgba(0, 0, 0, 0.26)';
+    this.context.fill();
+    this.context.restore();
   }
 
   private drawAura(
@@ -232,9 +333,30 @@ export class CanvasOrbMaterialLayer {
     color: RenderColor,
     pulse: number,
     time: number,
+    settle: number,
   ): void {
     const points = orb.role === 'percussion' ? 18 : 34;
     this.context.save();
+
+    const direction = orb.interaction.dragVelocity;
+    const angle = Math.atan2(direction.y, direction.x);
+    const dragSpeed = preferencesScale(
+      orb.interaction.dragSpeed,
+      this.context,
+    );
+    const interactionScale = 1
+      + orb.interaction.hoverStrength * 0.025
+      + (orb.interaction.grabbed ? 0.055 : 0)
+      + Math.abs(settle) * 0.045;
+
+    this.context.translate(x, y);
+    this.context.rotate(angle);
+    this.context.scale(
+      interactionScale * (1 + dragSpeed * 0.16),
+      interactionScale * (1 - dragSpeed * 0.07),
+    );
+    this.context.rotate(-angle);
+    this.context.translate(-x, -y);
 
     if (orb.role === 'beat') {
       this.context.translate(x, y);
@@ -584,4 +706,13 @@ export class CanvasOrbMaterialLayer {
 
 function preferencesSafeTime(time: number): number {
   return Number.isFinite(time) ? time : 0;
+}
+
+
+function preferencesScale(
+  speed: number,
+  context: CanvasRenderingContext2D,
+): number {
+  void context;
+  return Math.max(0, Math.min(1, speed));
 }
