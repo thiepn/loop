@@ -13,7 +13,8 @@ import {
   deleteSoundOrb,
   moveSoundOrb,
 } from '../src/core/world/WorldActions';
-import { createEmptyWorld } from '../src/core/world/World';
+import { createEmptyWorld, type WorldDocument } from '../src/core/world/World';
+import { soundById } from '../src/core/sounds/coreCatalog';
 
 const PREFS = {
   quality: 'high' as const,
@@ -22,18 +23,43 @@ const PREFS = {
   reduceBloom: false,
 };
 
+function addAt(
+  world: WorldDocument,
+  soundId: string,
+  position: { x: number; y: number },
+) {
+  const sound = soundById(soundId);
+
+  if (!sound) {
+    throw new Error('Missing test sound: ' + soundId);
+  }
+
+  const result = addSoundOrb(world, sound);
+
+  return {
+    world: result.createdId
+      ? moveSoundOrb(
+          result.world,
+          result.createdId,
+          position,
+        )
+      : result.world,
+    createdId: result.createdId,
+  };
+}
+
 function worldWithObjects() {
   let world = createEmptyWorld({
     id: 'transition-world',
   });
 
-  const first = addSoundOrb(
+  const first = addAt(
     world,
     'beat-round-kick',
     { x: 0.25, y: 0.4 },
   );
   world = first.world;
-  const second = addSoundOrb(
+  const second = addAt(
     world,
     'bass-warm',
     { x: 0.7, y: 0.55 },
@@ -156,7 +182,7 @@ describe('Visual V2 state transition payloads', () => {
     });
 
     for (let index = 0; index < 12; index += 1) {
-      world = addSoundOrb(
+      world = addAt(
         world,
         index % 2 === 0
           ? 'beat-round-kick'
@@ -354,7 +380,7 @@ describe('Visual V2 transition frames', () => {
     let world = createEmptyWorld();
 
     for (let index = 0; index < 12; index += 1) {
-      world = addSoundOrb(
+      world = addAt(
         world,
         'melody-soft-pluck',
         {
