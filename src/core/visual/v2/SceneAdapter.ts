@@ -24,6 +24,13 @@ import {
   deriveFieldMaterial,
 } from './FieldMaterialModel';
 import { deriveOrbMaterial } from './OrbMaterialModel';
+import {
+  deriveCrossEnvironment,
+  deriveLinkCrossInteraction,
+  deriveOrbCouplings,
+  deriveOrbCrossInteractions,
+  deriveToyCrossInteraction,
+} from './CrossSystemModel';
 
 export interface SceneProjectionOptions {
   readonly selectedOrbId: string | null;
@@ -77,10 +84,32 @@ export function projectWorldToRenderScene(
     world,
     options.fieldOverrides,
   );
+  const toyDocuments = effectiveToys(
+    world,
+    options.toyOverrides,
+  );
+
+  for (const orb of world.soundOrbs) {
+    positions.set(
+      orb.id,
+      options.liveOrbPositions?.get(orb.id) ?? orb.position,
+    );
+  }
+
+  const orbCouplings = deriveOrbCouplings(
+    world.soundOrbs,
+    positions,
+  );
+  const orbCross = deriveOrbCrossInteractions(
+    world.soundOrbs,
+    positions,
+    options.orbInteractions,
+    toyDocuments,
+    orbCouplings,
+  );
 
   const orbs = world.soundOrbs.map((orb) => {
-    const position = options.liveOrbPositions?.get(orb.id) ?? orb.position;
-    positions.set(orb.id, position);
+    const position = positions.get(orb.id) ?? orb.position;
 
     return {
       id: orb.id,
@@ -91,6 +120,14 @@ export function projectWorldToRenderScene(
       focused: options.focusedOrbId === orb.id,
       interaction: options.orbInteractions?.get(orb.id)
         ?? IDLE_ORB_INTERACTION,
+      cross: orbCross.get(orb.id) ?? {
+        auraBlend: 0,
+        neighborLight: 0,
+        neighborDirection: { x: 0, y: 0 },
+        wakeStrength: 0,
+        wakeDirection: { x: 0, y: 0 },
+        toyInfluence: null,
+      },
       material: deriveOrbMaterial(
         orb,
         options.orbFieldInfluenceOverrides?.get(orb.id)
@@ -120,7 +157,7 @@ export function projectWorldToRenderScene(
     fieldIntersections,
   );
 
-  const toys = effectiveToys(world, options.toyOverrides).map(
+  const toys = toyDocuments.map(
     (toy) => ({
       id: toy.id,
       type: toy.type,
@@ -128,6 +165,12 @@ export function projectWorldToRenderScene(
       radius: toy.radius,
       selected: options.selectedToyId === toy.id,
       exitPosition: toy.exitPosition ?? null,
+      cross: deriveToyCrossInteraction(
+        toy,
+        fieldDocuments,
+        world.soundOrbs,
+        positions,
+      ),
     }),
   );
 
@@ -149,6 +192,13 @@ export function projectWorldToRenderScene(
       source,
       target,
       selected: options.selectedLinkId === link.id,
+      cross: deriveLinkCrossInteraction(
+        link,
+        source,
+        target,
+        fieldDocuments,
+        toyDocuments,
+      ),
     });
   }
 
@@ -162,6 +212,11 @@ export function projectWorldToRenderScene(
     fieldEnvironment,
     toys,
     links,
+    orbCouplings,
+    crossEnvironment: deriveCrossEnvironment(
+      toyDocuments,
+      orbCouplings,
+    ),
     trails: options.trails ?? [],
     listener: { x: 0.5, y: 0.5 },
     environment: deriveWorldEnvironment(world),

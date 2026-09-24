@@ -80,6 +80,48 @@ export interface RenderTrail {
   readonly points: readonly RenderTrailPoint[];
 }
 
+export interface RenderOrbCrossInteraction {
+  readonly auraBlend: number;
+  readonly neighborLight: number;
+  readonly neighborDirection: RenderVector;
+  readonly wakeStrength: number;
+  readonly wakeDirection: RenderVector;
+  readonly toyInfluence: RenderTrailToyInfluence | null;
+}
+
+export interface RenderToyCrossInteraction {
+  readonly fieldInfluence: EffectAmounts;
+  readonly nearbyOrbStrength: number;
+  readonly nearbyOrbDirection: RenderVector;
+}
+
+export interface RenderLinkCrossInteraction {
+  readonly fieldInfluence: EffectAmounts;
+  readonly dominantField: EffectFieldType | null;
+  readonly refractionDirection: RenderVector;
+  readonly refractionStrength: number;
+  readonly toyInfluence: RenderTrailToyInfluence | null;
+}
+
+export interface RenderOrbCoupling {
+  readonly id: string;
+  readonly orbAId: string;
+  readonly orbBId: string;
+  readonly roleA: SoundRole;
+  readonly roleB: SoundRole;
+  readonly positionA: NormalizedPoint;
+  readonly positionB: NormalizedPoint;
+  readonly midpoint: NormalizedPoint;
+  readonly strength: number;
+}
+
+export interface RenderCrossEnvironment {
+  readonly forceType: PlaygroundToyType | null;
+  readonly forcePosition: NormalizedPoint;
+  readonly forceStrength: number;
+  readonly couplingEnergy: number;
+}
+
 export interface RenderOrbMaterial {
   readonly energy: number;
   readonly brightness: number;
@@ -141,6 +183,7 @@ export interface RenderOrb {
   readonly selected: boolean;
   readonly focused: boolean;
   readonly interaction: RenderOrbInteraction;
+  readonly cross: RenderOrbCrossInteraction;
   readonly material: RenderOrbMaterial;
 }
 
@@ -161,6 +204,7 @@ export interface RenderToy {
   readonly radius: number;
   readonly selected: boolean;
   readonly exitPosition: NormalizedPoint | null;
+  readonly cross: RenderToyCrossInteraction;
 }
 
 export interface RenderLink {
@@ -171,6 +215,7 @@ export interface RenderLink {
   readonly source: NormalizedPoint;
   readonly target: NormalizedPoint;
   readonly selected: boolean;
+  readonly cross: RenderLinkCrossInteraction;
 }
 
 export interface RenderScene {
@@ -183,6 +228,8 @@ export interface RenderScene {
   readonly fieldEnvironment: RenderFieldEnvironment;
   readonly toys: readonly RenderToy[];
   readonly links: readonly RenderLink[];
+  readonly orbCouplings: readonly RenderOrbCoupling[];
+  readonly crossEnvironment: RenderCrossEnvironment;
   readonly trails: readonly RenderTrail[];
   readonly listener: NormalizedPoint;
   readonly environment: RenderEnvironment;

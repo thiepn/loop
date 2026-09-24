@@ -73,3 +73,53 @@ export function renderColorCss(color: RenderColor): string {
     + color[3].toFixed(3)
     + ')';
 }
+
+
+export function mixRenderColor(
+  a: RenderColor,
+  b: RenderColor,
+  amount: number,
+): RenderColor {
+  const t = Math.max(0, Math.min(1, amount));
+
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+    a[3] + (b[3] - a[3]) * t,
+  ];
+}
+
+export function fieldInfluencedColor(
+  base: RenderColor,
+  effects: Readonly<import('../../world/EffectField').EffectAmounts>,
+): RenderColor {
+  let result = base;
+  result = mixRenderColor(
+    result,
+    [0.49, 0.35, 0.96, result[3]],
+    effects.space * 0.18,
+  );
+  result = mixRenderColor(
+    result,
+    [0.13, 0.83, 0.93, result[3]],
+    effects.echo * 0.14,
+  );
+  result = mixRenderColor(
+    result,
+    [0.98, 0.36, 0.28, result[3]],
+    effects.heat * 0.28,
+  );
+  result = mixRenderColor(
+    result,
+    [0.68, 0.88, 1, result[3]],
+    effects.frost * 0.34,
+  );
+  result = mixRenderColor(
+    result,
+    [0.2, 0.83, 0.6, result[3]],
+    effects.filter * 0.26,
+  );
+
+  return result;
+}
