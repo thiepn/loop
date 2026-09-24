@@ -9,6 +9,7 @@ import {
 import { soundById } from '../core/sounds/coreCatalog';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface PatternEditorCallbacks {
   readonly onClose: () => void;
@@ -71,7 +72,7 @@ export class PatternEditorView {
             <h2 id="pattern-title" data-pattern-title>Pattern</h2>
             <p data-pattern-subtitle></p>
           </div>
-          <button class="pattern-close" type="button" data-pattern-close aria-label="Close pattern editor">×</button>
+          <button class="pattern-close" type="button" data-pattern-close aria-label="Close pattern editor">${loopIcon('close')}</button>
         </header>
 
         <div class="pattern-grid-wrap">
@@ -90,10 +91,10 @@ export class PatternEditorView {
         </div>
 
         <footer class="pattern-footer">
-          <button type="button" data-pattern-clear>Clear</button>
+          <button type="button" data-pattern-clear>${loopIcon('clear')}<span>Clear</span></button>
           <button class="pattern-vary" type="button" data-pattern-vary>
-            <span aria-hidden="true">✦</span>
-            Try another
+            ${loopIcon('magic')}
+            <span>Try another</span>
           </button>
         </footer>
       </section>
