@@ -3,6 +3,7 @@ import {
   spawnSync,
 } from 'node:child_process';
 import {
+  readFile,
   readdir,
   rm,
   stat,
@@ -17,8 +18,6 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const DIST = join(ROOT, 'dist');
 const APP_URL = 'http://127.0.0.1:4173/loop/';
-const DEBUG_PORT = 9222;
-const DEBUG_BASE = `http://127.0.0.1:${DEBUG_PORT}`;
 const USER_DATA_DIR = `/tmp/loop-phase16-${process.pid}`;
 
 const budgets = {
@@ -36,6 +35,35 @@ const budgets = {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForDevToolsPort(
+  userDataDir,
+  timeoutMs = 15_000,
+) {
+  const deadline = Date.now() + timeoutMs;
+  const activePortPath = join(userDataDir, 'DevToolsActivePort');
+  let lastError;
+
+  while (Date.now() < deadline) {
+    try {
+      const content = await readFile(activePortPath, 'utf8');
+      const [portLine] = content.trim().split(/\r?\n/);
+      const port = Number.parseInt(portLine ?? '', 10);
+
+      if (Number.isInteger(port) && port > 0) {
+        return port;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+
+    await delay(100);
+  }
+
+  throw new Error(
+    `Timed out waiting for Chrome DevToolsActivePort: ${lastError ?? 'not created'}`,
+  );
 }
 
 async function waitForHttp(url, timeoutMs = 15_000) {
@@ -321,24 +349,44 @@ async function main() {
       '--disable-sync',
       '--mute-audio',
       '--autoplay-policy=no-user-gesture-required',
-      `--remote-debugging-port=${DEBUG_PORT}`,
+      '--remote-debugging-port=0',
       '--remote-debugging-address=127.0.0.1',
+      '--no-first-run',
+      '--no-default-browser-check',
       `--user-data-dir=${USER_DATA_DIR}`,
       'about:blank',
     ],
     {
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', 'ignore', 'pipe'],
     },
   );
+  let chromeStderr = '';
+
+  chrome.stderr?.setEncoding('utf8');
+  chrome.stderr?.on('data', (chunk) => {
+    chromeStderr = (chromeStderr + chunk).slice(-12_000);
+  });
 
   let client = null;
 
   try {
     await waitForHttp(APP_URL);
-    await waitForHttp(`${DEBUG_BASE}/json/version`);
+
+    let debugPort;
+
+    try {
+      debugPort = await waitForDevToolsPort(USER_DATA_DIR);
+    } catch (error) {
+      throw new Error(
+        `${error instanceof Error ? error.message : String(error)}\nChrome stderr:\n${chromeStderr || '(empty)'}`,
+      );
+    }
+
+    const debugBase = `http://127.0.0.1:${debugPort}`;
+    await waitForHttp(`${debugBase}/json/version`);
 
     const targetResponse = await fetch(
-      `${DEBUG_BASE}/json/new?${encodeURIComponent('about:blank')}`,
+      `${debugBase}/json/new?${encodeURIComponent('about:blank')}`,
       { method: 'PUT' },
     );
     const target = await targetResponse.json();
