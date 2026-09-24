@@ -121,7 +121,7 @@ Implement:
 - two-Field intersection materials;
 - overlap simplification.
 
-## Phase 8 — Cross-System Visual Interaction — implemented; certification pending
+## Phase 8 — Cross-System Visual Interaction — complete
 
 Unify:
 - Orb ↔ Orb;
