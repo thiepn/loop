@@ -29,8 +29,8 @@ export class PwaView {
         <span>Install Loop: Share → Add to Home Screen</span>
       </div>
 
-      <aside class="pwa-update-banner" data-pwa-update role="status" aria-live="polite" aria-atomic="true" hidden>
-        <div>
+      <aside class="pwa-update-banner" data-pwa-update hidden>
+        <div role="status" aria-live="polite" aria-atomic="true">
           <strong>Loop update ready</strong>
           <small>Apply it when you're ready.</small>
         </div>
