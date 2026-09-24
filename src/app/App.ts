@@ -4,7 +4,10 @@ import {
   MasterRecorder,
   type RecordingResult,
 } from '../core/audio/MasterRecorder';
-import { convertRecordingToWav } from '../core/audio/RecordingExport';
+import {
+  MAX_AUTOMATIC_WAV_CONVERSION_MS,
+  convertRecordingToWav,
+} from '../core/audio/RecordingExport';
 import {
   decodeLoopBackup,
   encodeLoopBackup,
@@ -1283,7 +1286,10 @@ export class App {
       this.capturePreviewUrl = URL.createObjectURL(result.blob);
 
       const runtime = audioEngine.getRuntime();
-      this.captureWavBlob = runtime
+      this.captureWavBlob = (
+        runtime
+        && result.durationMs <= MAX_AUTOMATIC_WAV_CONVERSION_MS
+      )
         ? await convertRecordingToWav(
             runtime.context,
             result.blob,
