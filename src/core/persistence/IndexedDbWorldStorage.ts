@@ -170,10 +170,7 @@ export class IndexedDbWorldStorage implements WorldStorage {
         const database = request.result;
         database.addEventListener('versionchange', () => {
           database.close();
-
-          if (this.databasePromise === openPromise) {
-            this.databasePromise = null;
-          }
+          this.databasePromise = null;
         });
         resolve(database);
       }, { once: true });
