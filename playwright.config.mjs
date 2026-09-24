@@ -40,6 +40,12 @@ export default defineConfig({
       use: {
         browserName: 'firefox',
         viewport: { width: 1440, height: 900 },
+        launchOptions: {
+          firefoxUserPrefs: {
+            'media.autoplay.default': 0,
+            'media.autoplay.blocking_policy': 0,
+          },
+        },
       },
     },
     {
