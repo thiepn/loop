@@ -46,11 +46,11 @@ async function waitForSurface(locator) {
   });
 }
 
-async function stopPlayback(page) {
+async function stopPlayback(page, testInfo) {
   const play = page.locator('[data-play]');
 
   if (await play.getAttribute('aria-pressed') === 'true') {
-    await play.click();
+    await activate(play, testInfo);
     await expect(play).toHaveAttribute('aria-pressed', 'false');
   }
 }
@@ -189,7 +189,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   await activate(page.locator('[data-magic-keep]'), testInfo);
   await expect(page.locator('.magic-preview-bar')).toBeHidden();
 
-  await stopPlayback(page);
+  await stopPlayback(page, testInfo);
 
   await activate(page.locator('.sound-orb').first(), testInfo);
   await activate(page.locator('[data-action="motion"]'), testInfo);
