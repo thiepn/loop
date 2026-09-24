@@ -77,6 +77,12 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_pulse;\n'
   + 'uniform float u_pulse_progress;\n'
   + 'uniform float u_detail;\n'
+  + 'uniform float u_motion_scale;\n'
+  + 'uniform float u_fx_space;\n'
+  + 'uniform float u_fx_echo;\n'
+  + 'uniform float u_fx_heat;\n'
+  + 'uniform float u_fx_frost;\n'
+  + 'uniform float u_fx_filter;\n'
   + 'uniform float u_time_ms;\n'
   + 'uniform float u_pattern[16];\n'
   + 'out vec4 out_color;\n'
@@ -117,6 +123,10 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '      + 0.026 * sin(angle * 5.0 - time * 0.32)\n'
   + '      + u_pulse * 0.045;\n'
   + '  }\n'
+  + '  boundary += u_fx_space * 0.018;\n'
+  + '  boundary += u_fx_heat * 0.028 * sin(angle * 5.0 + time * 2.1);\n'
+  + '  boundary -= u_fx_frost * 0.012 * (0.5 + 0.5 * cos(angle * 8.0));\n'
+  + '  boundary -= u_fx_filter * 0.008;\n'
   + '  return boundary;\n'
   + '}\n'
   + '\n'
@@ -138,12 +148,18 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  float outside = max(0.0, d - boundary);\n'
   + '  float aura = exp(-outside * (6.0 + u_muted * 4.0))\n'
   + '    * (1.0 - smoothstep(1.0, 1.43, d));\n'
-  + '  float alpha = aura * (0.08 + u_energy * 0.08) + body * 0.94;\n'
+  + '  float alpha = aura * (0.08 + u_energy * 0.08 + u_fx_space * 0.035) + body * 0.94;\n'
   + '\n'
   + '  vec3 color = u_color.rgb;\n'
   + '  float radialLight = clamp(1.18 - d * 0.5, 0.55, 1.15);\n'
   + '  color *= radialLight * (0.82 + u_brightness * 0.28);\n'
   + '  color += vec3(0.24, 0.28, 0.34) * max(0.0, 0.34 - d) * 0.6;\n'
+  + '  color = mix(color, vec3(0.48, 0.4, 1.0), u_fx_space * 0.16);\n'
+  + '  color = mix(color, vec3(0.38, 0.9, 1.0), u_fx_echo * 0.12);\n'
+  + '  color = mix(color, vec3(1.0, 0.28, 0.08), u_fx_heat * 0.34);\n'
+  + '  color = mix(color, vec3(0.78, 0.94, 1.0), u_fx_frost * 0.42);\n'
+  + '  color = mix(color, vec3(0.18, 0.78, 0.58), u_fx_filter * 0.24);\n'
+  + '  color *= 1.0 - u_fx_filter * 0.12;\n'
   + '\n'
   + '  float stepFloat = (angle + 3.14159265 + (u_groove - 0.5) * 0.08) / 6.2831853 * 16.0;\n'
   + '  int stepIndex = int(clamp(floor(stepFloat), 0.0, 15.0));\n'
@@ -202,6 +218,12 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '    * smoothstep(0.035, 0.006, abs(d - (1.03 + u_pulse_progress * 0.24)));\n'
   + '  color += vec3(0.34, 0.38, 0.46) * pulseRing;\n'
   + '  alpha = max(alpha, pulseRing * 0.42);\n'
+  + '  float echoRingA = u_fx_echo * smoothstep(0.035, 0.007, abs(d - 1.10));\n'
+  + '  float echoRingB = u_fx_echo * smoothstep(0.04, 0.009, abs(d - 1.26));\n'
+  + '  color += vec3(0.32, 0.88, 1.0) * (echoRingA * 0.28 + echoRingB * 0.18);\n'
+  + '  alpha = max(alpha, echoRingA * 0.34 + echoRingB * 0.22);\n'
+  + '  float frostFacet = u_fx_frost * (0.5 + 0.5 * cos(angle * 8.0)) * body;\n'
+  + '  color += vec3(0.62, 0.82, 0.96) * frostFacet * 0.12;\n'
   + '\n'
   + '  if (u_role > 3.5 && u_role < 4.5) {\n'
   + '    float satelliteA = smoothstep(0.105, 0.025, length(q - vec2(0.98, -0.28)));\n'
@@ -379,6 +401,11 @@ export class WebGLOrbMaterialLayer {
   private readonly pulseProgress: WebGLUniformLocation;
   private readonly detail: WebGLUniformLocation;
   private readonly motionScale: WebGLUniformLocation;
+  private readonly fxSpace: WebGLUniformLocation;
+  private readonly fxEcho: WebGLUniformLocation;
+  private readonly fxHeat: WebGLUniformLocation;
+  private readonly fxFrost: WebGLUniformLocation;
+  private readonly fxFilter: WebGLUniformLocation;
   private readonly timeMs: WebGLUniformLocation;
   private readonly pattern: WebGLUniformLocation;
 
@@ -425,6 +452,11 @@ export class WebGLOrbMaterialLayer {
     this.pulseProgress = requiredUniform(gl, program, 'u_pulse_progress');
     this.detail = requiredUniform(gl, program, 'u_detail');
     this.motionScale = requiredUniform(gl, program, 'u_motion_scale');
+    this.fxSpace = requiredUniform(gl, program, 'u_fx_space');
+    this.fxEcho = requiredUniform(gl, program, 'u_fx_echo');
+    this.fxHeat = requiredUniform(gl, program, 'u_fx_heat');
+    this.fxFrost = requiredUniform(gl, program, 'u_fx_frost');
+    this.fxFilter = requiredUniform(gl, program, 'u_fx_filter');
     this.timeMs = requiredUniform(gl, program, 'u_time_ms');
     this.pattern = requiredUniform(gl, program, 'u_pattern[0]');
 
@@ -548,6 +580,26 @@ export class WebGLOrbMaterialLayer {
       gl.uniform1f(this.spread, orb.material.spread);
       gl.uniform1f(this.variation, orb.material.variation);
       gl.uniform1f(this.seed, orb.material.seed);
+      gl.uniform1f(
+        this.fxSpace,
+        orb.material.fieldInfluence.space,
+      );
+      gl.uniform1f(
+        this.fxEcho,
+        orb.material.fieldInfluence.echo,
+      );
+      gl.uniform1f(
+        this.fxHeat,
+        orb.material.fieldInfluence.heat,
+      );
+      gl.uniform1f(
+        this.fxFrost,
+        orb.material.fieldInfluence.frost,
+      );
+      gl.uniform1f(
+        this.fxFilter,
+        orb.material.fieldInfluence.filter,
+      );
       gl.uniform1f(this.selected, orb.selected ? 1 : 0);
       gl.uniform1f(this.focused, orb.focused ? 1 : 0);
       gl.uniform1f(this.muted, orb.muted ? 1 : 0);

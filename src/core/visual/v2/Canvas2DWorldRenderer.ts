@@ -288,6 +288,46 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     context.fillStyle = hazeB;
     context.fillRect(0, 0, width, height);
 
+    const fields = scene.fieldEnvironment;
+
+    if (
+      fields.space
+      + fields.echo
+      + fields.heat
+      + fields.frost
+      + fields.filter
+      + fields.overlap
+      > 0.001
+    ) {
+      context.fillStyle = 'rgba(96, 75, 180, '
+        + (
+          fields.space * 0.018
+          + fields.overlap * 0.009
+        ).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+
+      context.fillStyle = 'rgba(19, 128, 154, '
+        + (fields.echo * 0.012).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+
+      context.fillStyle = 'rgba(162, 44, 9, '
+        + (fields.heat * 0.02).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+
+      context.fillStyle = 'rgba(103, 178, 215, '
+        + (fields.frost * 0.016).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+
+      context.fillStyle = 'rgba(11, 116, 79, '
+        + (fields.filter * 0.014).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+    }
+
     if (dynamics.eventStrength > 0.001) {
       const radius = Math.max(width, height) * (
         0.16 + dynamics.eventStrength * 0.14

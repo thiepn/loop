@@ -1,5 +1,6 @@
 import type { VisualPreferences } from '../VisualQuality';
 import type { SoundRole } from '../../sounds/SoundDefinition';
+import type { EffectAmounts } from '../../world/EffectField';
 import {
   ROLE_RENDER_COLORS,
   renderColorCss,
@@ -71,6 +72,58 @@ function roleBoundary(
   }
 }
 
+function mix(
+  a: number,
+  b: number,
+  amount: number,
+): number {
+  return a + (b - a) * Math.max(0, Math.min(1, amount));
+}
+
+function adjustedFieldColor(
+  color: RenderColor,
+  effects: EffectAmounts,
+): RenderColor {
+  let result: RenderColor = color;
+  const blend = (
+    target: RenderColor,
+    amount: number,
+  ) => {
+    result = [
+      mix(result[0], target[0], amount),
+      mix(result[1], target[1], amount),
+      mix(result[2], target[2], amount),
+      result[3],
+    ];
+  };
+
+  blend([0.48, 0.4, 1, 1], effects.space * 0.16);
+  blend([0.38, 0.9, 1, 1], effects.echo * 0.12);
+  blend([1, 0.28, 0.08, 1], effects.heat * 0.34);
+  blend([0.78, 0.94, 1, 1], effects.frost * 0.42);
+  blend([0.18, 0.78, 0.58, 1], effects.filter * 0.24);
+
+  return [
+    result[0] * (1 - effects.filter * 0.12),
+    result[1] * (1 - effects.filter * 0.12),
+    result[2] * (1 - effects.filter * 0.12),
+    result[3],
+  ];
+}
+
+function fieldBoundaryDelta(
+  effects: EffectAmounts,
+  angle: number,
+  time: number,
+): number {
+  return effects.space * 0.018
+    + effects.heat * 0.028 * Math.sin(angle * 5 + time * 2.1)
+    - effects.frost * 0.012 * (
+      0.5 + 0.5 * Math.cos(angle * 8)
+    )
+    - effects.filter * 0.008;
+}
+
 export class CanvasOrbMaterialLayer {
   public constructor(
     private readonly context: CanvasRenderingContext2D,
@@ -129,7 +182,10 @@ export class CanvasOrbMaterialLayer {
         + hoverShift.y
         + settleShift.y;
       const pulse = pulseForOrb(orb.id, events);
-      const color = ROLE_RENDER_COLORS[orb.role];
+      const color = adjustedFieldColor(
+        ROLE_RENDER_COLORS[orb.role],
+        orb.material.fieldInfluence,
+      );
 
       this.context.save();
       if (hasSelection && !orb.selected) {
@@ -150,7 +206,8 @@ export class CanvasOrbMaterialLayer {
         radius,
         color,
         orb.muted,
-        orb.material.energy,
+        orb.material.energy
+          + orb.material.fieldInfluence.space * 0.2,
       );
       this.drawBody(
         orb,
@@ -161,6 +218,16 @@ export class CanvasOrbMaterialLayer {
         pulse.amount,
         time,
         transient.settle,
+      );
+
+      this.drawFieldInfluence(
+        orb,
+        x,
+        y,
+        radius,
+        color,
+        time,
+        dpr,
       );
 
       if (detail > 0.25) {
@@ -383,6 +450,10 @@ export class CanvasOrbMaterialLayer {
         time,
         orb.material.seed,
         pulse,
+      ) + fieldBoundaryDelta(
+        orb.material.fieldInfluence,
+        angle,
+        time,
       );
       const px = x + Math.cos(angle) * radius * boundary;
       const py = y + Math.sin(angle) * radius * boundary;
@@ -446,6 +517,140 @@ export class CanvasOrbMaterialLayer {
     }
 
     this.context.restore();
+  }
+
+  private drawFieldInfluence(
+    orb: RenderOrb,
+    x: number,
+    y: number,
+    radius: number,
+    color: RenderColor,
+    time: number,
+    dpr: number,
+  ): void {
+    const effects = orb.material.fieldInfluence;
+    const context = this.context;
+
+    if (effects.space > 0.01) {
+      context.save();
+      context.beginPath();
+      context.arc(
+        x,
+        y,
+        radius * (1.08 + effects.space * 0.08),
+        0,
+        Math.PI * 2,
+      );
+      context.strokeStyle = 'rgba(138, 118, 255, '
+        + (effects.space * 0.18).toFixed(3)
+        + ')';
+      context.lineWidth = Math.max(1, dpr);
+      context.stroke();
+      context.restore();
+    }
+
+    if (effects.echo > 0.01) {
+      context.save();
+      context.strokeStyle = 'rgba(93, 226, 255, '
+        + (effects.echo * 0.24).toFixed(3)
+        + ')';
+      context.lineWidth = Math.max(0.8, dpr);
+      for (const scale of [1.1, 1.25]) {
+        context.beginPath();
+        context.arc(
+          x,
+          y,
+          radius * scale,
+          0,
+          Math.PI * 2,
+        );
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    if (effects.heat > 0.01) {
+      context.save();
+      context.strokeStyle = 'rgba(255, 104, 46, '
+        + (effects.heat * 0.24).toFixed(3)
+        + ')';
+      context.lineWidth = Math.max(1, dpr);
+      context.beginPath();
+      for (let index = 0; index <= 14; index += 1) {
+        const normalized = index / 14 * 2 - 1;
+        const px = x + normalized * radius * 0.72;
+        const py = y
+          + Math.sin(
+            normalized * 4.5 + time * 1.6,
+          ) * radius * 0.16 * effects.heat;
+        if (index === 0) {
+          context.moveTo(px, py);
+        } else {
+          context.lineTo(px, py);
+        }
+      }
+      context.stroke();
+      context.restore();
+    }
+
+    if (effects.frost > 0.01) {
+      context.save();
+      context.strokeStyle = 'rgba(211, 242, 255, '
+        + (effects.frost * 0.28).toFixed(3)
+        + ')';
+      context.lineWidth = Math.max(0.7, dpr * 0.8);
+      for (let index = 0; index < 6; index += 1) {
+        const angle = index / 6 * Math.PI * 2
+          + orb.material.seed * 2;
+        context.beginPath();
+        context.moveTo(
+          x + Math.cos(angle) * radius * 0.18,
+          y + Math.sin(angle) * radius * 0.18,
+        );
+        context.lineTo(
+          x + Math.cos(angle) * radius * 0.74,
+          y + Math.sin(angle) * radius * 0.74,
+        );
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    if (effects.filter > 0.01) {
+      context.save();
+      context.beginPath();
+      context.arc(x, y, radius * 0.86, 0, Math.PI * 2);
+      context.clip();
+      const gradient = context.createLinearGradient(
+        x - radius,
+        y,
+        x + radius,
+        y,
+      );
+      gradient.addColorStop(
+        0,
+        'rgba(6, 34, 30, '
+          + (effects.filter * 0.18).toFixed(3)
+          + ')',
+      );
+      gradient.addColorStop(
+        1,
+        renderColorCss(
+          withAlpha(
+            color,
+            effects.filter * 0.08,
+          ),
+        ),
+      );
+      context.fillStyle = gradient;
+      context.fillRect(
+        x - radius,
+        y - radius,
+        radius * 2,
+        radius * 2,
+      );
+      context.restore();
+    }
   }
 
   private drawInternalMaterial(
