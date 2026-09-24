@@ -1,9 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   chooseAutomaticVisualQuality,
   initialVisualPreferences,
+  loadVisualPreferences,
   profileForVisualPreferences,
+  saveVisualPreferences,
 } from '../src/core/visual/VisualQuality';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('VisualQuality', () => {
   it('chooses High for strong hardware', () => {
@@ -105,6 +111,39 @@ describe('VisualQuality', () => {
     expect(profile.ambientParticleCount).toBe(0);
     expect(profile.burstParticleCount).toBe(0);
     expect(profile.bloomScale).toBeLessThanOrEqual(0.3);
+  });
+
+  it('round-trips explicit user preferences through local storage', () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    });
+
+    const preferences = {
+      quality: 'battery' as const,
+      reduceMotion: true,
+      reduceParticles: false,
+      reduceBloom: true,
+    };
+
+    saveVisualPreferences(preferences);
+
+    expect(loadVisualPreferences()).toEqual(preferences);
+  });
+
+  it('falls back safely when stored visual preferences are malformed', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => '{bad json',
+      setItem: () => undefined,
+    });
+
+    const preferences = loadVisualPreferences();
+
+    expect(['high', 'balanced', 'battery']).toContain(
+      preferences.quality,
+    );
+    expect(typeof preferences.reduceMotion).toBe('boolean');
   });
 
   it('keeps reduced motion readable instead of disabling all visual feedback', () => {
