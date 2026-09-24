@@ -1538,6 +1538,427 @@ export class App {
     });
   }
 
+  private async openLibraryWorld(worldId: string): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      const loaded = await this.repository.loadWorld(worldId);
+
+      if (!loaded) {
+        await this.refreshLibrary();
+        appStore.patch({
+          message: 'That World could not be opened.',
+        });
+        return;
+      }
+
+      await this.enterWorld(loaded.world, {
+        autoPlay: true,
+        saveBeforeEnter: false,
+      });
+
+      if (loaded.warnings.length > 0) {
+        appStore.patch({
+          message: `Opened with ${loaded.warnings.length} repair${loaded.warnings.length === 1 ? '' : 's'}.`,
+        });
+      }
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not open World');
+    }
+  }
+
+  private async renameLibraryWorld(
+    worldId: string,
+    name: string,
+  ): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      const loaded = await this.repository.loadWorld(
+        worldId,
+        Date.now(),
+        false,
+        false,
+      );
+
+      if (!loaded) {
+        await this.refreshLibrary();
+        return;
+      }
+
+      const world = renameWorld(loaded.world, name);
+
+      if (world !== loaded.world) {
+        await this.repository.saveWorld(world);
+
+        const current = appStore.getState();
+        if (current.world.id === worldId) {
+          appStore.patch({ world });
+        }
+      }
+
+      await this.refreshLibrary();
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not rename World');
+    }
+  }
+
+  private async duplicateLibraryWorld(worldId: string): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      await this.repository.duplicateWorld(worldId);
+      await this.refreshLibrary();
+      appStore.patch({
+        message: 'World duplicated.',
+      });
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not duplicate World');
+    }
+  }
+
+  private async trashLibraryWorld(worldId: string): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      await this.repository.trashWorld(worldId);
+      await this.refreshLibrary();
+      appStore.patch({
+        message: 'World moved to Recently Deleted.',
+      });
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not move World to Trash');
+    }
+  }
+
+  private async restoreLibraryWorld(worldId: string): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      await this.repository.restoreWorld(worldId);
+      await this.refreshLibrary();
+      appStore.patch({
+        message: 'World restored.',
+      });
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not restore World');
+    }
+  }
+
+  private async purgeLibraryWorld(worldId: string): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      await this.repository.purgeWorld(worldId);
+      await this.refreshLibrary();
+      appStore.patch({
+        message: 'World permanently deleted.',
+      });
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not delete World');
+    }
+  }
+
+  private async exportLibraryWorld(worldId: string): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      const loaded = await this.repository.loadWorld(
+        worldId,
+        Date.now(),
+        false,
+        false,
+      );
+
+      if (!loaded) {
+        return;
+      }
+
+      this.downloadBackup(
+        [loaded.world],
+        `${loaded.world.name}.loop.json`,
+      );
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not create backup');
+    }
+  }
+
+  private async exportAllWorlds(): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      const worlds: WorldDocument[] = [];
+
+      for (const item of appStore.getState().library) {
+        if (item.deletedAt !== null) {
+          continue;
+        }
+
+        const loaded = await this.repository.loadWorld(
+          item.id,
+          Date.now(),
+          false,
+          false,
+        );
+
+        if (loaded) {
+          worlds.push(loaded.world);
+        }
+      }
+
+      if (worlds.length === 0) {
+        appStore.patch({
+          message: 'There are no saved Worlds to back up.',
+        });
+        return;
+      }
+
+      this.downloadBackup(worlds, 'loop-worlds-backup.json');
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not create backup');
+    }
+  }
+
+  private async importBackup(text: string): Promise<void> {
+    if (!this.persistenceReady) {
+      appStore.patch({
+        message: 'Local storage is unavailable, so the backup cannot be imported.',
+      });
+      return;
+    }
+
+    try {
+      const decoded = decodeLoopBackup(text);
+      const imported = await this.repository.importWorlds(decoded.worlds);
+      await this.refreshLibrary();
+
+      appStore.patch({
+        message: decoded.warnings.length > 0
+          ? `Imported ${imported.length} World${imported.length === 1 ? '' : 's'} with ${decoded.warnings.length} warning${decoded.warnings.length === 1 ? '' : 's'}.`
+          : `Imported ${imported.length} World${imported.length === 1 ? '' : 's'}.`,
+      });
+    } catch (error) {
+      const failure = classifyPersistenceError(error);
+      appStore.patch({
+        message: `Import failed: ${failure.message}`,
+      });
+    }
+  }
+
+  private downloadBackup(
+    worlds: readonly WorldDocument[],
+    filename: string,
+  ): void {
+    const text = encodeLoopBackup(worlds);
+    const blob = new Blob([text], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim() || 'loop-backup.json';
+    anchor.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  private exportCurrentWorld(): void {
+    this.downloadBackup(
+      [appStore.getState().world],
+      `${appStore.getState().world.name}.loop.json`,
+    );
+  }
+
+  private renameCurrentWorld(name: string): void {
+    const current = appStore.getState();
+    const world = renameWorld(current.world, name);
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      message: 'World renamed.',
+    });
+  }
+
+  private saveSnapshot(name?: string): void {
+    const current = appStore.getState();
+    const result = addSnapshot(current.world, name);
+
+    if (!result.createdId) {
+      appStore.patch({
+        message: 'This World already has eight Snapshots.',
+      });
+      return;
+    }
+
+    appStore.patch({
+      world: result.world,
+      snapshotsOpen: true,
+      message: 'Snapshot saved.',
+    });
+  }
+
+  private renameWorldSnapshot(
+    snapshotId: string,
+    name: string,
+  ): void {
+    const current = appStore.getState();
+    const world = renameSnapshot(
+      current.world,
+      snapshotId,
+      name,
+    );
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      snapshotsOpen: true,
+      message: 'Snapshot renamed.',
+    });
+  }
+
+  private deleteWorldSnapshot(snapshotId: string): void {
+    const current = appStore.getState();
+    const world = deleteSnapshot(current.world, snapshotId);
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      snapshotsOpen: true,
+      message: 'Snapshot deleted.',
+    });
+  }
+
+  private queueSnapshotRecall(snapshotId: string): void {
+    const current = appStore.getState();
+
+    if (current.magicSession) {
+      return;
+    }
+
+    this.cancelSnapshotRecall();
+
+    const runtime = audioEngine.getRuntime();
+
+    if (!current.playing || !this.playground || !runtime) {
+      this.applySnapshotRecall(snapshotId);
+      return;
+    }
+
+    const now = runtime.context.currentTime;
+    const targetTime = this.playground.transport.nextQuantizedTime(
+      now,
+      'bar',
+    );
+    const delayMs = Math.max(0, (targetTime - now) * 1000);
+
+    this.snapshotRecallTimer = setTimeout(() => {
+      this.snapshotRecallTimer = null;
+      this.applySnapshotRecall(snapshotId);
+    }, delayMs);
+
+    appStore.patch({
+      snapshotsOpen: false,
+      message: 'Snapshot queued for the next bar.',
+    });
+  }
+
+  private applySnapshotRecall(snapshotId: string): void {
+    const current = appStore.getState();
+    const world = recallSnapshot(
+      current.world,
+      snapshotId,
+    );
+
+    if (world === current.world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      snapshotsOpen: false,
+      magicUndo: null,
+      message: 'Snapshot recalled.',
+    });
+  }
+
+  private cancelSnapshotRecall(): void {
+    if (this.snapshotRecallTimer !== null) {
+      clearTimeout(this.snapshotRecallTimer);
+      this.snapshotRecallTimer = null;
+    }
+  }
+
+  private undoWorld(): void {
+    if (appStore.getState().magicSession) {
+      return;
+    }
+
+    this.cancelSnapshotRecall();
+    const world = this.history.undo();
+
+    if (!world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      magicUndo: null,
+      snapshotsOpen: false,
+      message: 'Undone.',
+    });
+  }
+
+  private redoWorld(): void {
+    if (appStore.getState().magicSession) {
+      return;
+    }
+
+    this.cancelSnapshotRecall();
+    const world = this.history.redo();
+
+    if (!world) {
+      return;
+    }
+
+    appStore.patch({
+      world,
+      magicUndo: null,
+      snapshotsOpen: false,
+      message: 'Redone.',
+    });
+  }
+
   private createLinkRelationship(type: LinkType): void {
     const current = appStore.getState();
     const sourceOrbId = current.linkEditorSourceOrbId;
