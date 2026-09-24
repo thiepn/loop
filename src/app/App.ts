@@ -1439,7 +1439,7 @@ export class App {
         captureEpoch,
       );
     } catch (error) {
-      this.handleCaptureError(error);
+      this.handleCaptureError(error, captureEpoch);
     }
   }
 
