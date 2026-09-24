@@ -22,8 +22,8 @@ const DEBUG_BASE = `http://127.0.0.1:${DEBUG_PORT}`;
 const USER_DATA_DIR = `/tmp/loop-phase16-${process.pid}`;
 
 const budgets = {
-  jsCssRawBytes: 700 * 1024,
-  jsCssGzipBytes: 220 * 1024,
+  jsCssRawBytes: 500 * 1024,
+  jsCssGzipBytes: 120 * 1024,
   navigationLoadMs: 3_000,
   homeToWorldMs: 1_500,
   frameP95Ms: 35,
