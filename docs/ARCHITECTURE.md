@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 10.
+Updated through Phase 11.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -34,7 +34,11 @@ Current responsibilities:
 - one bounded AudioRuntime containing context + destination;
 - lightweight procedural event synthesis;
 - SpatialVoice channels that map orb presence/pan into Web Audio nodes;
-- EffectRack channels that provide bounded Filter, Heat, Frost, Echo, and Space processing per live Sound Orb.
+- EffectRack channels that provide bounded Filter, Heat, Frost, Echo, and Space processing per live Sound Orb;
+- temporary post-limiter master capture taps;
+- MasterRecorder — bounded MediaRecorder orchestration;
+- RecordingFormat — browser MIME negotiation;
+- RecordingExport + WavEncoder — optional bounded PCM16 WAV conversion.
 
 No feature may create hidden AudioContexts independently.
 
@@ -181,6 +185,9 @@ Examples:
 - library metadata (last-opened, deletedAt, active World) belongs to persistence records, not WorldDocument;
 - autosave/persistence status and open Snapshot sheet state are transient AppState;
 - undo/redo stacks belong to WorldHistory and are intentionally session-only;
+- recording Blob/WAV data and preview object URLs are transient App runtime state;
+- capture status/duration/format metadata is transient AppState;
+- recordings never belong to WorldDocument, IndexedDB Worlds, Snapshots, or WorldHistory;
 - rendered DOM is a projection of state, not a second persistent data model.
 
 During a drag, DOM position and spatial audio may preview continuously. The normalized position is committed back to World state when the drag ends.
@@ -253,6 +260,8 @@ Phase 9 adds ✦ Magic and ✦ Remix as bounded mutation operations over the exi
 
 Phase 10 adds the local World library, autosave/restore, typed Snapshots, bounded general undo/redo, schema migration/quarantine, and versioned JSON backups. Persistence remains independent of the audio runtime.
 
+Phase 11 adds transient master performance capture and download. Recording taps the post-limiter master without changing the creative World model or persistence schema.
+
 ## GitHub Pages
 The production URL is expected to use the repository path:
 https://thiepn.github.io/loop/
@@ -316,7 +325,12 @@ Current automated coverage includes:
 - backup round-trip and partial recovery;
 - WorldRepository library/Trash/restore/purge/duplicate/import;
 - corruption quarantine;
-- persistence error/quota classification.
+- persistence error/quota classification;
+- recording MIME negotiation;
+- PCM16 WAV encoding/interleaving/clamping;
+- MasterRecorder Stop/Cancel/tap cleanup;
+- bounded duration callback;
+- unexpected browser-stop recovery.
 
 Future phases add tests at their domain boundaries.
 
@@ -337,6 +351,8 @@ Phase 6 explicitly avoids a convolution engine or granular AudioWorklet per Soun
 Phase 7 adds one demand-driven requestAnimationFrame loop. It runs only while at least one Sound Orb exists and Motion/toys require live position evaluation; static Worlds do not keep the loop alive.
 
 Phase 10 persistence is event/debounce-driven and adds no render or audio loop. Live Motion positions are never serialized.
+
+Phase 11 recording adds no permanent audio graph. The MediaStreamAudioDestinationNode capture tap exists only while recording. Captures are capped at 10 minutes, arrive in 1-second MediaRecorder chunks, and automatic WAV decoding is capped at 3 minutes to avoid large PCM memory spikes.
 
 Future render loops and expensive DSP must be pausable when hidden or unnecessary.
 
@@ -549,3 +565,43 @@ Snapshot recall:
 - cancelled if a newer material World edit occurs before recall fires.
 
 Backup format is versioned JSON (`loop-world-backup`, version 1). Imported Worlds are always assigned new World ids, preventing silent overwrite.
+
+
+## Phase 11 capture rule
+
+Performance capture records the already-limited master, not individual Sound Orbs.
+
+Normal master:
+
+master gain → safety limiter → speakers
+
+Temporary recording branch:
+
+safety limiter → MediaStreamAudioDestinationNode → MediaRecorder
+
+AudioEngine creates/disposes the temporary tap; it does not expose the limiter itself to the UI.
+
+MasterRecorder owns:
+- one-active-recording state;
+- MIME negotiation;
+- 1-second chunk collection;
+- 10-minute hard limit;
+- Stop/Cancel behavior;
+- browser-initiated Stop/Error recovery;
+- tap cleanup.
+
+The app owns only user-facing orchestration and the transient finished artifacts.
+
+The browser's original MediaRecorder file is the primary export. Optional WAV conversion is:
+
+recorded Blob → decodeAudioData → PCM16 RIFF/WAVE
+
+Automatic WAV conversion is attempted only for captures ≤3 minutes and only when decodeAudioData succeeds. Native export remains valid if WAV conversion fails.
+
+Recording does not use getUserMedia and requires no microphone permission.
+
+When Record is pressed while musical playback is stopped, the existing browser gesture is used to initialize/resume audio and start the World before capture. Stopping recording is independent from stopping musical playback.
+
+Capture data is never persisted. Object URLs are revoked on discard, replacement, navigation, and teardown.
+
+Backgrounding the document finalizes an active recording rather than promising cross-browser background audio capture.
