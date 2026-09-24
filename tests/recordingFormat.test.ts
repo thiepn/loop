@@ -13,7 +13,7 @@ describe('RecordingFormat', () => {
     expect(chosen).toEqual({
       mimeType: 'audio/webm;codecs=opus',
       extension: 'webm',
-      label: 'WebM / Opus',
+      label: 'WebM audio',
     });
   });
 
@@ -28,6 +28,21 @@ describe('RecordingFormat', () => {
 
   it('returns null when none of the explicit preferences are supported', () => {
     expect(chooseRecordingFormat(() => false)).toBeNull();
+  });
+
+  it('keeps user-facing labels free of codec jargon', () => {
+    const formats = [
+      chooseRecordingFormat(
+        (mimeType) => mimeType === 'audio/webm;codecs=opus',
+      ),
+      formatForMimeType('audio/ogg;codecs=opus'),
+      formatForMimeType(''),
+    ].filter((format) => format !== null);
+
+    for (const format of formats) {
+      expect(format.label.toLowerCase()).not.toContain('opus');
+      expect(format.label.toLowerCase()).not.toContain('codec');
+    }
   });
 
   it('derives safe download extensions from browser MIME output', () => {
