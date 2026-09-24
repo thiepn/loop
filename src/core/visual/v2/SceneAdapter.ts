@@ -17,6 +17,11 @@ import type {
   RenderTrail,
 } from './RenderTypes';
 import { deriveWorldEnvironment } from './EnvironmentModel';
+import {
+  deriveFieldEnvironment,
+  deriveFieldIntersections,
+  deriveFieldMaterial,
+} from './FieldMaterialModel';
 import { deriveOrbMaterial } from './OrbMaterialModel';
 
 export interface SceneProjectionOptions {
@@ -29,6 +34,7 @@ export interface SceneProjectionOptions {
   readonly recording: boolean;
   readonly liveOrbPositions?: ReadonlyMap<string, NormalizedPoint>;
   readonly orbInteractions?: ReadonlyMap<string, RenderOrbInteraction>;
+  readonly orbFieldInfluenceOverrides?: ReadonlyMap<string, EffectAmounts>;
   readonly fieldInteractions?: ReadonlyMap<string, RenderFieldInteraction>;
   readonly trails?: readonly RenderTrail[];
   readonly fieldOverrides?: ReadonlyMap<string, EffectFieldDocument>;
@@ -86,7 +92,8 @@ export function projectWorldToRenderScene(
         ?? IDLE_ORB_INTERACTION,
       material: deriveOrbMaterial(
         orb,
-        effectAmountsAtPoint(fieldDocuments, position),
+        options.orbFieldInfluenceOverrides?.get(orb.id)
+          ?? effectAmountsAtPoint(fieldDocuments, position),
       ),
     };
   });
@@ -100,7 +107,16 @@ export function projectWorldToRenderScene(
       selected: options.selectedFieldId === field.id,
       interaction: options.fieldInteractions?.get(field.id)
         ?? IDLE_FIELD_INTERACTION,
+      material: deriveFieldMaterial(field),
     }),
+  );
+
+  const fieldIntersections = deriveFieldIntersections(
+    fieldDocuments,
+  );
+  const fieldEnvironment = deriveFieldEnvironment(
+    fieldDocuments,
+    fieldIntersections,
   );
 
   const toys = effectiveToys(world, options.toyOverrides).map(
@@ -141,6 +157,8 @@ export function projectWorldToRenderScene(
     recording: options.recording,
     orbs,
     fields,
+    fieldIntersections,
+    fieldEnvironment,
     toys,
     links,
     trails: options.trails ?? [],

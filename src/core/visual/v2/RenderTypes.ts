@@ -108,6 +108,31 @@ export interface RenderFieldInteraction {
   readonly tension: number;
 }
 
+export interface RenderFieldMaterial {
+  readonly seed: number;
+  readonly edgeRoughness: number;
+  readonly detail: number;
+}
+
+export interface RenderFieldIntersection {
+  readonly id: string;
+  readonly typeA: EffectFieldType;
+  readonly typeB: EffectFieldType;
+  readonly position: NormalizedPoint;
+  readonly radius: number;
+  readonly strength: number;
+  readonly simplified: boolean;
+}
+
+export interface RenderFieldEnvironment {
+  readonly space: number;
+  readonly echo: number;
+  readonly heat: number;
+  readonly frost: number;
+  readonly filter: number;
+  readonly overlap: number;
+}
+
 export interface RenderOrb {
   readonly id: string;
   readonly role: SoundRole;
@@ -126,6 +151,7 @@ export interface RenderField {
   readonly radius: number;
   readonly selected: boolean;
   readonly interaction: RenderFieldInteraction;
+  readonly material: RenderFieldMaterial;
 }
 
 export interface RenderToy {
@@ -153,6 +179,8 @@ export interface RenderScene {
   readonly recording: boolean;
   readonly orbs: readonly RenderOrb[];
   readonly fields: readonly RenderField[];
+  readonly fieldIntersections: readonly RenderFieldIntersection[];
+  readonly fieldEnvironment: RenderFieldEnvironment;
   readonly toys: readonly RenderToy[];
   readonly links: readonly RenderLink[];
   readonly trails: readonly RenderTrail[];
