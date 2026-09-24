@@ -8,7 +8,7 @@
   text-rendering: optimizeLegibility;
   --panel: rgba(18, 18, 27, 0.82);
   --panel-border: rgba(255, 255, 255, 0.085);
-  --muted-text: #8b8b98;
+  --muted-text: #a1a1aa;
 }
 
 * {
@@ -43,9 +43,23 @@ button {
 }
 
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+.effect-field:focus-visible,
+.playground-toy:focus-visible,
+.portal-exit:focus-visible {
   outline: 2px solid #c4b5fd;
   outline-offset: 4px;
+}
+
+.link-hit:focus-visible {
+  outline: none;
+  stroke: rgba(196, 181, 253, 0.42);
+  stroke-width: 18;
+}
+
+.link-connection:has(.link-hit:focus-visible) .link-path {
+  opacity: 1;
+  stroke-width: 4;
 }
 
 .playground-shell,
@@ -151,7 +165,7 @@ a:focus-visible {
 }
 
 .world-heading span {
-  color: #666672;
+  color: var(--muted-text);
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -289,7 +303,7 @@ a:focus-visible {
 }
 
 .listener-core small {
-  color: #6f6f7b;
+  color: var(--muted-text);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -517,7 +531,7 @@ a:focus-visible {
 }
 
 .sound-orb.is-muted .orb-label {
-  color: #52525d;
+  color: var(--muted-text);
   text-decoration: line-through;
 }
 
@@ -532,7 +546,7 @@ a:focus-visible {
   padding: 8px 12px;
   border: 1px solid rgba(255, 255, 255, 0.045);
   border-radius: 999px;
-  color: #71717d;
+  color: var(--muted-text);
   background: rgba(8, 8, 13, 0.64);
   backdrop-filter: blur(14px);
   font-size: 11px;
@@ -572,7 +586,7 @@ a:focus-visible {
 }
 
 .selection-copy span {
-  color: #71717a;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -668,7 +682,7 @@ a:focus-visible {
 
 .fatal-card details {
   margin-top: 20px;
-  color: #71717a;
+  color: var(--muted-text);
 }
 
 .fatal-card pre {
@@ -900,7 +914,7 @@ a:focus-visible {
 
 .home-tagline,
 .home-footer {
-  color: #656571;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -1048,7 +1062,7 @@ a:focus-visible {
 }
 
 .starter-copy small {
-  color: #7c7c88;
+  color: var(--muted-text);
   font-size: 11px;
   line-height: 1.3;
 }
@@ -1175,7 +1189,7 @@ a:focus-visible {
 }
 
 .palette-header span {
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -1260,7 +1274,7 @@ a:focus-visible {
 
 .surprise-sound small {
   margin-top: 2px;
-  color: #797484;
+  color: var(--muted-text);
   font-size: 10px;
 }
 
@@ -1326,7 +1340,7 @@ a:focus-visible {
 
 .sound-choice-copy small {
   overflow: hidden;
-  color: #757581;
+  color: var(--muted-text);
   font-size: 10px;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -1473,7 +1487,7 @@ a:focus-visible {
 }
 
 .pattern-kicker {
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.11em;
@@ -1587,7 +1601,7 @@ a:focus-visible {
 }
 
 .melody-row-label {
-  color: #575763;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 700;
   text-align: right;
@@ -1653,7 +1667,7 @@ a:focus-visible {
 }
 
 .macro-group > span {
-  color: #686873;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2003,7 +2017,7 @@ a:focus-visible {
 }
 
 .field-selection-copy span {
-  color: #71717a;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2023,7 +2037,7 @@ a:focus-visible {
 }
 
 .field-help {
-  color: #666672;
+  color: var(--muted-text);
   font-size: 10px;
 }
 
@@ -2077,7 +2091,7 @@ a:focus-visible {
 }
 
 .effect-palette-header > div > span {
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2092,7 +2106,7 @@ a:focus-visible {
 
 .effect-palette-header p {
   margin: 5px 0 0;
-  color: #777782;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -2165,7 +2179,7 @@ a:focus-visible {
 }
 
 .effect-choice-copy small {
-  color: #747480;
+  color: var(--muted-text);
   font-size: 10px;
   line-height: 1.25;
 }
@@ -2399,7 +2413,7 @@ a:focus-visible {
 }
 
 .motion-header > div > span {
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2414,7 +2428,7 @@ a:focus-visible {
 
 .motion-header p {
   margin: 5px 0 0;
-  color: #777782;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -2523,7 +2537,7 @@ a:focus-visible {
 }
 
 .motion-mode-choice small {
-  color: #747480;
+  color: var(--muted-text);
   font-size: 9px;
   line-height: 1.25;
 }
@@ -2547,7 +2561,7 @@ a:focus-visible {
 
 .motion-macro > span,
 .follow-target-group > span {
-  color: #686873;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2686,7 +2700,7 @@ a:focus-visible {
   left: 50%;
   top: calc(100% + 5px);
   translate: -50% 0;
-  color: #777784;
+  color: var(--muted-text);
   font-size: 8px;
   font-weight: 730;
   letter-spacing: 0.07em;
@@ -2782,7 +2796,7 @@ a:focus-visible {
 }
 
 .toy-selection-copy span {
-  color: #71717a;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2801,7 +2815,7 @@ a:focus-visible {
 }
 
 .toy-selection-actions > span {
-  color: #666672;
+  color: var(--muted-text);
   font-size: 10px;
 }
 
@@ -2855,7 +2869,7 @@ a:focus-visible {
 }
 
 .toy-palette-header > div > span {
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -2870,7 +2884,7 @@ a:focus-visible {
 
 .toy-palette-header p {
   margin: 5px 0 0;
-  color: #777782;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -2943,7 +2957,7 @@ a:focus-visible {
 }
 
 .toy-choice-copy small {
-  color: #747480;
+  color: var(--muted-text);
   font-size: 10px;
   line-height: 1.25;
 }
@@ -3161,7 +3175,7 @@ a:focus-visible {
 
 .link-editor-header > div > span,
 .link-editor-label {
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -3176,7 +3190,7 @@ a:focus-visible {
 
 .link-editor-header p {
   margin: 5px 0 0;
-  color: #777782;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -3353,7 +3367,7 @@ a:focus-visible {
 }
 
 .link-relation-copy small {
-  color: #747480;
+  color: var(--muted-text);
   font-size: 9px;
   line-height: 1.3;
 }
@@ -3389,7 +3403,7 @@ a:focus-visible {
 }
 
 .link-selection-copy > span {
-  color: #71717a;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -3402,7 +3416,7 @@ a:focus-visible {
 }
 
 .link-selection-copy small {
-  color: #71717a;
+  color: var(--muted-text);
   font-size: 10px;
 }
 
@@ -3567,7 +3581,7 @@ a:focus-visible {
 
 .magic-intent-header p {
   margin: 5px 0 0;
-  color: #7d7d89;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -3641,7 +3655,7 @@ a:focus-visible {
 }
 
 .magic-intent-copy small {
-  color: #747480;
+  color: var(--muted-text);
   font-size: 9px;
   line-height: 1.3;
 }
@@ -3697,7 +3711,7 @@ a:focus-visible {
 
 .magic-preview-copy small {
   overflow: hidden;
-  color: #777782;
+  color: var(--muted-text);
   font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3714,7 +3728,7 @@ a:focus-visible {
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.055);
   border-radius: 10px;
-  color: #84848f;
+  color: var(--muted-text);
   background: rgba(255, 255, 255, 0.025);
   cursor: pointer;
   font-size: 9px;
@@ -3945,7 +3959,7 @@ a:focus-visible {
 }
 
 .home-section-heading small {
-  color: #686873;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -4019,7 +4033,7 @@ a:focus-visible {
 }
 
 .world-library-copy small {
-  color: #71717a;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -4072,7 +4086,7 @@ a:focus-visible {
 }
 
 .world-trash-row small {
-  color: #60606b;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -4091,7 +4105,7 @@ a:focus-visible {
 
 .autosave-status {
   min-width: 52px;
-  color: #64646e;
+  color: var(--muted-text);
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4103,7 +4117,7 @@ a:focus-visible {
 }
 
 .autosave-status[data-status="saved"] {
-  color: #71717a;
+  color: var(--muted-text);
 }
 
 .autosave-status[data-status="error"] {
@@ -4200,7 +4214,7 @@ a:focus-visible {
 
 .snapshot-header > div > span,
 .snapshot-world-row > div > span {
-  color: #6f6f7b;
+  color: var(--muted-text);
   font-size: 9px;
   font-weight: 760;
   letter-spacing: 0.1em;
@@ -4215,7 +4229,7 @@ a:focus-visible {
 
 .snapshot-header p {
   margin: 5px 0 0;
-  color: #747480;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -4312,7 +4326,7 @@ a:focus-visible {
 }
 
 .snapshot-recall small {
-  color: #6b6b76;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -4330,7 +4344,7 @@ a:focus-visible {
   padding: 18px;
   border: 1px dashed rgba(255, 255, 255, 0.06);
   border-radius: 14px;
-  color: #71717a;
+  color: var(--muted-text);
   text-align: center;
 }
 
@@ -4354,7 +4368,7 @@ a:focus-visible {
 
 .snapshot-footer > span {
   margin-right: auto;
-  color: #656570;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -4574,7 +4588,7 @@ a:focus-visible {
 }
 
 .capture-live-limit {
-  color: #6f5a61;
+  color: #c58a98;
   font-size: 8px;
   white-space: nowrap;
 }
@@ -4641,7 +4655,7 @@ a:focus-visible {
 
 .capture-result-header p {
   margin: 5px 0 0;
-  color: #777782;
+  color: var(--muted-text);
   font-size: 11px;
 }
 
@@ -4659,7 +4673,7 @@ a:focus-visible {
 }
 
 .capture-result-meta span {
-  color: #6e6e79;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -5302,7 +5316,7 @@ a:focus-visible {
 
 .visual-settings-header p {
   margin: 5px 0 0;
-  color: #747480;
+  color: var(--muted-text);
   font-size: 10px;
 }
 
@@ -5378,7 +5392,7 @@ a:focus-visible {
 }
 
 .visual-quality-choice small {
-  color: #6f6f7a;
+  color: var(--muted-text);
   font-size: 9px;
   line-height: 1.3;
 }
@@ -5413,7 +5427,7 @@ a:focus-visible {
 }
 
 .visual-accessibility-list small {
-  color: #696974;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -6129,7 +6143,7 @@ a:focus-visible {
 }
 
 .pwa-update-banner small {
-  color: #747480;
+  color: var(--muted-text);
   font-size: 9px;
 }
 
@@ -6200,6 +6214,19 @@ a:focus-visible {
   .snapshot-row-actions button,
   .capture-result-actions button,
   .magic-preview-actions button {
+    min-height: 44px;
+  }
+
+  .palette-close,
+  .pattern-close,
+  .effect-palette-close,
+  .motion-close,
+  .toy-palette-close,
+  .link-editor-close,
+  .magic-intent-close,
+  .snapshot-close,
+  .visual-settings-close {
+    min-width: 44px;
     min-height: 44px;
   }
 
@@ -6573,5 +6600,26 @@ a:focus-visible {
 
   body {
     background: #07070b;
+  }
+}
+
+@media (forced-colors: active) {
+  button:focus-visible,
+  a:focus-visible,
+  .effect-field:focus-visible,
+  .playground-toy:focus-visible,
+  .portal-exit:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .link-hit:focus-visible {
+    stroke: Highlight;
+  }
+
+  .sound-orb.is-selected,
+  .effect-field.is-selected,
+  .playground-toy.is-selected,
+  .portal-exit.is-selected {
+    outline: 2px solid Highlight;
   }
 }
