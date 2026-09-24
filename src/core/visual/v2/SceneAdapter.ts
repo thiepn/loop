@@ -1,6 +1,7 @@
 import type { WorldDocument } from '../../world/World';
 import {
   effectAmountsAtPoint,
+  type EffectAmounts,
   type EffectFieldDocument,
 } from '../../world/EffectField';
 import type { PlaygroundToyDocument } from '../../world/PlaygroundToy';

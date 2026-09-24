@@ -2,7 +2,6 @@ import type { VisualPreferences } from '../VisualQuality';
 import type { EffectFieldType } from '../../world/EffectField';
 import {
   FIELD_RENDER_COLORS,
-  type RenderColor,
 } from './RenderPalette';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import type {
