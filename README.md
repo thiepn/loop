@@ -28,7 +28,8 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Next: Phase 18 — Production Release & GitHub Pages**
 - **Post-V1 Visual V2 Phase 1 — Specification & Art Direction Lock: complete (documentation only; runtime unchanged)**
 - **Post-V1 Visual V2 Phase 2 — Rendering Architecture V2: complete and CI-verified**
-- **Next Visual V2 phase: Phase 3 — World Environment, Atmosphere & Depth**
+- **Post-V1 Visual V2 Phase 3 — World Environment, Atmosphere & Depth: implemented; certification pending**
+- **Next Visual V2 phase after certification: Phase 4 — Sound Orb Material Engine**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
@@ -65,6 +66,8 @@ The authoritative specifications live in `docs/`:
 - [VISUAL_V2_PHASE_1_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_1_ACCEPTANCE.md) — Phase 1 art-direction/specification gate
 - [VISUAL_V2_RENDERER.md](docs/VISUAL_V2_RENDERER.md) — WebGL2/Canvas2D renderer architecture, ownership boundaries, lifecycle, and diagnostics
 - [VISUAL_V2_PHASE_2_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_2_ACCEPTANCE.md) — Phase 2 renderer foundation gate
+- [VISUAL_V2_ENVIRONMENT.md](docs/VISUAL_V2_ENVIRONMENT.md) — derived World palette, procedural atmosphere, depth bands, parallax, silence, and environmental energy
+- [VISUAL_V2_PHASE_3_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_3_ACCEPTANCE.md) — Phase 3 environment/depth gate
 
 ## Development
 

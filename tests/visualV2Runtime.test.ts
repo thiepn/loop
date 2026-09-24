@@ -90,6 +90,36 @@ describe('Visual V2 renderer policy', () => {
 });
 
 describe('Visual V2 event bridge', () => {
+  it('coalesces pointer disturbances instead of accumulating pointer history', () => {
+    const bridge = new VisualEventBridge();
+
+    bridge.emit({
+      kind: 'pointer-disturbance',
+      position: { x: 0.2, y: 0.3 },
+      delta: { x: 0.02, y: 0.01 },
+      intensity: 0.4,
+    }, 100);
+
+    bridge.emit({
+      kind: 'pointer-disturbance',
+      position: { x: 0.7, y: 0.6 },
+      delta: { x: 0.03, y: -0.01 },
+      intensity: 0.8,
+    }, 120);
+
+    const snapshot = bridge.sample(120);
+    expect(snapshot.samples).toHaveLength(1);
+    expect(snapshot.samples[0]?.event.kind).toBe('pointer-disturbance');
+
+    const event = snapshot.samples[0]?.event;
+    if (event?.kind !== 'pointer-disturbance') {
+      throw new Error('Expected pointer disturbance.');
+    }
+
+    expect(event.position).toEqual({ x: 0.7, y: 0.6 });
+    expect(event.intensity).toBe(0.8);
+  });
+
   it('keeps transient events presentation-only and expires them', () => {
     const bridge = new VisualEventBridge();
 

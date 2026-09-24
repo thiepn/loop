@@ -59,7 +59,7 @@ Build the visual runtime foundation:
 
 Use placeholder visuals before art polish.
 
-## Phase 3 — World Environment, Atmosphere & Depth
+## Phase 3 — World Environment, Atmosphere & Depth — implemented; certification pending
 
 Implement:
 - deep backdrop;
