@@ -10,6 +10,11 @@ import type { SoundRole } from '../../sounds/SoundDefinition';
 
 export type RendererKind = 'webgl2' | 'canvas2d' | 'none';
 
+export interface RenderVector {
+  readonly x: number;
+  readonly y: number;
+}
+
 export type RenderRgb = readonly [
   red: number,
   green: number,
@@ -34,6 +39,11 @@ export interface EnvironmentDynamics {
   readonly pointerPosition: NormalizedPoint;
   readonly pointerDelta: NormalizedPoint;
   readonly pointerStrength: number;
+  readonly dragPosition: NormalizedPoint;
+  readonly dragDelta: RenderVector;
+  readonly dragStrength: number;
+  readonly spotlightPosition: NormalizedPoint;
+  readonly spotlightStrength: number;
 }
 
 export interface EnvironmentParticle {
@@ -59,6 +69,21 @@ export interface RenderOrbMaterial {
   readonly fieldInfluence: EffectAmounts;
 }
 
+export interface RenderOrbInteraction {
+  readonly hoverStrength: number;
+  readonly hoverOffset: RenderVector;
+  readonly grabbed: boolean;
+  readonly dragVelocity: RenderVector;
+  readonly dragSpeed: number;
+  readonly charging: boolean;
+}
+
+export interface RenderFieldInteraction {
+  readonly dragging: boolean;
+  readonly resizing: boolean;
+  readonly tension: number;
+}
+
 export interface RenderOrb {
   readonly id: string;
   readonly role: SoundRole;
@@ -66,6 +91,7 @@ export interface RenderOrb {
   readonly muted: boolean;
   readonly selected: boolean;
   readonly focused: boolean;
+  readonly interaction: RenderOrbInteraction;
   readonly material: RenderOrbMaterial;
 }
 
@@ -75,6 +101,7 @@ export interface RenderField {
   readonly position: NormalizedPoint;
   readonly radius: number;
   readonly selected: boolean;
+  readonly interaction: RenderFieldInteraction;
 }
 
 export interface RenderToy {
@@ -129,7 +156,20 @@ export type VisualTransientEvent =
   | {
       readonly kind: 'pointer-disturbance';
       readonly position: NormalizedPoint;
-      readonly delta: NormalizedPoint;
+      readonly delta: RenderVector;
+      readonly intensity: number;
+    }
+  | {
+      readonly kind: 'orb-drop';
+      readonly orbId: string;
+      readonly position: NormalizedPoint;
+      readonly velocity: RenderVector;
+      readonly intensity: number;
+    }
+  | {
+      readonly kind: 'orb-charge';
+      readonly orbId: string;
+      readonly position: NormalizedPoint;
       readonly intensity: number;
     };
 

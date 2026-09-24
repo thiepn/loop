@@ -175,6 +175,25 @@ export function deriveEnvironmentDynamics(
   let pointerPosition = scene.listener;
   let pointerDelta = { x: 0, y: 0 };
   let pointerStrength = 0;
+  let dragPosition = scene.listener;
+  let dragDelta = { x: 0, y: 0 };
+  let dragStrength = 0;
+
+  const selectedOrb = scene.orbs.find((orb) => orb.selected);
+  const spotlightPosition = selectedOrb?.position ?? scene.listener;
+  const spotlightStrength = selectedOrb ? 0.58 : 0;
+
+  for (const orb of scene.orbs) {
+    if (orb.interaction.dragSpeed <= dragStrength) {
+      continue;
+    }
+
+    dragStrength = orb.interaction.dragSpeed;
+    dragPosition = orb.position;
+    dragDelta = preferences.reduceMotion
+      ? { x: 0, y: 0 }
+      : orb.interaction.dragVelocity;
+  }
 
   for (const sample of samples) {
     const event = sample.event;
@@ -195,6 +214,34 @@ export function deriveEnvironmentDynamics(
 
     if (event.kind === 'link-pulse') {
       energy += event.intensity * fade * 0.09;
+      continue;
+    }
+
+    if (event.kind === 'orb-drop') {
+      const strength = event.intensity
+        * fade
+        * fade;
+
+      if (strength >= dragStrength) {
+        dragStrength = strength;
+        dragPosition = event.position;
+        dragDelta = preferences.reduceMotion
+          ? { x: 0, y: 0 }
+          : event.velocity;
+      }
+
+      energy += strength * 0.12;
+      continue;
+    }
+
+    if (event.kind === 'orb-charge') {
+      const strength = event.intensity * fade;
+      energy += strength * 0.06;
+
+      if (strength > eventStrength) {
+        eventStrength = strength;
+        eventPosition = event.position;
+      }
       continue;
     }
 
@@ -242,6 +289,15 @@ export function deriveEnvironmentDynamics(
         ? pointerStrength * 0.35
         : pointerStrength,
     ),
+    dragPosition,
+    dragDelta,
+    dragStrength: clamp01(
+      preferences.reduceMotion
+        ? dragStrength * 0.25
+        : dragStrength,
+    ),
+    spotlightPosition,
+    spotlightStrength,
   };
 }
 

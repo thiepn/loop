@@ -5,7 +5,16 @@ import {
 } from '../../world/EffectField';
 import type { PlaygroundToyDocument } from '../../world/PlaygroundToy';
 import type { NormalizedPoint } from '../../world/SoundOrb';
-import type { RenderLink, RenderScene } from './RenderTypes';
+import {
+  IDLE_FIELD_INTERACTION,
+  IDLE_ORB_INTERACTION,
+} from './InteractionModel';
+import type {
+  RenderFieldInteraction,
+  RenderLink,
+  RenderOrbInteraction,
+  RenderScene,
+} from './RenderTypes';
 import { deriveWorldEnvironment } from './EnvironmentModel';
 import { deriveOrbMaterial } from './OrbMaterialModel';
 
@@ -18,6 +27,8 @@ export interface SceneProjectionOptions {
   readonly playing: boolean;
   readonly recording: boolean;
   readonly liveOrbPositions?: ReadonlyMap<string, NormalizedPoint>;
+  readonly orbInteractions?: ReadonlyMap<string, RenderOrbInteraction>;
+  readonly fieldInteractions?: ReadonlyMap<string, RenderFieldInteraction>;
   readonly fieldOverrides?: ReadonlyMap<string, EffectFieldDocument>;
   readonly toyOverrides?: ReadonlyMap<string, PlaygroundToyDocument>;
 }
@@ -69,6 +80,8 @@ export function projectWorldToRenderScene(
       muted: orb.muted,
       selected: options.selectedOrbId === orb.id,
       focused: options.focusedOrbId === orb.id,
+      interaction: options.orbInteractions?.get(orb.id)
+        ?? IDLE_ORB_INTERACTION,
       material: deriveOrbMaterial(
         orb,
         effectAmountsAtPoint(fieldDocuments, position),
@@ -83,6 +96,8 @@ export function projectWorldToRenderScene(
       position: field.position,
       radius: field.radius,
       selected: options.selectedFieldId === field.id,
+      interaction: options.fieldInteractions?.get(field.id)
+        ?? IDLE_FIELD_INTERACTION,
     }),
   );
 

@@ -22,6 +22,10 @@ function durationForEvent(event: VisualTransientEvent): number {
       return 320;
     case 'pointer-disturbance':
       return 720;
+    case 'orb-drop':
+      return 560;
+    case 'orb-charge':
+      return 900;
   }
 }
 
@@ -35,6 +39,18 @@ export class VisualEventBridge {
     if (event.kind === 'pointer-disturbance') {
       for (let index = this.events.length - 1; index >= 0; index -= 1) {
         if (this.events[index]?.event.kind === 'pointer-disturbance') {
+          this.events.splice(index, 1);
+        }
+      }
+    }
+
+    if (event.kind === 'orb-drop' || event.kind === 'orb-charge') {
+      for (let index = this.events.length - 1; index >= 0; index -= 1) {
+        const queued = this.events[index]?.event;
+        if (
+          queued?.kind === event.kind
+          && queued.orbId === event.orbId
+        ) {
           this.events.splice(index, 1);
         }
       }

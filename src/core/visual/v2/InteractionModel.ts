@@ -2,6 +2,7 @@ import type { NormalizedPoint } from '../../world/SoundOrb';
 import type {
   RenderFieldInteraction,
   RenderOrbInteraction,
+  RenderVector,
 } from './RenderTypes';
 
 export const LONG_PRESS_CHARGE_MS = 420;
@@ -81,7 +82,7 @@ export function hoverInteractionAtPoint(
 }
 
 export interface DragVelocitySample {
-  readonly direction: NormalizedPoint;
+  readonly direction: RenderVector;
   readonly speed: number;
 }
 
