@@ -196,7 +196,9 @@ function mergeWorldNodes(
     return distance > 0.002
       || kind === 'magic'
       || kind === 'magic-revert'
-      || kind === 'snapshot';
+      || kind === 'snapshot'
+      || kind === 'undo'
+      || kind === 'redo';
   });
 
   return changed.slice(0, 18);
@@ -245,8 +247,15 @@ export function buildWorldTransition(
   after: WorldDocument,
   seed?: number,
   intensity = 1,
+  focusKey?: string,
 ): StateTransitionPayload {
-  const nodes = mergeWorldNodes(before, after, kind);
+  const allNodes = mergeWorldNodes(before, after, kind);
+  const focusedNodes = focusKey
+    ? allNodes.filter((node) => node.id === focusKey)
+    : allNodes;
+  const nodes = focusedNodes.length > 0
+    ? focusedNodes
+    : allNodes;
   const deleteNode = kind === 'delete'
     ? nodes.find((node) => node.from && !node.to)
     : undefined;

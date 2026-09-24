@@ -1998,6 +1998,16 @@ export class App {
 
     const becameEmpty = world.soundOrbs.length === 0;
 
+    this.worldRendererView?.worldTransition(
+      'delete',
+      current.world,
+      world,
+      {
+        intensity: 0.82,
+        focusKey: 'orb:' + orbId,
+      },
+    );
+
     this.liveOrbOverrides.delete(orbId);
     this.playground?.releaseOrbMotionOverride(orbId);
 
@@ -2180,6 +2190,29 @@ export class App {
     }
   }
 
+  private magicTransitionIntensity(
+    strength: MagicStrength,
+  ): number {
+    switch (strength) {
+      case 'gentle':
+        return 0.58;
+      case 'playful':
+        return 0.78;
+      case 'wild':
+        return 1;
+    }
+  }
+
+  private magicTransitionFocus(
+    target: MagicTarget,
+  ): string | undefined {
+    if (target.kind === 'world') {
+      return undefined;
+    }
+
+    return target.kind + ':' + target.id;
+  }
+
   private openRemixIntent(): void {
     const current = appStore.getState();
 
@@ -2241,6 +2274,17 @@ export class App {
       },
     );
 
+    this.worldRendererView?.worldTransition(
+      'magic',
+      current.world,
+      result.world,
+      {
+        seed: result.seed,
+        intensity: this.magicTransitionIntensity(strength),
+        focusKey: this.magicTransitionFocus(target),
+      },
+    );
+
     appStore.patch({
       world: result.world,
       magicIntentOpen: false,
@@ -2288,6 +2332,17 @@ export class App {
       },
     );
 
+    this.worldRendererView?.worldTransition(
+      'magic',
+      current.world,
+      result.world,
+      {
+        seed: result.seed,
+        intensity: this.magicTransitionIntensity(session.strength),
+        focusKey: this.magicTransitionFocus(session.target),
+      },
+    );
+
     appStore.patch({
       world: result.world,
       magicSession: {
@@ -2315,6 +2370,17 @@ export class App {
         intent: session.intent,
         strength,
         attempt: session.attempt,
+      },
+    );
+
+    this.worldRendererView?.worldTransition(
+      'magic',
+      current.world,
+      result.world,
+      {
+        seed: result.seed,
+        intensity: this.magicTransitionIntensity(strength),
+        focusKey: this.magicTransitionFocus(session.target),
       },
     );
 
@@ -2356,6 +2422,17 @@ export class App {
       return;
     }
 
+    this.worldRendererView?.worldTransition(
+      'magic-revert',
+      current.world,
+      session.baseWorld,
+      {
+        seed: session.seed,
+        intensity: this.magicTransitionIntensity(session.strength),
+        focusKey: this.magicTransitionFocus(session.target),
+      },
+    );
+
     appStore.patch({
       world: session.baseWorld,
       magicSession: null,
@@ -2377,6 +2454,13 @@ export class App {
     if (historyWorld !== undo.beforeWorld) {
       this.history.reset(undo.beforeWorld);
     }
+
+    this.worldRendererView?.worldTransition(
+      'undo',
+      current.world,
+      undo.beforeWorld,
+      { intensity: 0.72 },
+    );
 
     appStore.patch({
       world: undo.beforeWorld,
@@ -2841,6 +2925,13 @@ export class App {
       return;
     }
 
+    this.worldRendererView?.worldTransition(
+      'snapshot',
+      current.world,
+      world,
+      { intensity: 0.84 },
+    );
+
     appStore.patch({
       world,
       snapshotsOpen: false,
@@ -2930,11 +3021,19 @@ export class App {
     }
 
     this.cancelSnapshotRecall();
+    const before = appStore.getState().world;
     const world = this.history.undo();
 
     if (!world) {
       return;
     }
+
+    this.worldRendererView?.worldTransition(
+      'undo',
+      before,
+      world,
+      { intensity: 0.68 },
+    );
 
     appStore.patch({
       world,
@@ -2950,11 +3049,19 @@ export class App {
     }
 
     this.cancelSnapshotRecall();
+    const before = appStore.getState().world;
     const world = this.history.redo();
 
     if (!world) {
       return;
     }
+
+    this.worldRendererView?.worldTransition(
+      'redo',
+      before,
+      world,
+      { intensity: 0.68 },
+    );
 
     appStore.patch({
       world,
@@ -3091,6 +3198,16 @@ export class App {
       return;
     }
 
+    this.worldRendererView?.worldTransition(
+      'delete',
+      current.world,
+      world,
+      {
+        intensity: 0.72,
+        focusKey: 'field:' + fieldId,
+      },
+    );
+
     this.fieldPreviewOverrides.delete(fieldId);
     this.playground?.releaseEffectFieldPreview(fieldId);
 
@@ -3171,6 +3288,16 @@ export class App {
     if (world === current.world) {
       return;
     }
+
+    this.worldRendererView?.worldTransition(
+      'delete',
+      current.world,
+      world,
+      {
+        intensity: 0.76,
+        focusKey: 'toy:' + toyId,
+      },
+    );
 
     this.toyPreviewOverrides.delete(toyId);
     this.playground?.releasePlaygroundToyPreview(toyId);

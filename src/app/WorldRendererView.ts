@@ -1,5 +1,6 @@
 import type { AppState } from './state';
 import type { ChoreographyActivity } from '../core/music/PlaygroundEngine';
+import type { WorldDocument } from '../core/world/World';
 import type { EffectFieldDocument } from '../core/world/EffectField';
 import type { PlaygroundToyDocument } from '../core/world/PlaygroundToy';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
@@ -28,11 +29,16 @@ import type {
   RenderVector,
   RenderViewport,
   RendererKind,
+  StateTransitionKind,
   WorldRenderer,
 } from '../core/visual/v2/RenderTypes';
 import { VisualEventBridge } from '../core/visual/v2/VisualEventBridge';
 import { TrailHistory } from '../core/visual/v2/TrailModel';
 import { FieldInfluenceTransitions } from '../core/visual/v2/FieldMaterialModel';
+import {
+  buildWorldTransition,
+  detectPortalTransition,
+} from '../core/visual/v2/TransitionModel';
 import { createWorldRenderer } from '../core/visual/v2/createWorldRenderer';
 
 export interface WorldRendererDiagnostics {
@@ -737,7 +743,34 @@ export class WorldRendererView {
     positions: ReadonlyMap<string, NormalizedPoint>,
     timestampMs?: number,
   ): void {
+    const state = this.state;
+    const transitionTime = timestampMs ?? performance.now();
+
     for (const [orbId, position] of positions) {
+      const previous = this.liveOrbPositions.get(orbId)
+        ?? state?.world.soundOrbs.find(
+          (orb) => orb.id === orbId,
+        )?.position;
+
+      if (previous && state && !this.activeOrbPointer) {
+        const portal = detectPortalTransition(
+          orbId,
+          previous,
+          position,
+          this.playgroundToysWithPreviews(state),
+        );
+
+        if (portal) {
+          this.events.emit(
+            {
+              kind: 'state-transition',
+              transition: portal,
+            },
+            transitionTime,
+          );
+        }
+      }
+
       this.liveOrbPositions.set(orbId, position);
     }
 
@@ -898,6 +931,39 @@ export class WorldRendererView {
       );
     }
 
+    this.requestRender();
+  }
+
+  public worldTransition(
+    kind: Exclude<StateTransitionKind, 'portal'>,
+    before: Readonly<WorldDocument>,
+    after: Readonly<WorldDocument>,
+    options: {
+      readonly seed?: number;
+      readonly intensity?: number;
+      readonly focusKey?: string;
+    } = {},
+  ): void {
+    const transition = buildWorldTransition(
+      kind,
+      before,
+      after,
+      options.seed,
+      options.intensity ?? 1,
+      options.focusKey,
+    );
+
+    if (transition.nodes.length === 0) {
+      return;
+    }
+
+    this.events.emit(
+      {
+        kind: 'state-transition',
+        transition,
+      },
+      performance.now(),
+    );
     this.requestRender();
   }
 
