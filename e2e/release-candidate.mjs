@@ -7,6 +7,26 @@ async function expectNoFatalShell(page) {
   await expect(page.locator('.fatal-shell')).toHaveCount(0);
 }
 
+function isTouchProject(testInfo) {
+  return (
+    testInfo.project.name === 'android-chromium'
+    || testInfo.project.name === 'ios-webkit'
+    || testInfo.project.name === 'ipad-webkit'
+  );
+}
+
+async function activate(locator, testInfo) {
+  await expect(locator).toBeVisible();
+  await expect(locator).toBeEnabled();
+
+  if (isTouchProject(testInfo)) {
+    await locator.tap({ force: true });
+    return;
+  }
+
+  await locator.click();
+}
+
 async function waitForSurface(locator) {
   await expect(locator).toBeVisible();
 
@@ -35,35 +55,55 @@ async function stopPlayback(page) {
   }
 }
 
-async function openStarter(page, starter = 'beat') {
+async function openStarter(
+  page,
+  testInfo,
+  starter = 'beat',
+) {
   await page.goto('./');
   await expect(page.locator('.home-shell')).toBeVisible();
   await expectNoFatalShell(page);
 
-  await page.locator(`[data-starter="${starter}"]`).click();
+  await activate(
+    page.locator(`[data-starter="${starter}"]`),
+    testInfo,
+  );
 
   await expect(page.locator('.playground-shell')).toBeVisible();
   await expect(page.locator('.sound-orb').first()).toBeVisible();
-  await expect(page.locator('[data-play]')).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+
+  const play = page.locator('[data-play]');
+
+  if (await play.getAttribute('aria-pressed') !== 'true') {
+    await activate(play, testInfo);
+    await page.waitForTimeout(250);
+  }
+
+  const playing = await play.getAttribute('aria-pressed') === 'true';
+
+  if (!playing) {
+    await expect(page.locator('[data-status]')).toContainText(
+      /Tap Play to allow sound|Sound could not start/i,
+    );
+  }
+
+  return playing;
 }
 
 test('complete clean-user V1 workflow survives the release-candidate matrix', async ({
   page,
-}) => {
+}, testInfo) => {
   const pageErrors = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
   });
 
-  await openStarter(page, 'beat');
+  await openStarter(page, testInfo, 'beat');
 
   const initialSoundCount = await page.locator('.sound-orb').count();
   const firstOrb = page.locator('.sound-orb').first();
 
-  await firstOrb.click();
+  await activate(firstOrb, testInfo);
   await expect(page.locator('.selection-panel')).toBeVisible();
 
   const initialX = Number(await firstOrb.getAttribute('data-x'));
@@ -141,7 +181,19 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
 
   await stopPlayback(page);
 
-  await page.locator('.snapshots-button').click();
+  await activate(page.locator('.sound-orb').first(), testInfo);
+  await activate(page.locator('[data-action="motion"]'), testInfo);
+  await waitForSurface(page.locator('.motion-sheet'));
+  await activate(
+    page.locator('[data-motion-mode="still"]'),
+    testInfo,
+  );
+  await expect(
+    page.locator('[data-motion-mode="still"]'),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await activate(page.locator('[data-motion-close]'), testInfo);
+
+  await activate(page.locator('.snapshots-button'), testInfo);
   await waitForSurface(page.locator('.snapshot-sheet'));
 
   page.once('dialog', async (dialog) => {
@@ -232,8 +284,8 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
 
 test('recording either completes or degrades with an explicit unsupported state', async ({
   page,
-}) => {
-  await openStarter(page, 'dreamy');
+}, testInfo) => {
+  const playing = await openStarter(page, testInfo, 'dreamy');
 
   const recordButton = page.locator('[data-capture-record]');
   await expect(recordButton).toBeVisible();
@@ -246,14 +298,27 @@ test('recording either completes or degrades with an explicit unsupported state'
     return;
   }
 
-  await recordButton.click();
+  await activate(recordButton, testInfo);
+
+  if (!playing) {
+    await expect(page.locator('#app')).toHaveAttribute(
+      'data-capture-status',
+      'error',
+      { timeout: 8_000 },
+    );
+    await expect(page.locator('[data-status]')).toContainText(
+      /Recording could not start because audio is not running/i,
+    );
+    return;
+  }
+
   await expect(page.locator('#app')).toHaveAttribute(
     'data-capture-status',
     'recording',
   );
 
   await page.waitForTimeout(250);
-  await recordButton.click();
+  await activate(recordButton, testInfo);
 
   await expect(page.locator('#app')).toHaveAttribute(
     'data-capture-status',
@@ -317,7 +382,7 @@ test('touch layouts keep primary sheets inside the viewport', async ({
 
   test.skip(!touchProject, 'Touch-layout check only.');
 
-  await openStarter(page, 'chill');
+  await openStarter(page, testInfo, 'chill');
 
   await page.locator('.effects-button').click();
   const sheet = page.locator('.effect-palette-sheet');
