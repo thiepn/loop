@@ -6,6 +6,7 @@ import {
   withAlpha,
   type RenderColor,
 } from './RenderPalette';
+import { transientOrbInteraction } from './InteractionModel';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import { orbDiameterPixels } from './RenderMetrics';
 import type {
