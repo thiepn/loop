@@ -8,27 +8,27 @@ const CANDIDATES: readonly RecordingFormat[] = [
   {
     mimeType: 'audio/webm;codecs=opus',
     extension: 'webm',
-    label: 'WebM / Opus',
+    label: 'WebM audio',
   },
   {
     mimeType: 'audio/ogg;codecs=opus',
     extension: 'ogg',
-    label: 'Ogg / Opus',
+    label: 'Ogg audio',
   },
   {
     mimeType: 'audio/mp4',
     extension: 'm4a',
-    label: 'MPEG-4 Audio',
+    label: 'MPEG-4 audio',
   },
   {
     mimeType: 'audio/webm',
     extension: 'webm',
-    label: 'WebM Audio',
+    label: 'WebM audio',
   },
   {
     mimeType: 'audio/ogg',
     extension: 'ogg',
-    label: 'Ogg Audio',
+    label: 'Ogg audio',
   },
 ];
 
@@ -39,7 +39,7 @@ export function formatForMimeType(mimeType: string): RecordingFormat {
     return {
       mimeType,
       extension: 'ogg',
-      label: 'Ogg Audio',
+      label: 'Ogg audio',
     };
   }
 
@@ -47,7 +47,7 @@ export function formatForMimeType(mimeType: string): RecordingFormat {
     return {
       mimeType,
       extension: 'm4a',
-      label: 'MPEG-4 Audio',
+      label: 'MPEG-4 audio',
     };
   }
 
@@ -55,14 +55,14 @@ export function formatForMimeType(mimeType: string): RecordingFormat {
     return {
       mimeType,
       extension: 'webm',
-      label: 'WebM Audio',
+      label: 'WebM audio',
     };
   }
 
   return {
     mimeType: mimeType || 'audio/webm',
     extension: 'webm',
-    label: 'Browser Audio',
+    label: 'Audio file',
   };
 }
 
