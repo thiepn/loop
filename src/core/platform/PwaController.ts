@@ -5,9 +5,34 @@ import {
 
 export interface PwaRuntimeState {
   readonly installAvailable: boolean;
+  readonly manualInstallAvailable: boolean;
   readonly installed: boolean;
   readonly updateReady: boolean;
   readonly offline: boolean;
+}
+
+export interface PwaPlatformHints {
+  readonly userAgent: string;
+  readonly platform: string;
+  readonly maxTouchPoints: number;
+  readonly standalone: boolean;
+}
+
+export function isIosLikePlatform(
+  hints: PwaPlatformHints,
+): boolean {
+  return /iPad|iPhone|iPod/i.test(hints.userAgent)
+    || (
+      hints.platform === 'MacIntel'
+      && hints.maxTouchPoints > 1
+    );
+}
+
+export function shouldOfferManualInstall(
+  hints: PwaPlatformHints,
+): boolean {
+  return isIosLikePlatform(hints)
+    && !hints.standalone;
 }
 
 export type PwaStateListener = (
@@ -34,6 +59,7 @@ function standaloneNow(): boolean {
 export class PwaController {
   private stateValue: PwaRuntimeState = {
     installAvailable: false,
+    manualInstallAvailable: false,
     installed: false,
     updateReady: false,
     offline: false,
@@ -52,6 +78,7 @@ export class PwaController {
     this.installPrompt = promptEvent;
     this.patch({
       installAvailable: true,
+      manualInstallAvailable: false,
     });
   };
 
@@ -59,6 +86,7 @@ export class PwaController {
     this.installPrompt = null;
     this.patch({
       installAvailable: false,
+      manualInstallAvailable: false,
       installed: true,
     });
   };
@@ -117,8 +145,19 @@ export class PwaController {
 
     this.started = true;
 
+    const installed = standaloneNow();
+    const nav = navigator as Navigator & {
+      standalone?: boolean;
+    };
+
     this.patch({
-      installed: standaloneNow(),
+      installed,
+      manualInstallAvailable: shouldOfferManualInstall({
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        maxTouchPoints: navigator.maxTouchPoints ?? 0,
+        standalone: nav.standalone === true || installed,
+      }),
       offline: navigator.onLine === false,
     });
 
@@ -174,6 +213,7 @@ export class PwaController {
     if (choice.outcome === 'accepted') {
       this.patch({
         installAvailable: false,
+        manualInstallAvailable: false,
         installed: true,
       });
       this.installPrompt = null;
@@ -305,6 +345,7 @@ export class PwaController {
 
     if (
       next.installAvailable === this.stateValue.installAvailable
+      && next.manualInstallAvailable === this.stateValue.manualInstallAvailable
       && next.installed === this.stateValue.installed
       && next.updateReady === this.stateValue.updateReady
       && next.offline === this.stateValue.offline
