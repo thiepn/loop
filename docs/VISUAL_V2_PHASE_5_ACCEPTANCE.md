@@ -108,3 +108,24 @@ Phase 5 is complete only when the exact final Phase 5 head passes:
 - complete unit/soak suite;
 - production build;
 - Phase 16 browser certification without relaxing its budgets.
+
+
+## Verification record
+
+The implemented Phase 5 head passed the existing repository verification gates without changing certification budgets:
+
+- strict TypeScript typecheck: passed;
+- unit/soak suite: **42 files, 226 tests passed**;
+- production Vite build: passed;
+- Phase 16 browser certification: passed;
+- JS+CSS gzip: **96,222 bytes** (< 120 KiB budget);
+- navigation load: **395.0 ms** (< 3,000 ms budget);
+- Home → World: **480.9 ms** (< 1,500 ms budget);
+- sampled animation-frame p95: **16.8 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **4.38 ms** (< 8 ms budget);
+- post-GC heap growth: **362,012 bytes** (< 5 MiB budget);
+- DOM node growth: **119** (< 250 budget);
+- longest observed long task: **0 ms**;
+- frozen → active lifecycle recovery: passed.
+
+The physical interaction layer therefore remains inside the existing release-performance envelope while preserving substantial headroom for the renderer-level trail system in Phase 6.

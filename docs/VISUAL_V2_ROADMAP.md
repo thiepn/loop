@@ -84,7 +84,7 @@ Implement:
 - selection/mute/focus treatment;
 - label-free identity.
 
-## Phase 5 — Physical Interaction & Object Game Feel — implemented; certification pending
+## Phase 5 — Physical Interaction & Object Game Feel — complete
 
 Implement:
 - hover magnetism;
