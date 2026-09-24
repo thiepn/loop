@@ -111,7 +111,7 @@ function findBrowser() {
   );
 }
 
-async function launchChrome(browserPath, attempts = 3) {
+async function launchChrome(browserPath, attempts = 5) {
   const failures = [];
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -159,10 +159,10 @@ async function launchChrome(browserPath, attempts = 3) {
     try {
       const debugPort = await waitForDevToolsPort(
         userDataDir,
-        7_000,
+        15_000,
       );
       const debugBase = `http://127.0.0.1:${debugPort}`;
-      await waitForHttp(`${debugBase}/json/version`, 3_000);
+      await waitForHttp(`${debugBase}/json/version`, 7_500);
 
       return {
         chrome,
