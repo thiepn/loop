@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 10.
+Introduced in Phase 3 and updated through Phase 11.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -417,6 +417,54 @@ Home provides:
 
 Imports migrate supported older Worlds and always create new local World ids instead of overwriting existing Worlds.
 
+## Play, Capture & Export
+
+Phase 11 adds a single beginner-facing **● Record** action to the playground dock.
+
+### Record
+Press Record to capture the master World performance.
+
+If playback is stopped, the same gesture starts/resumes Loop audio and begins the World before recording.
+
+During recording the user can continue normal playground interaction:
+- drag Sound Orbs;
+- reshape patterns;
+- move through Effect Fields;
+- use Motion/toys;
+- trigger Links;
+- use Magic;
+- recall Snapshots.
+
+The capture follows what is actually heard from Loop's post-limiter master.
+
+### Live status
+While recording:
+- Record becomes Stop;
+- elapsed duration is visible;
+- Cancel discards;
+- recording is capped at 10 minutes.
+
+Backgrounding the app finalizes the current capture.
+
+### Result
+After Stop, the result sheet exposes:
+- listen-back audio;
+- duration;
+- browser recording format;
+- Download Audio;
+- Download WAV when safely available;
+- New Recording;
+- Discard.
+
+The result is transient. It is not part of the World or World library.
+
+### WAV
+Automatic WAV conversion is attempted only for recordings up to three minutes.
+
+Longer recordings still provide the browser-native Download Audio path.
+
+No codec/bit-depth/routing controls are exposed in the normal UI.
+
 ## World schema
 
 World schema version 8 includes:
@@ -451,9 +499,10 @@ The playground currently includes:
 - Trash/recovery;
 - eight Snapshots per World;
 - bounded general undo/redo;
-- versioned JSON backups/import.
+- versioned JSON backups/import;
+- one-tap master performance recording;
+- live duration/cancel;
+- browser-native audio download;
+- bounded optional WAV export.
 
-It does not yet include:
-- audio recording/export.
-
-Those remain assigned to later roadmap phases.
+The remaining roadmap work is visual/game-feel hardening, mobile/PWA/offline hardening, and release certification—not deeper studio production features.
