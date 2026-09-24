@@ -3,6 +3,7 @@ import {
 } from '../core/audio/MasterRecorder';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface CaptureViewCallbacks {
   readonly onStart: () => void;
@@ -48,7 +49,7 @@ export class CaptureView {
     recordButton.type = 'button';
     recordButton.className = 'record-button';
     recordButton.dataset.captureRecord = '';
-    recordButton.innerHTML = '<span aria-hidden="true">●</span> Record';
+    recordButton.innerHTML = loopIcon('record') + '<span>Record</span>';
     recordButton.disabled = !supported;
     recordButton.title = supported
       ? 'Record this performance'
@@ -117,7 +118,7 @@ export class CaptureView {
 
         <div class="capture-result-actions">
           <button class="capture-download-primary" type="button" data-capture-download>
-            Download Audio
+            ${loopIcon('download')}<span>Download Audio</span>
           </button>
           <button type="button" data-capture-wav>
             Download WAV
@@ -191,8 +192,8 @@ export class CaptureView {
       recording ? 'Stop recording' : 'Start recording',
     );
     this.recordButton.innerHTML = recording
-      ? `<span aria-hidden="true">■</span> Stop ${durationLabel(state.captureDurationMs)}`
-      : '<span aria-hidden="true">●</span> Record';
+      ? loopIcon('stop') + '<span>Stop ' + durationLabel(state.captureDurationMs) + '</span>'
+      : loopIcon('record') + '<span>Record</span>';
 
     this.liveBar.hidden = !recording;
     this.liveDuration.textContent = durationLabel(state.captureDurationMs);
