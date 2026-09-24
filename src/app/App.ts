@@ -617,6 +617,53 @@ export class App {
       },
     });
 
+    this.persistenceView = new PersistenceView(this.root, {
+      onOpenSnapshots: () => {
+        appStore.patch({
+          snapshotsOpen: true,
+          palette: null,
+          effectPaletteOpen: false,
+          toyPaletteOpen: false,
+          patternEditorOrbId: null,
+          motionEditorOrbId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
+          magicIntentOpen: false,
+          selectedOrbId: null,
+          selectedFieldId: null,
+          selectedToyId: null,
+          selectedLinkId: null,
+        });
+      },
+      onCloseSnapshots: () => {
+        appStore.patch({ snapshotsOpen: false });
+      },
+      onSaveSnapshot: (name) => {
+        this.saveSnapshot(name);
+      },
+      onRecallSnapshot: (snapshotId) => {
+        this.queueSnapshotRecall(snapshotId);
+      },
+      onRenameSnapshot: (snapshotId, name) => {
+        this.renameWorldSnapshot(snapshotId, name);
+      },
+      onDeleteSnapshot: (snapshotId) => {
+        this.deleteWorldSnapshot(snapshotId);
+      },
+      onUndo: () => {
+        this.undoWorld();
+      },
+      onRedo: () => {
+        this.redoWorld();
+      },
+      onRenameWorld: (name) => {
+        this.renameCurrentWorld(name);
+      },
+      onExportCurrent: () => {
+        this.exportCurrentWorld();
+      },
+    });
+
     this.patternEditorView = new PatternEditorView(this.root, {
       onClose: () => {
         appStore.patch({ patternEditorOrbId: null });
