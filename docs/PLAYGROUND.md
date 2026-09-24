@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 9.
+Introduced in Phase 3 and updated through Phase 10.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -337,17 +337,94 @@ Keep leaves a one-step **Undo Magic** while no later material World edit has occ
 
 The canvas is temporarily pointer-locked during preview so Revert/Retry cannot silently erase a manual edit made after the preview began.
 
-Magic itself does not add a persistent schema field. World schema remains version 7.
+Magic itself does not add a persistent schema field. Phase 10 later advances the World schema only for typed Snapshots.
+
+## Worlds, persistence & history
+
+Phase 10 makes every ordinary World locally durable.
+
+### Your Worlds
+Home now shows **Your Worlds** above the starter choices.
+
+A saved World can:
+- Open
+- Rename
+- Duplicate
+- Backup
+- move to Recently Deleted
+
+Recently Deleted supports:
+- Restore
+- Delete permanently
+
+Starter choices still create ordinary WorldDocument values; there is no separate starter-project format.
+
+### Autosave
+Material World edits save automatically to IndexedDB after a short debounce.
+
+The playground shows:
+- Local
+- Saving…
+- Saved
+- Save failed
+
+UI selections, open sheets and playback state do not trigger World saves.
+
+Active Magic previews are not autosaved.
+
+### Restore after refresh
+If the user refreshes/restarts while a World is active, Loop restores that World but keeps playback stopped until the user presses Play.
+
+Returning Home clears the active-World pointer, so Home remains the startup destination after a deliberate return.
+
+### Undo / Redo
+The playground top bar provides bounded session undo/redo.
+
+Keyboard:
+- Ctrl/Cmd + Z
+- Ctrl/Cmd + Shift + Z
+- Ctrl/Cmd + Y
+
+Text-entry controls are not intercepted.
+
+### Snapshots
+The dock includes **Snapshots**.
+
+A World can store up to eight playable Snapshots.
+
+Snapshot actions:
+- Save Snapshot
+- Recall
+- Rename
+- Delete
+
+When stopped, recall is immediate.
+
+When playing, recall is queued to the next musical bar. A later material edit cancels the queued recall instead of letting it overwrite newer work.
+
+Snapshots preserve the World identity/name and the Snapshot collection itself while recalling:
+- music;
+- Sound Orbs;
+- Effect Fields;
+- toys;
+- Links.
+
+### Backups
+Home provides:
+- Backup one World
+- Backup All
+- Import Backup
+
+Imports migrate supported older Worlds and always create new local World ids instead of overwriting existing Worlds.
 
 ## World schema
 
-World schema version 7 includes:
+World schema version 8 includes:
 - full SoundOrbDocument objects with optional serializable pattern + Motion state;
 - full EffectFieldDocument objects;
 - full PlaygroundToyDocument objects;
-- full LinkDocument objects.
-
-Snapshots remain the remaining placeholder collection.
+- full LinkDocument objects;
+- bounded typed SnapshotDocument objects.
 
 ## Current scope boundary
 
@@ -369,10 +446,14 @@ The playground currently includes:
 - per-object ✦ Magic;
 - global ✦ Remix with six intent choices;
 - Gentle/Playful/Wild preview strength;
-- Retry/Keep/Revert and one-step Undo Magic.
+- Retry/Keep/Revert and one-step Undo Magic;
+- IndexedDB World library/autosave/restore;
+- Trash/recovery;
+- eight Snapshots per World;
+- bounded general undo/redo;
+- versioned JSON backups/import.
 
 It does not yet include:
-- persistent World library;
-- recording/export.
+- audio recording/export.
 
 Those remain assigned to later roadmap phases.
