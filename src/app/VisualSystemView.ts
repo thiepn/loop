@@ -66,10 +66,10 @@ export class VisualSystemView {
   ) {
     const shell = root.querySelector<HTMLElement>('.playground-shell');
     const canvas = root.querySelector<HTMLElement>('[data-canvas]');
-    const topbar = root.querySelector<HTMLElement>('.playground-topbar');
-    const playButton = topbar?.querySelector<HTMLElement>('[data-play]');
+    const topbarActions = root.querySelector<HTMLElement>('[data-topbar-actions]');
+    const playButton = topbarActions?.querySelector<HTMLElement>('[data-play]');
 
-    if (!shell || !canvas || !topbar || !playButton) {
+    if (!shell || !canvas || !topbarActions || !playButton) {
       throw new Error('Visual system requires the playground shell.');
     }
 
@@ -105,7 +105,7 @@ export class VisualSystemView {
     settingsButton.title = 'Visual settings';
     settingsButton.innerHTML = '<span aria-hidden="true">✺</span>';
     settingsButton.addEventListener('click', callbacks.onOpenSettings);
-    topbar.insertBefore(settingsButton, playButton);
+    topbarActions.insertBefore(settingsButton, playButton);
     this.settingsButton = settingsButton;
 
     const settingsBackdrop = document.createElement('div');
