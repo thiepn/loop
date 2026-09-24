@@ -395,6 +395,52 @@ function assertBudget(
   }
 }
 
+async function stopProcessGroup(child) {
+  if (
+    child.exitCode !== null
+    || child.signalCode !== null
+  ) {
+    return;
+  }
+
+  const exited = new Promise((resolve) => {
+    child.once('exit', resolve);
+  });
+
+  const signal = (name) => {
+    try {
+      if (
+        process.platform !== 'win32'
+        && child.pid
+      ) {
+        process.kill(-child.pid, name);
+      } else {
+        child.kill(name);
+      }
+    } catch {
+      // The process may have already exited between checks.
+    }
+  };
+
+  signal('SIGTERM');
+
+  await Promise.race([
+    exited,
+    delay(2_000),
+  ]);
+
+  if (
+    child.exitCode === null
+    && child.signalCode === null
+  ) {
+    signal('SIGKILL');
+    await Promise.race([
+      exited,
+      delay(1_000),
+    ]);
+  }
+}
+
 async function main() {
   const build = await measureBuildSize();
   const browserPath = findBrowser();
@@ -413,6 +459,7 @@ async function main() {
     {
       cwd: ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
     },
   );
   let chrome = null;
@@ -831,7 +878,7 @@ async function main() {
   } finally {
     client?.close();
     chrome?.kill('SIGTERM');
-    preview.kill('SIGTERM');
+    await stopProcessGroup(preview);
 
     await delay(250);
 
