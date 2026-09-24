@@ -1685,6 +1685,7 @@ export class App {
 
     if (state.playing) {
       this.playground?.stop();
+      this.clearActivityTimers();
       appStore.patch({
         playing: false,
         message: 'Paused.',
@@ -1702,6 +1703,15 @@ export class App {
 
     try {
       const audio = await audioEngine.initialize();
+      const latest = appStore.getState();
+
+      if (
+        latest.screen !== 'playground'
+        || latest.world.id !== state.world.id
+      ) {
+        return;
+      }
+
       const runtime = audioEngine.getRuntime();
 
       if (!runtime || audio.state !== 'running') {
@@ -1740,6 +1750,15 @@ export class App {
       });
     } catch (error) {
       console.error('[Loop] Playground playback failed.', error);
+
+      const latest = appStore.getState();
+      if (
+        latest.screen !== 'playground'
+        || latest.world.id !== state.world.id
+      ) {
+        return;
+      }
+
       appStore.patch({
         playing: false,
         message: 'Sound could not start.',
