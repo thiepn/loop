@@ -33,7 +33,8 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Post-V1 Visual V2 Phase 5 — Physical Interaction & Object Game Feel: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 6 — Motion Trails & Kinetic Graphics: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 7 — Effect Fields V2: complete and CI-verified**
-- **Next Visual V2 phase after certification: Phase 8 — Cross-System Visual Interaction**
+- **Post-V1 Visual V2 Phase 8 — Cross-System Visual Interaction: implemented; certification pending**
+- **Next Visual V2 phase after certification: Phase 9 — Links, Listener & Light Propagation**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
@@ -80,6 +81,8 @@ The authoritative specifications live in `docs/`:
 - [VISUAL_V2_PHASE_6_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_6_ACCEPTANCE.md) — Phase 6 motion-trail/kinetic-graphics gate
 - [VISUAL_V2_FIELDS.md](docs/VISUAL_V2_FIELDS.md) — procedural Field materials, Orb/environment transformation, overlap materials, and entry/exit continuity
 - [VISUAL_V2_PHASE_7_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_7_ACCEPTANCE.md) — Phase 7 Effect Fields V2 gate
+- [VISUAL_V2_CROSS_SYSTEM.md](docs/VISUAL_V2_CROSS_SYSTEM.md) — Orb/Field/Link/toy/trail/environment coupling, bounded priority, aura bridges, refraction, and particle forces
+- [VISUAL_V2_PHASE_8_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_8_ACCEPTANCE.md) — Phase 8 cross-system interaction gate
 
 ## Development
 
