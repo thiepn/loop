@@ -162,21 +162,31 @@ The same certified source tree also passes the normal Verify workflow:
 
 ## RC tag gate
 
-The versioned Phase 17 tree includes a one-shot release-candidate tagging workflow.
+The versioned Phase 17 tree includes a rerunnable self-verifying release-candidate tagging workflow.
 
-When `package.json` changes to an RC version, that workflow independently runs:
+While the package version is an RC and its tag does not yet exist, that workflow independently runs:
 
 1. dependency installation;
 2. strict TypeScript + unit/soak tests;
 3. production build;
-4. Phase 16 browser performance certification;
-5. Chromium/Firefox/Android/WebKit release-candidate matrix.
+4. Chromium/Firefox/Android/WebKit release-candidate matrix;
+5. Phase 16 browser performance certification.
 
-Only after those gates pass does it create and push the annotated tag matching the package version.
+Only after those gates pass does it create and push the annotated tag matching the package version. If the RC tag already exists, later main-branch pushes do not retag it. Non-RC versions make this workflow a no-op.
 
-For this tree, the intended tag is:
+The exact tag gate completed successfully with:
 
-**`v1.0.0-rc.1`**
+- **37 / 37 test files passed**;
+- **193 / 193 unit/soak tests passed**;
+- **14 RC matrix tests passed**;
+- **6 intentional platform-scoped skips**;
+- production build and 9-URL service-worker generation passed;
+- browser performance certification passed with **0 long tasks**;
+- annotated tag **`v1.0.0-rc.1`** created.
+
+The annotated tag dereferences to certified commit:
+
+**`c904d6f822af0f89d73652d886aabbf04769f9a9`**
 
 ## Scope protection
 
@@ -192,6 +202,6 @@ For this tree, the intended tag is:
 
 Phase 17 succeeds when the exact versioned RC tree passes both the normal Verify gate and the complete release-candidate browser matrix, and the self-verifying tag workflow creates `v1.0.0-rc.1`.
 
-**Phase 17 status: release-candidate tree prepared for final exact-head verification and tag creation.**
+**Phase 17 status: complete, exact-head verified, and tagged as `v1.0.0-rc.1`.**
 
-**Next after the RC tag is verified: Phase 18 — Production Release & GitHub Pages.**
+**Next: Phase 18 — Production Release & GitHub Pages.**

@@ -23,9 +23,9 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 14 — Functional & Data-Integrity Audit: complete and CI-verified**
 - **Phase 15 — UX, Accessibility & Regression Audit: complete and CI-verified**
 - **Phase 16 — Performance & Soak Certification: complete and CI-verified**
-- **Phase 17 — Release Candidate: `1.0.0-rc.1` packaged; exact-head tag gate active**
+- **Phase 17 — Release Candidate: complete and tagged as `v1.0.0-rc.1`**
 - **V1 feature development remains frozen**
-- **Next after RC tag verification: Phase 18 — Production Release & GitHub Pages**
+- **Next: Phase 18 — Production Release & GitHub Pages**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
@@ -94,7 +94,7 @@ The release-candidate source tree carries:
   - iPhone WebKit touch profile
   - iPad WebKit touch profile
 
-The final pre-version RC matrix completed with **14 passed, 6 intentionally skipped, 0 flaky, 0 failed**. The six skips are platform-scoped checks: canonical offline/service-worker testing runs in Chromium desktop, and touch geometry runs only on touch projects.
+The final pre-version RC matrix completed with **14 passed, 6 intentionally skipped, 0 flaky, 0 failed**. The exact tagged RC tree then independently repeated the full release gates before creating the annotated **`v1.0.0-rc.1`** tag at commit **`c904d6f`**. The six skips are platform-scoped checks: canonical offline/service-worker testing runs in Chromium desktop, and touch geometry runs only on touch projects.
 
 ## Product rule
 
@@ -106,4 +106,4 @@ If it mainly adds technical sophistication, professional production depth, or ar
 
 The canonical V1 product is a static web app / PWA at the `/loop/` GitHub Pages project path.
 
-Public production deployment remains Phase 18. Phase 17 produces the audited release candidate; Phase 18 deploys and smoke-tests that candidate before the final `v1.0.0` tag.
+Public production deployment remains Phase 18. The audited release candidate is now tagged as `v1.0.0-rc.1`; Phase 18 deploys, smoke-tests the real GitHub Pages URL/PWA, and then creates the final `v1.0.0` release tag.
