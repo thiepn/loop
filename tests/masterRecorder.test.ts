@@ -183,7 +183,7 @@ describe('MasterRecorder', () => {
     );
 
     expect(dispose).toHaveBeenCalledTimes(250);
-    expect(elapsedMs).toBeLessThan(5_000);
+    expect(elapsedMs).toBeLessThan(1_000);
   }, 15_000);
 
   it('fires the bounded-duration callback while recording', async () => {
