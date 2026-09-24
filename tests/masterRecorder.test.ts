@@ -164,6 +164,28 @@ describe('MasterRecorder', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('survives 250 start/cancel cycles without leaking capture taps', async () => {
+    vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
+
+    const dispose = vi.fn();
+    const recorder = new MasterRecorder();
+    const started = performance.now();
+
+    for (let cycle = 0; cycle < 250; cycle += 1) {
+      await recorder.start(fakeEngine(dispose));
+      await recorder.cancel();
+      expect(recorder.state).toBe('idle');
+    }
+
+    const elapsedMs = performance.now() - started;
+    console.info(
+      `[Phase 16] 250 recorder start/cancel cycles: ${elapsedMs.toFixed(2)} ms`,
+    );
+
+    expect(dispose).toHaveBeenCalledTimes(250);
+    expect(elapsedMs).toBeLessThan(5_000);
+  }, 15_000);
+
   it('fires the bounded-duration callback while recording', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
