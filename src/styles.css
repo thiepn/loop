@@ -6555,7 +6555,8 @@ a:focus-visible,
   .selection-panel,
   .field-selection-panel,
   .toy-selection-panel,
-  .link-selection-panel {
+  .link-selection-panel,
+  .magic-undo-button {
     bottom: max(
       56px,
       calc(env(safe-area-inset-bottom) + 50px)
@@ -6613,6 +6614,19 @@ a:focus-visible,
   .field-selection-panel,
   .toy-selection-panel,
   .link-selection-panel {
+    bottom: max(
+      84px,
+      calc(env(safe-area-inset-bottom) + 76px)
+    );
+  }
+}
+
+@media (min-height: 541px) {
+  .selection-panel,
+  .field-selection-panel,
+  .toy-selection-panel,
+  .link-selection-panel,
+  .magic-undo-button {
     bottom: max(
       84px,
       calc(env(safe-area-inset-bottom) + 76px)
