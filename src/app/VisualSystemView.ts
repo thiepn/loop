@@ -51,6 +51,7 @@ export class VisualSystemView {
   private readonly reduceParticlesInput: HTMLInputElement;
   private readonly reduceBloomInput: HTMLInputElement;
   private readonly trails = new Map<string, TrailState>();
+  private readonly positions = new Map<string, NormalizedPoint>();
   private readonly cleanupTimers = new Set<ReturnType<typeof setTimeout>>();
   private roles = new Map<string, SoundRole>();
   private preferences: VisualPreferences = {
@@ -254,6 +255,20 @@ export class VisualSystemView {
       state.world.soundOrbs.map((orb) => [orb.id, orb.role]),
     );
 
+    const liveIds = new Set(state.world.soundOrbs.map((orb) => orb.id));
+
+    for (const orb of state.world.soundOrbs) {
+      if (!this.positions.has(orb.id)) {
+        this.positions.set(orb.id, orb.position);
+      }
+    }
+
+    for (const orbId of [...this.positions.keys()]) {
+      if (!liveIds.has(orbId)) {
+        this.positions.delete(orbId);
+      }
+    }
+
     this.shell.dataset.visualQuality = state.visualQuality;
     this.shell.dataset.reduceMotion = String(state.visualReduceMotion);
     this.shell.dataset.reduceParticles = String(state.visualReduceParticles);
@@ -285,6 +300,8 @@ export class VisualSystemView {
     position: NormalizedPoint,
     motionActive: boolean,
   ): void {
+    this.positions.set(orbId, position);
+
     if (!motionActive) {
       return;
     }
@@ -356,11 +373,12 @@ export class VisualSystemView {
 
   public pulseOrb(
     orbId: string,
-    position: NormalizedPoint,
     intensity: number,
   ): void {
     const role = this.roles.get(orbId);
-    if (!role) {
+    const position = this.positions.get(orbId);
+
+    if (!role || !position) {
       return;
     }
 
@@ -427,6 +445,7 @@ export class VisualSystemView {
     }
 
     this.trails.delete(orbId);
+    this.positions.delete(orbId);
   }
 
   public destroy(): void {
@@ -443,6 +462,7 @@ export class VisualSystemView {
     }
 
     this.trails.clear();
+    this.positions.clear();
     this.ambientLayer.parentElement?.remove();
     this.settingsButton.remove();
     this.settingsBackdrop.remove();
