@@ -1,5 +1,6 @@
 import type { NormalizedPoint } from '../../world/SoundOrb';
 import type {
+  RenderEventSample,
   RenderFieldInteraction,
   RenderOrbInteraction,
   RenderVector,
@@ -159,4 +160,48 @@ export function movedDistancePixels(
     (b.x - a.x) * width,
     (b.y - a.y) * height,
   );
+}
+
+
+export interface OrbTransientInteraction {
+  readonly settle: number;
+  readonly settleDirection: RenderVector;
+  readonly charge: number;
+}
+
+export function transientOrbInteraction(
+  orbId: string,
+  samples: readonly RenderEventSample[],
+): OrbTransientInteraction {
+  let settle = 0;
+  let settleDirection: RenderVector = { x: 0, y: 0 };
+  let charge = 0;
+
+  for (const sample of samples) {
+    const event = sample.event;
+
+    if (event.kind === 'orb-drop' && event.orbId === orbId) {
+      const candidate = settleEnvelope(sample.progress)
+        * event.intensity;
+
+      if (Math.abs(candidate) > Math.abs(settle)) {
+        settle = candidate;
+        settleDirection = event.velocity;
+      }
+      continue;
+    }
+
+    if (event.kind === 'orb-charge' && event.orbId === orbId) {
+      charge = Math.max(
+        charge,
+        chargeEnvelope(sample.progress) * event.intensity,
+      );
+    }
+  }
+
+  return {
+    settle,
+    settleDirection,
+    charge,
+  };
 }

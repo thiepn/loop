@@ -5,12 +5,26 @@ import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { VisualPreferences } from '../core/visual/VisualQuality';
 import { AnimationClock } from '../core/visual/v2/AnimationClock';
 import {
+  IDLE_FIELD_INTERACTION,
+  IDLE_ORB_INTERACTION,
+  LONG_PRESS_CANCEL_DISTANCE_PX,
+  LONG_PRESS_CHARGE_MS,
+  dragVelocitySample,
+  hoverInteractionAtPoint,
+  movedDistancePixels,
+  pointerPositionInRect,
+  resizeTension,
+} from '../core/visual/v2/InteractionModel';
+import {
   motionRenderIntervalMs,
   rendererDevicePixelRatio,
 } from '../core/visual/v2/RendererPolicy';
 import { projectWorldToRenderScene } from '../core/visual/v2/SceneAdapter';
 import type {
+  RenderFieldInteraction,
+  RenderOrbInteraction,
   RenderScene,
+  RenderVector,
   RenderViewport,
   RendererKind,
   WorldRenderer,
@@ -27,6 +41,25 @@ export interface WorldRendererDiagnostics {
   readonly viewport: RenderViewport;
 }
 
+interface ActiveOrbPointer {
+  readonly orbId: string;
+  readonly pointerId: number;
+  readonly startPosition: NormalizedPoint;
+  lastPosition: NormalizedPoint;
+  lastAtMs: number;
+  movedPixels: number;
+  velocity: RenderVector;
+  speed: number;
+}
+
+interface ActiveFieldPointer {
+  readonly fieldId: string;
+  readonly pointerId: number;
+  readonly kind: 'move' | 'resize';
+  readonly center: NormalizedPoint;
+  readonly initialRadius: number;
+}
+
 export class WorldRendererView {
   private readonly canvas: HTMLCanvasElement;
   private readonly shell: HTMLElement;
@@ -35,6 +68,8 @@ export class WorldRendererView {
   private readonly events = new VisualEventBridge();
   private readonly clock: AnimationClock;
   private readonly liveOrbPositions = new Map<string, NormalizedPoint>();
+  private readonly orbInteractions = new Map<string, RenderOrbInteraction>();
+  private readonly fieldInteractions = new Map<string, RenderFieldInteraction>();
   private readonly fieldOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyOverrides = new Map<string, PlaygroundToyDocument>();
   private state: Readonly<AppState> | null = null;
@@ -62,6 +97,9 @@ export class WorldRendererView {
   private lastPointerPosition: NormalizedPoint | null = null;
   private lastPointerAtMs = 0;
   private focusedOrbId: string | null = null;
+  private activeOrbPointer: ActiveOrbPointer | null = null;
+  private activeFieldPointer: ActiveFieldPointer | null = null;
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly handleWindowResize = () => {
     this.syncViewport();
@@ -70,21 +108,15 @@ export class WorldRendererView {
 
   private readonly handlePointerMove = (event: PointerEvent) => {
     const rect = this.worldCanvas.getBoundingClientRect();
+    const position = pointerPositionInRect(
+      event.clientX,
+      event.clientY,
+      rect,
+    );
 
-    if (rect.width <= 0 || rect.height <= 0) {
+    if (!position) {
       return;
     }
-
-    const position = {
-      x: Math.max(
-        0,
-        Math.min(1, (event.clientX - rect.left) / rect.width),
-      ),
-      y: Math.max(
-        0,
-        Math.min(1, (event.clientY - rect.top) / rect.height),
-      ),
-    };
     const now = performance.now();
     const previous = this.lastPointerPosition;
     const elapsed = Math.max(8, now - this.lastPointerAtMs);
@@ -118,6 +150,330 @@ export class WorldRendererView {
   private readonly handlePointerLeave = () => {
     this.lastPointerPosition = null;
     this.lastPointerAtMs = 0;
+
+    if (!this.activeOrbPointer) {
+      this.clearHoverInteractions();
+    }
+  };
+
+  private readonly handleInteractionPointerDown = (event: PointerEvent) => {
+    if (event.button !== 0 && event.pointerType === 'mouse') {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const rect = this.worldCanvas.getBoundingClientRect();
+    const position = pointerPositionInRect(
+      event.clientX,
+      event.clientY,
+      rect,
+    );
+
+    if (!position) {
+      return;
+    }
+
+    const orbElement = target.closest<HTMLElement>('[data-orb-id]');
+    const orbId = orbElement?.dataset.orbId;
+
+    if (orbId) {
+      this.cancelLongPressTimer();
+      this.activeOrbPointer = {
+        orbId,
+        pointerId: event.pointerId,
+        startPosition: position,
+        lastPosition: position,
+        lastAtMs: performance.now(),
+        movedPixels: 0,
+        velocity: { x: 0, y: 0 },
+        speed: 0,
+      };
+      this.orbInteractions.set(orbId, {
+        ...IDLE_ORB_INTERACTION,
+        hoverStrength: event.pointerType === 'touch' ? 0 : 1,
+        grabbed: true,
+      });
+      this.rebuildScene();
+      this.requestRender();
+
+      this.longPressTimer = setTimeout(() => {
+        this.longPressTimer = null;
+        const active = this.activeOrbPointer;
+
+        if (
+          !active
+          || active.orbId !== orbId
+          || active.pointerId !== event.pointerId
+          || active.movedPixels > LONG_PRESS_CANCEL_DISTANCE_PX
+        ) {
+          return;
+        }
+
+        const interaction = this.orbInteractions.get(orbId)
+          ?? IDLE_ORB_INTERACTION;
+        const orbPosition = this.liveOrbPositions.get(orbId)
+          ?? this.scene?.orbs.find((orb) => orb.id === orbId)?.position
+          ?? position;
+
+        this.orbInteractions.set(orbId, {
+          ...interaction,
+          charging: true,
+        });
+        this.events.emit({
+          kind: 'orb-charge',
+          orbId,
+          position: orbPosition,
+          intensity: 1,
+        }, performance.now());
+        this.rebuildScene();
+        this.requestRender();
+      }, LONG_PRESS_CHARGE_MS);
+      return;
+    }
+
+    const fieldElement = target.closest<HTMLElement>('[data-field-id]');
+    const fieldId = fieldElement?.dataset.fieldId;
+
+    if (!fieldId) {
+      return;
+    }
+
+    const field = this.fieldOverrides.get(fieldId)
+      ?? this.state?.world.effectFields.find(
+        (candidate) => candidate.id === fieldId,
+      );
+
+    if (!field) {
+      return;
+    }
+
+    const resizing = target.classList.contains('field-resize-handle');
+    this.activeFieldPointer = {
+      fieldId,
+      pointerId: event.pointerId,
+      kind: resizing ? 'resize' : 'move',
+      center: field.position,
+      initialRadius: field.radius,
+    };
+    this.fieldInteractions.set(fieldId, {
+      ...IDLE_FIELD_INTERACTION,
+      dragging: !resizing,
+      resizing,
+    });
+    this.rebuildScene();
+    this.requestRender();
+  };
+
+  private readonly handleInteractionPointerMove = (event: PointerEvent) => {
+    const rect = this.worldCanvas.getBoundingClientRect();
+    const position = pointerPositionInRect(
+      event.clientX,
+      event.clientY,
+      rect,
+    );
+
+    if (!position) {
+      return;
+    }
+
+    const activeOrb = this.activeOrbPointer;
+
+    if (
+      activeOrb
+      && activeOrb.pointerId === event.pointerId
+    ) {
+      const now = performance.now();
+      const velocity = dragVelocitySample(
+        activeOrb.lastPosition,
+        position,
+        now - activeOrb.lastAtMs,
+        rect.width,
+        rect.height,
+      );
+      activeOrb.movedPixels += movedDistancePixels(
+        activeOrb.lastPosition,
+        position,
+        rect.width,
+        rect.height,
+      );
+      activeOrb.lastPosition = position;
+      activeOrb.lastAtMs = now;
+      activeOrb.velocity = velocity.direction;
+      activeOrb.speed = velocity.speed;
+
+      if (activeOrb.movedPixels > LONG_PRESS_CANCEL_DISTANCE_PX) {
+        this.cancelLongPressTimer();
+      }
+
+      this.orbInteractions.set(activeOrb.orbId, {
+        ...IDLE_ORB_INTERACTION,
+        grabbed: true,
+        dragVelocity: velocity.direction,
+        dragSpeed: this.preferences.reduceMotion
+          ? velocity.speed * 0.2
+          : velocity.speed,
+        charging: (
+          this.orbInteractions.get(activeOrb.orbId)?.charging
+          ?? false
+        ) && activeOrb.movedPixels <= LONG_PRESS_CANCEL_DISTANCE_PX,
+      });
+      this.rebuildScene();
+      this.requestRender();
+      return;
+    }
+
+    const activeField = this.activeFieldPointer;
+
+    if (
+      activeField
+      && activeField.pointerId === event.pointerId
+    ) {
+      const tension = activeField.kind === 'resize'
+        ? resizeTension(
+            activeField.center,
+            position,
+            activeField.initialRadius,
+            rect.width,
+            rect.height,
+          )
+        : 0.18;
+
+      this.fieldInteractions.set(activeField.fieldId, {
+        dragging: activeField.kind === 'move',
+        resizing: activeField.kind === 'resize',
+        tension: this.preferences.reduceMotion
+          ? Math.min(0.24, tension)
+          : tension,
+      });
+      this.rebuildScene();
+      this.requestRender();
+      return;
+    }
+
+    if (event.pointerType !== 'touch') {
+      this.updateHoverInteractions(
+        position,
+        rect.width,
+        rect.height,
+      );
+    }
+  };
+
+  private readonly handleInteractionPointerEnd = (event: PointerEvent) => {
+    const rect = this.worldCanvas.getBoundingClientRect();
+    const pointerPosition = pointerPositionInRect(
+      event.clientX,
+      event.clientY,
+      rect,
+    );
+    const activeOrb = this.activeOrbPointer;
+
+    if (
+      activeOrb
+      && activeOrb.pointerId === event.pointerId
+    ) {
+      this.cancelLongPressTimer();
+      const orbPosition = this.liveOrbPositions.get(activeOrb.orbId)
+        ?? this.scene?.orbs.find(
+          (orb) => orb.id === activeOrb.orbId,
+        )?.position
+        ?? activeOrb.lastPosition;
+      const intensity = Math.max(
+        0.2,
+        Math.min(1, activeOrb.speed * 0.9 + 0.18),
+      );
+
+      this.events.emit({
+        kind: 'orb-drop',
+        orbId: activeOrb.orbId,
+        position: orbPosition,
+        velocity: activeOrb.velocity,
+        intensity,
+      }, performance.now());
+
+      this.activeOrbPointer = null;
+      this.orbInteractions.delete(activeOrb.orbId);
+
+      if (
+        pointerPosition
+        && event.pointerType !== 'touch'
+      ) {
+        this.updateHoverInteractions(
+          pointerPosition,
+          rect.width,
+          rect.height,
+        );
+      }
+
+      this.rebuildScene();
+      this.requestRender();
+    }
+
+    const activeField = this.activeFieldPointer;
+
+    if (
+      activeField
+      && activeField.pointerId === event.pointerId
+    ) {
+      this.activeFieldPointer = null;
+      this.fieldInteractions.delete(activeField.fieldId);
+      this.rebuildScene();
+      this.requestRender();
+    }
+  };
+
+  private readonly handleInteractionKeyDown = (event: KeyboardEvent) => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const orbElement = target.closest<HTMLElement>('[data-orb-id]');
+    const orbId = orbElement?.dataset.orbId;
+
+    if (!orbId) {
+      return;
+    }
+
+    const velocity = (() => {
+      switch (event.key) {
+        case 'ArrowLeft':
+          return { x: -1, y: 0 };
+        case 'ArrowRight':
+          return { x: 1, y: 0 };
+        case 'ArrowUp':
+          return { x: 0, y: -1 };
+        case 'ArrowDown':
+          return { x: 0, y: 1 };
+        default:
+          return null;
+      }
+    })();
+
+    if (!velocity) {
+      return;
+    }
+
+    const position = this.liveOrbPositions.get(orbId)
+      ?? this.scene?.orbs.find((orb) => orb.id === orbId)?.position;
+
+    if (!position) {
+      return;
+    }
+
+    this.events.emit({
+      kind: 'orb-drop',
+      orbId,
+      position,
+      velocity,
+      intensity: this.preferences.reduceMotion ? 0.18 : 0.38,
+    }, performance.now());
+    this.requestRender();
   };
 
   private readonly handleFocusIn = (event: FocusEvent) => {
@@ -154,6 +510,9 @@ export class WorldRendererView {
     }
 
     this.focusedOrbId = null;
+    this.activeOrbPointer = null;
+    this.activeFieldPointer = null;
+    this.cancelLongPressTimer();
     this.rebuildScene();
     this.requestRender();
   };
@@ -242,6 +601,31 @@ export class WorldRendererView {
     worldCanvas.addEventListener(
       'focusout',
       this.handleFocusOut,
+    );
+    worldCanvas.addEventListener(
+      'pointerdown',
+      this.handleInteractionPointerDown,
+      { capture: true, passive: true },
+    );
+    worldCanvas.addEventListener(
+      'pointermove',
+      this.handleInteractionPointerMove,
+      { capture: true, passive: true },
+    );
+    worldCanvas.addEventListener(
+      'pointerup',
+      this.handleInteractionPointerEnd,
+      { capture: true, passive: true },
+    );
+    worldCanvas.addEventListener(
+      'pointercancel',
+      this.handleInteractionPointerEnd,
+      { capture: true, passive: true },
+    );
+    worldCanvas.addEventListener(
+      'keydown',
+      this.handleInteractionKeyDown,
+      true,
     );
 
     if (typeof ResizeObserver !== 'undefined') {
@@ -404,6 +788,8 @@ export class WorldRendererView {
 
   public clearRuntimeOverrides(): void {
     this.liveOrbPositions.clear();
+    this.orbInteractions.clear();
+    this.fieldInteractions.clear();
     this.fieldOverrides.clear();
     this.toyOverrides.clear();
     this.events.clear();
@@ -461,6 +847,32 @@ export class WorldRendererView {
       'focusout',
       this.handleFocusOut,
     );
+    this.worldCanvas.removeEventListener(
+      'pointerdown',
+      this.handleInteractionPointerDown,
+      true,
+    );
+    this.worldCanvas.removeEventListener(
+      'pointermove',
+      this.handleInteractionPointerMove,
+      true,
+    );
+    this.worldCanvas.removeEventListener(
+      'pointerup',
+      this.handleInteractionPointerEnd,
+      true,
+    );
+    this.worldCanvas.removeEventListener(
+      'pointercancel',
+      this.handleInteractionPointerEnd,
+      true,
+    );
+    this.worldCanvas.removeEventListener(
+      'keydown',
+      this.handleInteractionKeyDown,
+      true,
+    );
+    this.cancelLongPressTimer();
     this.renderer.destroy();
     this.canvas.remove();
     delete this.shell.dataset.rendererV2;
@@ -486,10 +898,111 @@ export class WorldRendererView {
         playing: state.playing,
         recording: state.captureStatus === 'recording',
         liveOrbPositions: this.liveOrbPositions,
+        orbInteractions: this.orbInteractions,
+        fieldInteractions: this.fieldInteractions,
         fieldOverrides: this.fieldOverrides,
         toyOverrides: this.toyOverrides,
       },
     );
+  }
+
+  private updateHoverInteractions(
+    pointer: NormalizedPoint,
+    width: number,
+    height: number,
+  ): void {
+    const scene = this.scene;
+
+    if (!scene) {
+      return;
+    }
+
+    let changed = false;
+
+    for (const orb of scene.orbs) {
+      if (this.activeOrbPointer?.orbId === orb.id) {
+        continue;
+      }
+
+      const hover = hoverInteractionAtPoint(
+        pointer,
+        orb.position,
+        width,
+        height,
+        true,
+      );
+      const current = this.orbInteractions.get(orb.id)
+        ?? IDLE_ORB_INTERACTION;
+
+      if (
+        Math.abs(current.hoverStrength - hover.hoverStrength) < 0.01
+        && Math.abs(current.hoverOffset.x - hover.hoverOffset.x) < 0.01
+        && Math.abs(current.hoverOffset.y - hover.hoverOffset.y) < 0.01
+      ) {
+        continue;
+      }
+
+      if (
+        hover.hoverStrength <= 0
+        && !current.grabbed
+        && !current.charging
+        && current.dragSpeed <= 0
+      ) {
+        this.orbInteractions.delete(orb.id);
+      } else {
+        this.orbInteractions.set(orb.id, {
+          ...current,
+          ...hover,
+        });
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      this.rebuildScene();
+      this.requestRender();
+    }
+  }
+
+  private clearHoverInteractions(): void {
+    let changed = false;
+
+    for (const [orbId, interaction] of this.orbInteractions) {
+      if (interaction.hoverStrength <= 0) {
+        continue;
+      }
+
+      const next = {
+        ...interaction,
+        hoverStrength: 0,
+        hoverOffset: { x: 0, y: 0 },
+      };
+
+      if (
+        !next.grabbed
+        && !next.charging
+        && next.dragSpeed <= 0
+      ) {
+        this.orbInteractions.delete(orbId);
+      } else {
+        this.orbInteractions.set(orbId, next);
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      this.rebuildScene();
+      this.requestRender();
+    }
+  }
+
+  private cancelLongPressTimer(): void {
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
   }
 
   private syncViewport(): void {
