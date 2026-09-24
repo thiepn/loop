@@ -30,6 +30,7 @@ import type {
   WorldRenderer,
 } from '../core/visual/v2/RenderTypes';
 import { VisualEventBridge } from '../core/visual/v2/VisualEventBridge';
+import { TrailHistory } from '../core/visual/v2/TrailModel';
 import { createWorldRenderer } from '../core/visual/v2/createWorldRenderer';
 
 export interface WorldRendererDiagnostics {
@@ -66,6 +67,7 @@ export class WorldRendererView {
   private readonly worldCanvas: HTMLElement;
   private renderer: WorldRenderer;
   private readonly events = new VisualEventBridge();
+  private readonly trailHistory = new TrailHistory();
   private readonly clock: AnimationClock;
   private readonly liveOrbPositions = new Map<string, NormalizedPoint>();
   private readonly orbInteractions = new Map<string, RenderOrbInteraction>();
@@ -644,6 +646,7 @@ export class WorldRendererView {
   public render(state: Readonly<AppState>): void {
     if (this.currentWorldId !== state.world.id) {
       this.clearRuntimeOverrides();
+      this.trailHistory.clear();
       this.currentWorldId = state.world.id;
     }
 
@@ -678,8 +681,14 @@ export class WorldRendererView {
   public previewOrbPosition(
     orbId: string,
     position: NormalizedPoint,
+    timestampMs = performance.now(),
   ): void {
     this.liveOrbPositions.set(orbId, position);
+    this.sampleTrailOrb(
+      orbId,
+      position,
+      timestampMs,
+    );
     this.rebuildScene();
     this.requestRender();
   }
@@ -691,6 +700,11 @@ export class WorldRendererView {
     for (const [orbId, position] of positions) {
       this.liveOrbPositions.set(orbId, position);
     }
+
+    this.sampleTrailWorld(
+      positions,
+      timestampMs ?? performance.now(),
+    );
 
     if (timestampMs !== undefined) {
       const interval = motionRenderIntervalMs(
@@ -816,6 +830,7 @@ export class WorldRendererView {
   public destroy(): void {
     this.clock.destroy();
     this.events.clear();
+    this.trailHistory.clear();
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     window.removeEventListener('resize', this.handleWindowResize);
@@ -899,10 +914,88 @@ export class WorldRendererView {
         recording: state.captureStatus === 'recording',
         liveOrbPositions: this.liveOrbPositions,
         orbInteractions: this.orbInteractions,
+        trails: this.trailHistory.snapshot(state.world),
         fieldInteractions: this.fieldInteractions,
         fieldOverrides: this.fieldOverrides,
         toyOverrides: this.toyOverrides,
       },
+    );
+  }
+
+  private sampleTrailOrb(
+    orbId: string,
+    position: NormalizedPoint,
+    timestampMs: number,
+  ): void {
+    const state = this.state;
+
+    if (!state) {
+      return;
+    }
+
+    const orb = state.world.soundOrbs.find(
+      (candidate) => candidate.id === orbId,
+    );
+
+    if (!orb) {
+      return;
+    }
+
+    this.trailHistory.sampleOrb(
+      orb,
+      position,
+      timestampMs,
+      this.viewport.width,
+      this.viewport.height,
+      this.effectFieldsWithPreviews(state),
+      this.playgroundToysWithPreviews(state),
+      this.preferences,
+    );
+  }
+
+  private sampleTrailWorld(
+    positions: ReadonlyMap<string, NormalizedPoint>,
+    timestampMs: number,
+  ): void {
+    const state = this.state;
+
+    if (!state) {
+      return;
+    }
+
+    this.trailHistory.sampleWorld(
+      state.world,
+      positions,
+      timestampMs,
+      this.viewport.width,
+      this.viewport.height,
+      this.effectFieldsWithPreviews(state),
+      this.playgroundToysWithPreviews(state),
+      this.preferences,
+    );
+  }
+
+  private effectFieldsWithPreviews(
+    state: Readonly<AppState>,
+  ): readonly EffectFieldDocument[] {
+    if (this.fieldOverrides.size === 0) {
+      return state.world.effectFields;
+    }
+
+    return state.world.effectFields.map(
+      (field) => this.fieldOverrides.get(field.id) ?? field,
+    );
+  }
+
+  private playgroundToysWithPreviews(
+    state: Readonly<AppState>,
+  ): readonly PlaygroundToyDocument[] {
+    if (this.toyOverrides.size === 0) {
+      return state.world.playgroundToys;
+    }
+
+    return state.world.playgroundToys.map(
+      (toy) => this.toyOverrides.get(toy.id) ?? toy,
     );
   }
 
@@ -1042,6 +1135,15 @@ export class WorldRendererView {
       return false;
     }
 
+    if (
+      this.trailHistory.prune(
+        timestampMs,
+        this.preferences,
+      )
+    ) {
+      this.rebuildScene();
+    }
+
     const snapshot = this.events.sample(timestampMs);
     const startedAt = performance.now();
 
@@ -1068,6 +1170,10 @@ export class WorldRendererView {
       this.frames = 1;
     }
 
-    return snapshot.hasActiveEvents;
+    return snapshot.hasActiveEvents
+      || this.trailHistory.hasVisible(
+        timestampMs,
+        this.preferences,
+      );
   }
 }

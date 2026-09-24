@@ -14,6 +14,7 @@ import type {
   RenderLink,
   RenderOrbInteraction,
   RenderScene,
+  RenderTrail,
 } from './RenderTypes';
 import { deriveWorldEnvironment } from './EnvironmentModel';
 import { deriveOrbMaterial } from './OrbMaterialModel';
@@ -29,6 +30,7 @@ export interface SceneProjectionOptions {
   readonly liveOrbPositions?: ReadonlyMap<string, NormalizedPoint>;
   readonly orbInteractions?: ReadonlyMap<string, RenderOrbInteraction>;
   readonly fieldInteractions?: ReadonlyMap<string, RenderFieldInteraction>;
+  readonly trails?: readonly RenderTrail[];
   readonly fieldOverrides?: ReadonlyMap<string, EffectFieldDocument>;
   readonly toyOverrides?: ReadonlyMap<string, PlaygroundToyDocument>;
 }
@@ -141,6 +143,7 @@ export function projectWorldToRenderScene(
     fields,
     toys,
     links,
+    trails: options.trails ?? [],
     listener: { x: 0.5, y: 0.5 },
     environment: deriveWorldEnvironment(world),
   };
