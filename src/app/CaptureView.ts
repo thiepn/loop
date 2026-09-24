@@ -217,8 +217,8 @@ export class CaptureView {
 
     this.resultDuration.textContent = durationLabel(state.captureDurationMs);
     this.resultFormat.textContent = state.captureAutoStopped
-      ? `${state.captureFormatLabel ?? 'Browser Audio'} · stopped at 10 min`
-      : state.captureFormatLabel ?? 'Browser Audio';
+      ? `${state.captureFormatLabel ?? 'Audio file'} · stopped at 10 min`
+      : state.captureFormatLabel ?? 'Audio file';
     this.wavButton.hidden = !state.captureWavAvailable;
 
     if (
