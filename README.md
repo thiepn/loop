@@ -17,10 +17,11 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 8 — Links & Reactive Music: complete and CI-verified**
 - **Phase 9 — Magic, Mutation & Controlled Randomness: complete and CI-verified**
 - **Phase 10 — Worlds, Snapshots & Persistence: complete and CI-verified**
-- **Phase 11 — Play, Capture & Export: complete; final CI verification pending**
-- **Next: Phase 12 — Visual Identity, Game Feel & Delight**
+- **Phase 11 — Play, Capture & Export: complete and CI-verified**
+- **Phase 12 — Visual Identity, Game Feel & Delight: complete; final CI verification pending**
+- **Next: Phase 13 — Mobile, PWA & Offline Hardening**
 
-Loop can now capture the performance itself: one-tap master recording follows the same post-limiter output the user hears while they move Sound Orbs, use Magic, trigger Links, and recall Snapshots, then provides immediate listen-back plus browser-native download and bounded optional WAV conversion.
+Loop now has its complete V1 visual language: living role-specific Sound Orbs, audio-synchronized bursts, bounded Motion trails, richer Effect Fields/toys/Links, consistent transitions, max-density de-cluttering, and user-selectable High/Balanced/Battery Saver visuals with reduced-motion/particles/glow controls.
 
 ## Product contract
 
@@ -43,6 +44,7 @@ The authoritative specifications live in `docs/`:
 - [MAGIC.md](docs/MAGIC.md) — seeded mutation, intents, per-object Magic, Remix, preview transactions, and undo safety
 - [PERSISTENCE.md](docs/PERSISTENCE.md) — World library, autosave/restore, IndexedDB, Snapshots, history, migration, Trash, quarantine, and backups
 - [CAPTURE_EXPORT.md](docs/CAPTURE_EXPORT.md) — post-limiter master recording, browser formats, duration safety, listen-back, downloads, and WAV conversion
+- [VISUAL_SYSTEM.md](docs/VISUAL_SYSTEM.md) — implemented role identity, fields/toys/Links, trails, particles, quality profiles, accessibility, and visual-performance rules
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
@@ -54,6 +56,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_9_ACCEPTANCE.md](docs/PHASE_9_ACCEPTANCE.md) — Phase 9 verification gate
 - [PHASE_10_ACCEPTANCE.md](docs/PHASE_10_ACCEPTANCE.md) — Phase 10 verification gate
 - [PHASE_11_ACCEPTANCE.md](docs/PHASE_11_ACCEPTANCE.md) — Phase 11 verification gate
+- [PHASE_12_ACCEPTANCE.md](docs/PHASE_12_ACCEPTANCE.md) — Phase 12 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -74,9 +77,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 10 remains fully verified.
+The integrated Phase 12 feature head passed CI with:
 
-The integrated Phase 11 recording/export implementation is under its final exact-head CI gate. Dedicated coverage now includes browser format negotiation, PCM16 WAV encoding, MasterRecorder lifecycle cleanup, bounded duration behavior, and unexpected browser-stop recovery in addition to every prior Phase 1–10 regression test.
+- **34 test files**
+- **171 tests**
+- strict TypeScript typecheck
+- production Vite build
+
+The suite now covers recording/export plus automatic visual-quality selection, reduced-motion/particles/glow policy, quality-density ordering, persisted visual preferences, safe preference fallback, and every prior Phase 1–11 regression test. The exact final shared-documentation/status head is verified before Phase 12 is marked CI-complete.
 
 ## Product rule
 
