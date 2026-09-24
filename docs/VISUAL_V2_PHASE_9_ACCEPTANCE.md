@@ -115,3 +115,24 @@ Phase 9 is complete only when the exact final Phase 9 head passes:
 - complete unit/soak suite;
 - production build;
 - Phase 16 browser certification without relaxing its budgets.
+
+
+## Verification record
+
+The implemented Phase 9 head passed the existing repository verification gates without changing certification budgets:
+
+- strict TypeScript typecheck: passed;
+- unit/soak suite: **46 files, 272 tests passed**;
+- production Vite build: passed;
+- Phase 16 browser certification: passed;
+- JS+CSS gzip: **112,762 bytes** (< 120 KiB budget);
+- navigation load: **858.0 ms** (< 3,000 ms budget);
+- Home → World: **658.5 ms** (< 1,500 ms budget);
+- sampled animation-frame p95: **16.7 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **5.32 ms** (< 8 ms budget);
+- post-GC heap growth: **652,460 bytes** (< 5 MiB budget);
+- DOM node growth: **119** (< 250 budget);
+- longest observed long task: **153 ms** (< 200 ms budget);
+- frozen → active lifecycle recovery: passed.
+
+The Link V2 renderer, listener material, local light propagation, energy packets and lifecycle choreography therefore remain inside the existing release-performance envelope while preserving room for Phase 10 musical choreography.
