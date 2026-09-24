@@ -405,7 +405,7 @@ export class TrailHistory {
         changed = true;
       }
 
-      if (trail.points.length < 2) {
+      if (trail.points.length === 0) {
         this.trails.delete(orbId);
         changed = true;
       }
@@ -454,7 +454,8 @@ export class TrailHistory {
       const newest = trail.points[trail.points.length - 1];
 
       if (
-        newest
+        trail.points.length >= 2
+        && newest
         && nowMs - newest.timestampMs <= policy.lifetimeMs
       ) {
         return true;
