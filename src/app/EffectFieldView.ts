@@ -74,6 +74,7 @@ export class EffectFieldView {
 
     const layer = document.createElement('div');
     layer.className = 'effect-field-layer';
+    layer.setAttribute('role', 'group');
     layer.setAttribute('aria-label', 'Effect fields');
     canvas.append(layer);
     this.layer = layer;
