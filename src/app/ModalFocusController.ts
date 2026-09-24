@@ -153,9 +153,9 @@ export class ModalFocusController {
     let activeBranch: HTMLElement | null = this.container;
 
     while (activeBranch?.parentElement) {
-      const parent = activeBranch.parentElement;
+      const parentElement: HTMLElement = activeBranch.parentElement;
 
-      for (const child of parent.children) {
+      for (const child of parentElement.children) {
         if (!(child instanceof HTMLElement) || child === activeBranch) {
           continue;
         }
@@ -167,7 +167,7 @@ export class ModalFocusController {
         child.inert = true;
       }
 
-      activeBranch = parent;
+      activeBranch = parentElement;
 
       if (activeBranch === document.body) {
         break;
