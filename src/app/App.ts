@@ -1095,6 +1095,11 @@ export class App {
     }
 
     this.autosavePendingWorld = state.world;
+
+    if (state.autosave !== 'saving') {
+      appStore.patch({ autosave: 'saving' });
+    }
+
     this.autosaveTimer = setTimeout(() => {
       this.autosaveTimer = null;
       void this.flushAutosave();
