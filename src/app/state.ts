@@ -1,5 +1,10 @@
 import type { AudioEngineState } from '../core/audio/AudioEngine';
 import type {
+  AutosaveStatus,
+  PersistenceStatus,
+  WorldLibraryItem,
+} from '../core/persistence/PersistenceTypes';
+import type {
   MagicIntent,
   MagicStrength,
   MagicTarget,
@@ -58,6 +63,10 @@ export interface AppState {
   readonly magicIntentOpen: boolean;
   readonly magicSession: MagicSessionState | null;
   readonly magicUndo: MagicUndoState | null;
+  readonly persistence: PersistenceStatus;
+  readonly autosave: AutosaveStatus;
+  readonly library: readonly WorldLibraryItem[];
+  readonly snapshotsOpen: boolean;
   readonly onboardingStep: OnboardingStep;
   readonly playing: boolean;
   readonly message: string;
@@ -82,7 +91,11 @@ export const appStore = new Store<AppState>({
   magicIntentOpen: false,
   magicSession: null,
   magicUndo: null,
+  persistence: 'loading',
+  autosave: 'idle',
+  library: [],
+  snapshotsOpen: false,
   onboardingStep: 'move',
   playing: false,
-  message: 'Pick a starting point.',
+  message: 'Loading your Worlds…',
 });
