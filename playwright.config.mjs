@@ -10,7 +10,7 @@ export default defineConfig({
     timeout: 8_000,
   },
   retries: process.env.CI ? 1 : 0,
-  workers: 1,
+  workers: process.env.CI ? 5 : 1,
   reporter: process.env.CI ? [['line']] : [['list']],
   use: {
     baseURL,
