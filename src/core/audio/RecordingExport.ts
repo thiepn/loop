@@ -1,5 +1,7 @@
 import { audioBufferToWavBlob } from './WavEncoder';
 
+export const MAX_AUTOMATIC_WAV_CONVERSION_MS = 3 * 60 * 1000;
+
 export async function convertRecordingToWav(
   context: BaseAudioContext,
   blob: Blob,
