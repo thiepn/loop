@@ -651,6 +651,42 @@ export class MotionView {
     element.addEventListener('pointerup', finish);
     element.addEventListener('pointercancel', finish);
 
+    element.addEventListener('keydown', (event) => {
+      const current = this.toyFromState(toy.id);
+      const exit = current?.exitPosition;
+
+      if (!current || current.type !== 'portal' || !exit) {
+        return;
+      }
+
+      const amount = event.shiftKey ? 0.035 : 0.015;
+      let dx = 0;
+      let dy = 0;
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          dx = -amount;
+          break;
+        case 'ArrowRight':
+          dx = amount;
+          break;
+        case 'ArrowUp':
+          dy = -amount;
+          break;
+        case 'ArrowDown':
+          dy = amount;
+          break;
+        default:
+          return;
+      }
+
+      event.preventDefault();
+      this.callbacks.onPortalExitCommit(toy.id, {
+        x: exit.x + dx,
+        y: exit.y + dy,
+      });
+    });
+
     return element;
   }
 
@@ -668,7 +704,7 @@ export class MotionView {
     element.setAttribute('aria-pressed', String(selected));
     element.setAttribute(
       'aria-label',
-      `${playgroundToyLabel(toy.type)}. ${playgroundToyDescription(toy.type)}. Drag to move.`,
+      `${playgroundToyLabel(toy.type)}. ${playgroundToyDescription(toy.type)}. Drag or use arrow keys to move.`,
     );
 
     const label = element.querySelector<HTMLElement>('.toy-label');
@@ -687,7 +723,7 @@ export class MotionView {
     const selected = this.latestState?.selectedToyId === toy.id;
     element.classList.toggle('is-selected', selected);
     element.setAttribute('aria-pressed', String(selected));
-    element.setAttribute('aria-label', 'Portal exit. Drag to move the OUT point.');
+    element.setAttribute('aria-label', 'Portal exit. Drag or use arrow keys to move the OUT point.');
   }
 
   private renderToyPanel(state: Readonly<AppState>): void {
