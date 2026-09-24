@@ -428,6 +428,8 @@ export class PlaygroundView {
     element.dataset.orbId = orb.id;
     element.innerHTML = `
       <span class="orb-visual" aria-hidden="true">
+        <span class="orb-aura"></span>
+        <span class="orb-detail"></span>
         <span class="orb-wave"></span>
         <span class="orb-core"></span>
         <span class="orb-particle orb-particle-a"></span>
