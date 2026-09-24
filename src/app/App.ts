@@ -1,5 +1,6 @@
 import { audioEngine } from '../core/audio/AudioEngine';
 import {
+  MAX_RECORDING_MS,
   MasterRecorder,
   type RecordingResult,
 } from '../core/audio/MasterRecorder';
@@ -228,7 +229,7 @@ export class App {
 
   public destroy(): void {
     this.clearActivityTimers();
-    this.discardCapture();
+    this.discardCapture(false);
     this.cancelAutosave();
     this.cancelSnapshotRecall();
     this.cancelMotionLoop();
@@ -1037,6 +1038,7 @@ export class App {
     const saveBeforeEnter = options.saveBeforeEnter ?? true;
 
     this.clearActivityTimers();
+    this.discardCapture();
     this.cancelSnapshotRecall();
     this.clearPlaygroundRuntime();
     this.history.reset(world);
@@ -1110,6 +1112,7 @@ export class App {
     const leavingWorld = current.magicSession?.baseWorld ?? current.world;
 
     this.clearActivityTimers();
+    this.discardCapture();
     this.cancelAutosave();
     this.cancelSnapshotRecall();
     this.clearPlaygroundRuntime();
@@ -1161,6 +1164,299 @@ export class App {
       playing: false,
       message: 'Pick a starting point.',
     });
+  }
+
+  private async startCapture(): Promise<void> {
+    const initial = appStore.getState();
+
+    if (!this.capabilities.recording) {
+      appStore.patch({
+        captureStatus: 'error',
+        captureError: 'Performance recording is not supported in this browser.',
+        message: 'This browser cannot record Loop performances.',
+      });
+      return;
+    }
+
+    if (
+      initial.captureStatus === 'recording'
+      || initial.captureStatus === 'processing'
+    ) {
+      return;
+    }
+
+    if (initial.world.soundOrbs.length === 0) {
+      appStore.patch({
+        message: 'Add a sound before recording a performance.',
+      });
+      return;
+    }
+
+    this.discardCapture(false);
+
+    await this.startPlayback();
+
+    if (!appStore.getState().playing) {
+      appStore.patch({
+        captureStatus: 'error',
+        captureError: 'Audio could not start.',
+        message: 'Recording could not start because audio is not running.',
+      });
+      return;
+    }
+
+    try {
+      await this.masterRecorder.start(
+        audioEngine,
+        {
+          maxDurationMs: MAX_RECORDING_MS,
+          onLimitReached: () => {
+            void this.stopCapture(
+              true,
+              'Recording reached the 10 minute safety limit.',
+            );
+          },
+        },
+      );
+
+      const startedAt = Date.now();
+
+      appStore.patch({
+        captureStatus: 'recording',
+        captureStartedAt: startedAt,
+        captureDurationMs: 0,
+        capturePreviewUrl: null,
+        captureFormatLabel: null,
+        captureWavAvailable: false,
+        captureAutoStopped: false,
+        captureError: null,
+        message: 'Recording performance…',
+      });
+
+      this.startCaptureTimer();
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : 'Performance recording could not start.';
+
+      appStore.patch({
+        captureStatus: 'error',
+        captureStartedAt: null,
+        captureDurationMs: 0,
+        captureError: message,
+        message,
+      });
+    }
+  }
+
+  private async stopCapture(
+    autoStopped = false,
+    completionMessage = 'Performance captured.',
+  ): Promise<void> {
+    const state = appStore.getState();
+
+    if (
+      state.captureStatus !== 'recording'
+      || this.masterRecorder.state === 'idle'
+    ) {
+      return;
+    }
+
+    this.clearCaptureTimer();
+
+    appStore.patch({
+      captureStatus: 'processing',
+      captureAutoStopped: autoStopped,
+      message: 'Finishing recording…',
+    });
+
+    try {
+      const result = await this.masterRecorder.stop();
+
+      if (result.blob.size === 0) {
+        throw new Error('The browser returned an empty recording.');
+      }
+
+      this.clearCaptureArtifacts();
+
+      this.captureResult = result;
+      this.capturePreviewUrl = URL.createObjectURL(result.blob);
+
+      const runtime = audioEngine.getRuntime();
+      this.captureWavBlob = runtime
+        ? await convertRecordingToWav(
+            runtime.context,
+            result.blob,
+          )
+        : null;
+
+      appStore.patch({
+        captureStatus: 'ready',
+        captureStartedAt: null,
+        captureDurationMs: result.durationMs,
+        capturePreviewUrl: this.capturePreviewUrl,
+        captureFormatLabel: result.format.label,
+        captureWavAvailable: this.captureWavBlob !== null,
+        captureAutoStopped: autoStopped,
+        captureError: null,
+        message: completionMessage,
+      });
+    } catch (error) {
+      this.clearCaptureArtifacts();
+
+      const message = error instanceof Error
+        ? error.message
+        : 'Performance recording failed.';
+
+      appStore.patch({
+        captureStatus: 'error',
+        captureStartedAt: null,
+        captureDurationMs: 0,
+        capturePreviewUrl: null,
+        captureFormatLabel: null,
+        captureWavAvailable: false,
+        captureError: message,
+        message,
+      });
+    }
+  }
+
+  private async cancelCapture(): Promise<void> {
+    this.clearCaptureTimer();
+
+    try {
+      await this.masterRecorder.cancel();
+    } finally {
+      this.clearCaptureArtifacts();
+
+      appStore.patch({
+        captureStatus: 'idle',
+        captureStartedAt: null,
+        captureDurationMs: 0,
+        capturePreviewUrl: null,
+        captureFormatLabel: null,
+        captureWavAvailable: false,
+        captureAutoStopped: false,
+        captureError: null,
+        message: 'Recording cancelled.',
+      });
+    }
+  }
+
+  private discardCapture(updateState = true): void {
+    this.clearCaptureTimer();
+
+    if (this.masterRecorder.state !== 'idle') {
+      void this.masterRecorder.cancel();
+    }
+
+    this.clearCaptureArtifacts();
+
+    if (updateState) {
+      appStore.patch({
+        captureStatus: 'idle',
+        captureStartedAt: null,
+        captureDurationMs: 0,
+        capturePreviewUrl: null,
+        captureFormatLabel: null,
+        captureWavAvailable: false,
+        captureAutoStopped: false,
+        captureError: null,
+      });
+    }
+  }
+
+  private startCaptureTimer(): void {
+    this.clearCaptureTimer();
+
+    this.captureTimer = setInterval(() => {
+      const state = appStore.getState();
+
+      if (
+        state.captureStatus !== 'recording'
+        || state.captureStartedAt === null
+      ) {
+        this.clearCaptureTimer();
+        return;
+      }
+
+      appStore.patch({
+        captureDurationMs: Math.min(
+          MAX_RECORDING_MS,
+          Math.max(0, Date.now() - state.captureStartedAt),
+        ),
+      });
+    }, 250);
+  }
+
+  private clearCaptureTimer(): void {
+    if (this.captureTimer !== null) {
+      clearInterval(this.captureTimer);
+      this.captureTimer = null;
+    }
+  }
+
+  private clearCaptureArtifacts(): void {
+    if (this.capturePreviewUrl) {
+      URL.revokeObjectURL(this.capturePreviewUrl);
+    }
+
+    this.capturePreviewUrl = null;
+    this.captureResult = null;
+    this.captureWavBlob = null;
+  }
+
+  private downloadCapture(wav: boolean): void {
+    const result = this.captureResult;
+
+    if (!result) {
+      return;
+    }
+
+    const blob = wav
+      ? this.captureWavBlob
+      : result.blob;
+
+    if (!blob) {
+      appStore.patch({
+        message: 'WAV conversion is not available for this recording.',
+      });
+      return;
+    }
+
+    const extension = wav
+      ? 'wav'
+      : result.format.extension;
+    const base = appStore.getState().world.name
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim() || 'Loop World';
+
+    this.downloadBlob(
+      blob,
+      `${base} - Performance.${extension}`,
+    );
+
+    appStore.patch({
+      message: wav
+        ? 'WAV downloaded.'
+        : 'Performance downloaded.',
+    });
+  }
+
+  private downloadBlob(
+    blob: Blob,
+    filename: string,
+  ): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
   }
 
   private async togglePlayback(): Promise<void> {
@@ -1951,18 +2247,12 @@ export class App {
     const blob = new Blob([text], {
       type: 'application/json',
     });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename
+    const safeName = filename
       .replace(/[\\/:*?"<>|]+/g, '-')
       .replace(/\s+/g, ' ')
       .trim() || 'loop-backup.json';
-    anchor.click();
 
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 0);
+    this.downloadBlob(blob, safeName);
   }
 
   private exportCurrentWorld(): void {
