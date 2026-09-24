@@ -24,6 +24,14 @@ function durationForEvent(event: VisualTransientEvent): number {
       return 620;
     case 'link-deleted':
       return 460;
+    case 'choreography-state':
+      return event.cue === 'play' || event.cue === 'stop'
+        ? 900
+        : 700;
+    case 'choreography-bar':
+      return Math.max(400, Math.min(8000, event.durationMs));
+    case 'choreography-hit':
+      return event.reentry ? 760 : 560;
     case 'pointer-disturbance':
       return 720;
     case 'orb-drop':
@@ -43,6 +51,17 @@ export class VisualEventBridge {
     if (event.kind === 'pointer-disturbance') {
       for (let index = this.events.length - 1; index >= 0; index -= 1) {
         if (this.events[index]?.event.kind === 'pointer-disturbance') {
+          this.events.splice(index, 1);
+        }
+      }
+    }
+
+    if (
+      event.kind === 'choreography-state'
+      || event.kind === 'choreography-bar'
+    ) {
+      for (let index = this.events.length - 1; index >= 0; index -= 1) {
+        if (this.events[index]?.event.kind === event.kind) {
           this.events.splice(index, 1);
         }
       }

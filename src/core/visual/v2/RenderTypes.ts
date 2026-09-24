@@ -259,6 +259,12 @@ export interface RenderViewport {
   readonly dpr: number;
 }
 
+export type ChoreographyStateCue =
+  | 'play'
+  | 'stop'
+  | 'record-start'
+  | 'record-stop';
+
 export type VisualTransientEvent =
   | {
       readonly kind: 'orb-pulse';
@@ -278,6 +284,28 @@ export type VisualTransientEvent =
   | {
       readonly kind: 'link-deleted';
       readonly link: RenderLinkGhost;
+    }
+  | {
+      readonly kind: 'choreography-state';
+      readonly cue: ChoreographyStateCue;
+      readonly intensity: number;
+    }
+  | {
+      readonly kind: 'choreography-bar';
+      readonly bar: number;
+      readonly phrasePosition: number;
+      readonly density: number;
+      readonly silent: boolean;
+      readonly durationMs: number;
+    }
+  | {
+      readonly kind: 'choreography-hit';
+      readonly bar: number;
+      readonly downbeat: boolean;
+      readonly simultaneousCount: number;
+      readonly density: number;
+      readonly reentry: boolean;
+      readonly intensity: number;
     }
   | {
       readonly kind: 'pointer-disturbance';

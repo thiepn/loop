@@ -46,8 +46,25 @@ export interface LinkActivity {
   readonly intensity: number;
 }
 
+export interface ChoreographyActivity {
+  readonly time: number;
+  readonly absoluteStep: number;
+  readonly stepInBar: number;
+  readonly bar: number;
+  readonly phrasePosition: number;
+  readonly barDurationMs: number;
+  readonly activeOrbCount: number;
+  readonly eventCount: number;
+  readonly previousBarEventCount: number | null;
+  readonly silentBarsBefore: number;
+  readonly reentry: boolean;
+}
+
 export type OrbActivityListener = (activity: OrbActivity) => void;
 export type LinkActivityListener = (activity: LinkActivity) => void;
+export type ChoreographyActivityListener = (
+  activity: ChoreographyActivity,
+) => void;
 
 interface OrbRuntime {
   orb: SoundOrbDocument;
@@ -82,6 +99,7 @@ export class PlaygroundEngine {
   private readonly runtimes = new Map<string, OrbRuntime>();
   private readonly activityListeners = new Set<OrbActivityListener>();
   private readonly linkActivityListeners = new Set<LinkActivityListener>();
+  private readonly choreographyListeners = new Set<ChoreographyActivityListener>();
   private readonly manualPositionOverrides = new Map<string, NormalizedPoint>();
   private readonly effectFieldPreviewOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
@@ -90,6 +108,9 @@ export class PlaygroundEngine {
   private world: WorldDocument;
   private unsubscribeTicks: (() => void) | null = null;
   private playing = false;
+  private choreographyBar: number | null = null;
+  private choreographyBarEventCount = 0;
+  private choreographySilentBars = 0;
 
   public constructor(
     private readonly context: AudioContext,
@@ -135,6 +156,16 @@ export class PlaygroundEngine {
     };
   }
 
+  public subscribeChoreography(
+    listener: ChoreographyActivityListener,
+  ): () => void {
+    this.choreographyListeners.add(listener);
+
+    return () => {
+      this.choreographyListeners.delete(listener);
+    };
+  }
+
   public start(): void {
     if (this.playing) {
       return;
@@ -143,6 +174,9 @@ export class PlaygroundEngine {
     const startTime = this.context.currentTime + 0.08;
     const resumeBeat = this.transport.beatAt(this.context.currentTime);
     this.transport.start(startTime, resumeBeat);
+    this.choreographyBar = null;
+    this.choreographyBarEventCount = 0;
+    this.choreographySilentBars = 0;
     this.unsubscribeTicks = this.scheduler.subscribe((tick) => this.scheduleTick(tick));
     this.scheduler.start();
     this.playing = true;
@@ -385,6 +419,7 @@ export class PlaygroundEngine {
     this.runtimes.clear();
     this.activityListeners.clear();
     this.linkActivityListeners.clear();
+    this.choreographyListeners.clear();
   }
 
   private effectiveEffectFields(): readonly EffectFieldDocument[] {
@@ -422,6 +457,12 @@ export class PlaygroundEngine {
     }
   }
 
+  private emitChoreography(activity: ChoreographyActivity): void {
+    for (const listener of this.choreographyListeners) {
+      listener(activity);
+    }
+  }
+
   private gainForOrb(
     orb: SoundOrbDocument,
     activeCount: number,
@@ -440,6 +481,25 @@ export class PlaygroundEngine {
   }
 
   private scheduleTick(tick: ScheduledTick): void {
+    let previousBarEventCount: number | null = null;
+
+    if (this.choreographyBar === null) {
+      this.choreographyBar = tick.bar;
+    } else if (tick.bar !== this.choreographyBar) {
+      previousBarEventCount = this.choreographyBarEventCount;
+
+      if (this.choreographyBarEventCount === 0) {
+        this.choreographySilentBars += 1;
+      } else {
+        this.choreographySilentBars = 0;
+      }
+
+      this.choreographyBar = tick.bar;
+      this.choreographyBarEventCount = 0;
+    }
+
+    let audibleEventCount = 0;
+    const silentBarsBeforeTick = this.choreographySilentBars;
     const activeCount = Math.max(
       1,
       this.world.soundOrbs.filter((orb) => !orb.muted).length,
@@ -489,6 +549,7 @@ export class PlaygroundEngine {
         time: event.time,
         intensity: event.intensity,
       });
+      audibleEventCount += 1;
 
       const takeTurns = takeTurnsLinkForActivity(
         this.world.links,
@@ -588,6 +649,7 @@ export class PlaygroundEngine {
           time: reactiveEvent.time,
           intensity: reactiveEvent.intensity,
         });
+        audibleEventCount += 1;
 
         this.emitLinkActivity({
           linkId: link.id,
@@ -600,5 +662,32 @@ export class PlaygroundEngine {
         });
       }
     }
+
+    this.choreographyBarEventCount += audibleEventCount;
+
+    const reentry = audibleEventCount > 0
+      && silentBarsBeforeTick > 0;
+
+    if (reentry) {
+      this.choreographySilentBars = 0;
+    }
+
+    this.emitChoreography({
+      time: tick.time,
+      absoluteStep: tick.absoluteStep,
+      stepInBar: tick.stepInBar,
+      bar: tick.bar,
+      phrasePosition: ((tick.bar % 4) + 4) % 4,
+      barDurationMs: (
+        this.transport.secondsPerBeat
+        * this.transport.beatsPerBar
+        * 1000
+      ),
+      activeOrbCount: activeCount,
+      eventCount: audibleEventCount,
+      previousBarEventCount,
+      silentBarsBefore: silentBarsBeforeTick,
+      reentry,
+    });
   }
 }
