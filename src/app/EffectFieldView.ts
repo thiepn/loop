@@ -159,7 +159,8 @@ export class EffectFieldView {
   public render(state: Readonly<AppState>): void {
     this.latestState = state;
     this.root.dataset.selectedFieldId = state.selectedFieldId ?? '';
-    this.effectsButton.disabled = state.world.effectFields.length >= MAX_EFFECT_FIELDS;
+    this.effectsButton.disabled = Boolean(state.magicSession)
+      || state.world.effectFields.length >= MAX_EFFECT_FIELDS;
     this.effectsButton.setAttribute('aria-expanded', String(state.effectPaletteOpen));
     this.palette.hidden = !state.effectPaletteOpen;
     this.paletteFocus.sync(state.effectPaletteOpen);
@@ -236,6 +237,8 @@ export class EffectFieldView {
         field,
         state.selectedFieldId === field.id,
       );
+      element.tabIndex = state.magicSession ? -1 : 0;
+      element.setAttribute('aria-disabled', String(Boolean(state.magicSession)));
     }
   }
 
@@ -354,6 +357,10 @@ export class EffectFieldView {
     element.addEventListener('pointercancel', finishGesture);
 
     element.addEventListener('keydown', (event) => {
+      if (this.latestState?.magicSession) {
+        return;
+      }
+
       const current = this.fieldFromLatestState(field.id);
       if (!current) {
         return;
