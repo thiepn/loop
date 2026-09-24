@@ -61,6 +61,7 @@ export class WorldRepository {
     id: string,
     now = Date.now(),
     includeDeleted = false,
+    markOpened = true,
   ): Promise<LoadedWorld | null> {
     const record = await this.storage.getWorldRecord(id);
 
@@ -80,7 +81,7 @@ export class WorldRepository {
     const migratedRecord: StoredWorldRecord = {
       id: migrated.world.id,
       world: migrated.world,
-      lastOpenedAt: now,
+      lastOpenedAt: markOpened ? now : record.lastOpenedAt,
       deletedAt: record.deletedAt,
     };
 
@@ -93,7 +94,7 @@ export class WorldRepository {
     return {
       world: migrated.world,
       warnings: migrated.warnings,
-      lastOpenedAt: now,
+      lastOpenedAt: markOpened ? now : record.lastOpenedAt,
       deletedAt: record.deletedAt,
     };
   }
