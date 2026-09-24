@@ -374,7 +374,7 @@ export class App {
           void this.pwa.install();
         },
         onUpdate: () => {
-          this.pwa.applyUpdate();
+          void this.applyPwaUpdate();
         },
       });
     }
@@ -2214,6 +2214,62 @@ export class App {
       magicUndo: null,
       message: 'Magic undone.',
     });
+  }
+
+  private async applyPwaUpdate(): Promise<void> {
+    const current = appStore.getState();
+
+    if (current.magicSession) {
+      appStore.patch({
+        message: 'Keep or revert the Magic preview before updating Loop.',
+      });
+      return;
+    }
+
+    if (
+      current.captureStatus === 'recording'
+      || current.captureStatus === 'processing'
+      || current.captureStatus === 'ready'
+    ) {
+      appStore.patch({
+        message: 'Finish, download, or discard the recording before updating Loop.',
+      });
+      return;
+    }
+
+    await this.waitForPendingHomeSave();
+
+    const latest = appStore.getState();
+
+    if (latest.screen === 'playground') {
+      if (!this.persistenceReady || latest.persistence !== 'ready') {
+        appStore.patch({
+          message: 'Update postponed because this World cannot be saved locally.',
+        });
+        return;
+      }
+
+      this.cancelAutosave();
+
+      try {
+        appStore.patch({
+          autosave: 'saving',
+          message: 'Saving before update…',
+        });
+        await this.repository.saveWorld(latest.world);
+        await this.repository.setActiveWorld(latest.world.id);
+        this.lastSavedWorld = latest.world;
+        appStore.patch({ autosave: 'saved' });
+      } catch (error) {
+        this.handlePersistenceFailure(
+          error,
+          'Update postponed because saving failed',
+        );
+        return;
+      }
+    }
+
+    this.pwa.applyUpdate();
   }
 
   private async waitForPendingHomeSave(): Promise<void> {
