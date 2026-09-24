@@ -941,7 +941,7 @@ export class WorldRendererView {
     options: {
       readonly seed?: number;
       readonly intensity?: number;
-      readonly focusKey?: string;
+      readonly focusKey?: string | undefined;
     } = {},
   ): void {
     const transition = buildWorldTransition(
