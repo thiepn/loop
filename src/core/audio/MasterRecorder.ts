@@ -77,14 +77,22 @@ export class MasterRecorder {
     let recorder: MediaRecorder;
 
     try {
-      recorder = preferred
-        ? new MediaRecorder(tap.stream, {
+      if (preferred) {
+        try {
+          recorder = new MediaRecorder(tap.stream, {
             mimeType: preferred.mimeType,
             audioBitsPerSecond: RECORDING_AUDIO_BITS_PER_SECOND,
-          })
-        : new MediaRecorder(tap.stream, {
+          });
+        } catch {
+          recorder = new MediaRecorder(tap.stream, {
             audioBitsPerSecond: RECORDING_AUDIO_BITS_PER_SECOND,
           });
+        }
+      } else {
+        recorder = new MediaRecorder(tap.stream, {
+          audioBitsPerSecond: RECORDING_AUDIO_BITS_PER_SECOND,
+        });
+      }
     } catch (error) {
       tap.dispose();
       throw error;
@@ -195,11 +203,14 @@ export class MasterRecorder {
 
     const recorder = this.recorder;
     const stoppedAt = Date.now();
-    const format = formatForMimeType(recorder.mimeType);
+    const detectedMimeType = recorder.mimeType
+      || this.chunks.find((chunk) => chunk.type)?.type
+      || 'audio/webm';
+    const format = formatForMimeType(detectedMimeType);
     const blob = new Blob(
       this.chunks,
       {
-        type: recorder.mimeType || format.mimeType,
+        type: detectedMimeType,
       },
     );
 
