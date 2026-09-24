@@ -3056,6 +3056,7 @@ export class App {
       this.visualSystemView?.pulseOrb(
         activity.orbId,
         activity.intensity,
+        this.playgroundView?.getOrbPosition(activity.orbId) ?? undefined,
       );
     }, delayMs);
 
