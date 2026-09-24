@@ -119,6 +119,10 @@ export class PwaController {
     void this.checkForUpdate();
   };
 
+  private readonly onWindowLoad = () => {
+    void this.registerServiceWorker();
+  };
+
   public get state(): Readonly<PwaRuntimeState> {
     return this.stateValue;
   }
@@ -191,9 +195,7 @@ export class PwaController {
       } else {
         window.addEventListener(
           'load',
-          () => {
-            void this.registerServiceWorker();
-          },
+          this.onWindowLoad,
           { once: true },
         );
       }
@@ -267,6 +269,8 @@ export class PwaController {
     this.started = false;
     this.listeners.clear();
     this.installPrompt = null;
+    this.registration = null;
+    this.reloadForUpdate = false;
 
     window.removeEventListener(
       'beforeinstallprompt',
@@ -279,6 +283,7 @@ export class PwaController {
     window.removeEventListener('online', this.onOnline);
     window.removeEventListener('offline', this.onOffline);
     window.removeEventListener('focus', this.onFocus);
+    window.removeEventListener('load', this.onWindowLoad);
     document.removeEventListener(
       'visibilitychange',
       this.onVisibilityChange,
@@ -306,6 +311,10 @@ export class PwaController {
         },
       );
 
+      if (!this.started) {
+        return;
+      }
+
       this.registration = registration;
 
       if (registration.waiting) {
@@ -313,6 +322,10 @@ export class PwaController {
       }
 
       registration.addEventListener('updatefound', () => {
+        if (!this.started) {
+          return;
+        }
+
         const worker = registration.installing;
 
         if (!worker) {
@@ -321,7 +334,8 @@ export class PwaController {
 
         worker.addEventListener('statechange', () => {
           if (
-            worker.state === 'installed'
+            this.started
+            && worker.state === 'installed'
             && navigator.serviceWorker.controller
           ) {
             this.patch({ updateReady: true });
