@@ -23,7 +23,8 @@ export function classifyPersistenceError(error: unknown): PersistenceError {
   }
 
   if (
-    error instanceof DOMException
+    typeof DOMException !== 'undefined'
+    && error instanceof DOMException
     && (
       error.name === 'QuotaExceededError'
       || error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
@@ -36,7 +37,10 @@ export function classifyPersistenceError(error: unknown): PersistenceError {
     );
   }
 
-  if (error instanceof DOMException) {
+  if (
+    typeof DOMException !== 'undefined'
+    && error instanceof DOMException
+  ) {
     return new PersistenceError(
       'unavailable',
       `Browser storage is unavailable: ${error.message || error.name}`,
