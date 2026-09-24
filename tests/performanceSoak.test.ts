@@ -41,7 +41,13 @@ import {
   type WorldDocument,
 } from '../src/core/world/World';
 
-const PERF_BUDGET_MS = 5_000;
+const PERF_BUDGETS_MS = {
+  motionTenMinutes: 1_500,
+  schedulerTenMinutes: 500,
+  magicThousand: 1_000,
+  persistenceChurn: 3_000,
+  backupHundred: 1_000,
+} as const;
 
 function measured<T>(
   label: string,
@@ -248,7 +254,7 @@ describe('Phase 16 performance and soak certification', () => {
     );
 
     expect(Number.isFinite(checksum)).toBe(true);
-    expect(elapsedMs).toBeLessThan(PERF_BUDGET_MS);
+    expect(elapsedMs).toBeLessThan(PERF_BUDGETS_MS.motionTenMinutes);
   }, 15_000);
 
   it('schedules ten simulated minutes at the production 25 ms pulse cadence without duplicates or stale ticks', () => {
@@ -289,7 +295,7 @@ describe('Phase 16 performance and soak certification', () => {
 
     expect(steps.length).toBeGreaterThan(5_000);
     expect(new Set(steps).size).toBe(steps.length);
-    expect(elapsedMs).toBeLessThan(PERF_BUDGET_MS);
+    expect(elapsedMs).toBeLessThan(PERF_BUDGETS_MS.schedulerTenMinutes);
   }, 15_000);
 
   it('repeats 1,000 wild global Magic previews without structural growth', () => {
@@ -322,7 +328,7 @@ describe('Phase 16 performance and soak certification', () => {
     expect(final.playgroundToys).toHaveLength(MAX_PLAYGROUND_TOYS);
     expect(final.links).toHaveLength(MAX_LINKS);
     expect(final.snapshots).toHaveLength(MAX_SNAPSHOTS);
-    expect(elapsedMs).toBeLessThan(PERF_BUDGET_MS);
+    expect(elapsedMs).toBeLessThan(PERF_BUDGETS_MS.magicThousand);
   }, 15_000);
 
   it('churns a large local library through save/list/load cycles inside the persistence soak budget', async () => {
@@ -364,7 +370,7 @@ describe('Phase 16 performance and soak certification', () => {
       },
     );
 
-    expect(elapsedMs).toBeLessThan(PERF_BUDGET_MS);
+    expect(elapsedMs).toBeLessThan(PERF_BUDGETS_MS.persistenceChurn);
   }, 15_000);
 
   it('round-trips repeated max-World backups inside the serialization soak budget', () => {
@@ -389,6 +395,6 @@ describe('Phase 16 performance and soak certification', () => {
 
     expect(lastDecoded?.soundOrbs).toHaveLength(MAX_SOUND_ORBS);
     expect(lastDecoded?.snapshots).toHaveLength(MAX_SNAPSHOTS);
-    expect(elapsedMs).toBeLessThan(PERF_BUDGET_MS);
+    expect(elapsedMs).toBeLessThan(PERF_BUDGETS_MS.backupHundred);
   }, 15_000);
 });
