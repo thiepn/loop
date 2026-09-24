@@ -169,12 +169,27 @@
 - [x] Phases 14–18 are audit/certification/release only.
 - [x] Feature additions stop after this acceptance gate.
 
-## Exit condition
-Phase 13 is complete only when the exact final main head passes:
+## Final CI verification
+
+GitHub Actions passed on the completed Phase 13 implementation and shared documentation with:
+
 - dependency installation;
 - strict TypeScript typecheck;
-- complete unit-test suite;
+- **35 test files**;
+- **177 tests**;
 - production Vite build;
-- service-worker generation.
+- generated `dist/sw.js`;
+- **9 verified precached URLs** under the `/loop/` deployment path.
 
-Final CI result is recorded after shared documentation/status commits.
+## Exit condition
+- [x] Dependency installation passes.
+- [x] Strict TypeScript typecheck passes.
+- [x] Complete unit-test suite passes.
+- [x] Production Vite build passes.
+- [x] Service-worker generation passes.
+- [x] Required PWA assets validate.
+- [x] V1 feature freeze is active.
+
+**Phase 13 status: complete and CI-verified.**
+
+**V1 product-build status: feature-frozen. Phase 14 begins audit/fix work only.**
