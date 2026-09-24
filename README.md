@@ -19,7 +19,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 10 — Worlds, Snapshots & Persistence: complete and CI-verified**
 - **Phase 11 — Play, Capture & Export: complete and CI-verified**
 - **Phase 12 — Visual Identity, Game Feel & Delight: complete and CI-verified**
-- **Phase 13 — Mobile, PWA & Offline Hardening: complete; final CI verification pending**
+- **Phase 13 — Mobile, PWA & Offline Hardening: complete and CI-verified**
 - **V1 feature development is now frozen**
 - **Next: Phase 14 — Functional & Data-Integrity Audit**
 
@@ -90,7 +90,7 @@ The integrated Phase 13 acceptance head passed CI with:
 - generated `dist/sw.js`
 - **9 verified precached URLs**
 
-Phase 13 coverage includes `/loop/` path normalization, service-worker URL/scope isolation, iOS/iPad manual-install policy, production PWA asset validation, plus every prior Phase 1–12 regression test. The exact final shared-documentation/status head is verified before Phase 13 is marked CI-complete.
+Phase 13 coverage includes `/loop/` path normalization, service-worker URL/scope isolation, iOS/iPad manual-install policy, production PWA asset validation, plus every prior Phase 1–12 regression test. The V1 product-build sequence is now fully CI-verified and feature-frozen.
 
 ## Product rule
 
