@@ -8,6 +8,7 @@ export interface PwaViewCallbacks {
 export class PwaView {
   private readonly layer: HTMLElement;
   private readonly installButton: HTMLButtonElement;
+  private readonly manualInstallHint: HTMLElement;
   private readonly updateBanner: HTMLElement;
   private readonly offlineBadge: HTMLElement;
 
@@ -22,6 +23,11 @@ export class PwaView {
         <span aria-hidden="true">↓</span>
         Install Loop
       </button>
+
+      <div class="pwa-manual-install-hint" data-pwa-manual-install hidden>
+        <span aria-hidden="true">↗</span>
+        <span>Install Loop: Share → Add to Home Screen</span>
+      </div>
 
       <aside class="pwa-update-banner" data-pwa-update hidden>
         <div>
@@ -43,6 +49,9 @@ export class PwaView {
     const installButton = layer.querySelector<HTMLButtonElement>(
       '[data-pwa-install]',
     );
+    const manualInstallHint = layer.querySelector<HTMLElement>(
+      '[data-pwa-manual-install]',
+    );
     const updateBanner = layer.querySelector<HTMLElement>(
       '[data-pwa-update]',
     );
@@ -50,11 +59,12 @@ export class PwaView {
       '[data-pwa-offline]',
     );
 
-    if (!installButton || !updateBanner || !offlineBadge) {
+    if (!installButton || !manualInstallHint || !updateBanner || !offlineBadge) {
       throw new Error('PWA status layer failed to mount.');
     }
 
     this.installButton = installButton;
+    this.manualInstallHint = manualInstallHint;
     this.updateBanner = updateBanner;
     this.offlineBadge = offlineBadge;
 
@@ -75,6 +85,12 @@ export class PwaView {
     this.installButton.hidden = !(
       state.screen === 'home'
       && state.pwaInstallAvailable
+      && !state.pwaInstalled
+    );
+
+    this.manualInstallHint.hidden = !(
+      state.screen === 'home'
+      && state.pwaManualInstallAvailable
       && !state.pwaInstalled
     );
 
