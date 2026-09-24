@@ -87,16 +87,22 @@ async function waitForReleaseMetadata() {
 
 async function run() {
   assert(
-    productionUrl.protocol === 'https:',
-    `Production URL must use HTTPS, got ${productionUrl.href}`,
-  );
-  assert(
     productionUrl.pathname === '/loop/',
     `Expected canonical /loop/ project path, got ${productionUrl.pathname}`,
   );
 
   const releaseResponse = await waitForReleaseMetadata();
   const release = await releaseResponse.json();
+  const liveProductionUrl = new URL('./', releaseResponse.url);
+
+  assert(
+    liveProductionUrl.protocol === 'https:',
+    `Production did not resolve to HTTPS: ${releaseResponse.url}`,
+  );
+  assert(
+    liveProductionUrl.pathname === '/loop/',
+    `Resolved production path is not /loop/: ${liveProductionUrl.pathname}`,
+  );
 
   assert(
     release.version === expectedVersion,
@@ -160,7 +166,7 @@ async function run() {
   });
 
   try {
-    const liveUrl = new URL(productionUrl);
+    const liveUrl = new URL(liveProductionUrl);
     liveUrl.searchParams.set('release', release.commit);
 
     const navigation = await page.goto(liveUrl.href, {
@@ -246,7 +252,7 @@ async function run() {
         .map((entry) => entry.name)
     ));
 
-    const origin = productionUrl.origin;
+    const origin = liveProductionUrl.origin;
     for (const resource of resources) {
       const url = new URL(resource);
 
@@ -300,7 +306,7 @@ async function run() {
 
     console.log(
       `PHASE18_LIVE_SMOKE ${JSON.stringify({
-        url: productionUrl.href,
+        url: liveProductionUrl.href,
         version: release.version,
         commit: release.commit,
         manifest: resolvedManifest.href,
