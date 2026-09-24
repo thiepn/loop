@@ -8,6 +8,7 @@ import { playgroundToyLabel } from '../core/world/PlaygroundToy';
 import { soundById } from '../core/sounds/coreCatalog';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface MagicViewCallbacks {
   readonly onOpenRemix: () => void;
@@ -108,7 +109,7 @@ export class MagicView {
     const remixButton = document.createElement('button');
     remixButton.type = 'button';
     remixButton.className = 'remix-button';
-    remixButton.innerHTML = '<span aria-hidden="true">✦</span> Remix';
+    remixButton.innerHTML = loopIcon('magic') + '<span>Remix</span>';
     remixButton.setAttribute('aria-haspopup', 'dialog');
     remixButton.setAttribute('aria-expanded', 'false');
     remixButton.addEventListener('click', callbacks.onOpenRemix);
@@ -126,7 +127,7 @@ export class MagicView {
             <h2 id="magic-intent-title">Which direction?</h2>
             <p>Loop keeps the same World, then bends it in that direction.</p>
           </div>
-          <button class="magic-intent-close" type="button" data-magic-intent-close aria-label="Close Remix">×</button>
+          <button class="magic-intent-close" type="button" data-magic-intent-close aria-label="Close Remix">${loopIcon('close')}</button>
         </header>
         <div class="magic-intent-grid" data-magic-intents></div>
       </section>
@@ -159,7 +160,7 @@ export class MagicView {
       button.className = 'magic-intent-choice';
       button.dataset.magicIntent = intent.id;
       button.innerHTML = `
-        <span class="magic-intent-art" aria-hidden="true">✦</span>
+        <span class="magic-intent-art" aria-hidden="true">${loopIcon('magic')}</span>
         <span class="magic-intent-copy">
           <strong>${intent.label}</strong>
           <small>${intent.description}</small>
@@ -180,9 +181,9 @@ export class MagicView {
       </div>
       <div class="magic-strength-options" data-magic-strengths role="group" aria-label="Magic strength"></div>
       <div class="magic-preview-actions">
-        <button type="button" data-magic-revert>Revert</button>
-        <button type="button" data-magic-retry><span aria-hidden="true">↻</span> Retry</button>
-        <button class="magic-keep" type="button" data-magic-keep>Keep</button>
+        <button type="button" data-magic-revert>${loopIcon('undo')}<span>Revert</span></button>
+        <button type="button" data-magic-retry>${loopIcon('retry')}<span>Retry</span></button>
+        <button class="magic-keep" type="button" data-magic-keep>${loopIcon('check')}<span>Keep</span></button>
       </div>
     `;
     shell.append(previewBar);
@@ -217,7 +218,7 @@ export class MagicView {
     undoButton.type = 'button';
     undoButton.className = 'magic-undo-button';
     undoButton.hidden = true;
-    undoButton.innerHTML = '<span aria-hidden="true">↶</span> Undo Magic';
+    undoButton.innerHTML = loopIcon('undo') + '<span>Undo Magic</span>';
     undoButton.addEventListener('click', callbacks.onUndo);
     shell.append(undoButton);
     this.undoButton = undoButton;
