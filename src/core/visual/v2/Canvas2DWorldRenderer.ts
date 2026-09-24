@@ -688,13 +688,18 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       return;
     }
 
-    const points = curvedLinkPoints(
-      link.id,
-      link.source,
-      link.target,
+    const points = crossAffectedLinkPoints(
+      curvedLinkPoints(
+        link.id,
+        link.source,
+        link.target,
+        width,
+        height,
+        12,
+      ),
+      link.cross,
       width,
       height,
-      12,
     );
     const midpoint = points[Math.floor(points.length / 2)];
 
@@ -707,7 +712,10 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       midpoint.y,
       (8 + sample.progress * 16) * dpr,
       withAlpha(
-        LINK_RENDER_COLORS[link.type],
+        fieldInfluencedColor(
+          LINK_RENDER_COLORS[link.type],
+          link.cross.fieldInfluence,
+        ),
         fade * 0.5 * event.intensity,
       ),
     );
