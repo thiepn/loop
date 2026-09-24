@@ -65,6 +65,34 @@ describe('WorldRepository', () => {
     expect(library).toHaveLength(3);
   });
 
+  it('rolls back copies created before a multi-World import failure', async () => {
+    class FailingImportStorage extends MemoryWorldStorage {
+      private writes = 0;
+
+      public override async putWorldRecord(
+        record: Parameters<MemoryWorldStorage['putWorldRecord']>[0],
+      ): Promise<void> {
+        this.writes += 1;
+
+        if (this.writes === 2) {
+          throw new DOMException('Quota exhausted', 'QuotaExceededError');
+        }
+
+        await super.putWorldRecord(record);
+      }
+    }
+
+    const storage = new FailingImportStorage();
+    const repository = new WorldRepository(storage);
+    const worlds = [
+      createStarterWorld('beat', 100),
+      createStarterWorld('chill', 110),
+    ];
+
+    await expect(repository.importWorlds(worlds, 200)).rejects.toThrow();
+    expect(await storage.listWorldRecords()).toEqual([]);
+  });
+
   it('quarantines and removes an unrecoverable stored World', async () => {
     const storage = new MemoryWorldStorage();
     const repository = new WorldRepository(storage);
