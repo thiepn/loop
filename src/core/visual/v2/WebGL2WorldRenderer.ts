@@ -285,6 +285,22 @@ export class WebGL2WorldRenderer implements WorldRenderer {
         );
       }
 
+      if (field.interaction.resizing || field.interaction.dragging) {
+        const tensionScale = 1.025
+          + field.interaction.tension * 0.065;
+        pushDisc(
+          discVertices,
+          field.position.x * width,
+          field.position.y * height,
+          field.radius * width * tensionScale,
+          field.radius * height * tensionScale,
+          withAlpha(
+            color,
+            0.055 + field.interaction.tension * 0.09,
+          ),
+        );
+      }
+
       pushDisc(
         discVertices,
         field.position.x * width,
@@ -629,7 +645,11 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       return;
     }
 
-    if (event.kind === 'pointer-disturbance') {
+    if (
+      event.kind === 'pointer-disturbance'
+      || event.kind === 'orb-drop'
+      || event.kind === 'orb-charge'
+    ) {
       return;
     }
 

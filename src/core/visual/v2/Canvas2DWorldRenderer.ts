@@ -107,6 +107,21 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
         );
       }
 
+      if (field.interaction.resizing || field.interaction.dragging) {
+        const tensionScale = 1.025
+          + field.interaction.tension * 0.065;
+        this.drawEllipse(
+          field.position.x * width,
+          field.position.y * height,
+          field.radius * width * tensionScale,
+          field.radius * height * tensionScale,
+          withAlpha(
+            color,
+            0.055 + field.interaction.tension * 0.09,
+          ),
+        );
+      }
+
       this.drawEllipse(
         field.position.x * width,
         field.position.y * height,
@@ -331,6 +346,53 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       context.fillRect(0, 0, width, height);
     }
 
+    if (dynamics.dragStrength > 0.001) {
+      const dragGlow = context.createRadialGradient(
+        dynamics.dragPosition.x * width,
+        dynamics.dragPosition.y * height,
+        0,
+        dynamics.dragPosition.x * width,
+        dynamics.dragPosition.y * height,
+        Math.max(width, height) * 0.16,
+      );
+      dragGlow.addColorStop(
+        0,
+        this.rgbCss(
+          primary,
+          dynamics.dragStrength * 0.055,
+        ),
+      );
+      dragGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      context.fillStyle = dragGlow;
+      context.fillRect(0, 0, width, height);
+    }
+
+    if (dynamics.spotlightStrength > 0.001) {
+      context.fillStyle = 'rgba(0, 0, 0, '
+        + (dynamics.spotlightStrength * 0.035).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+
+      const spotlight = context.createRadialGradient(
+        dynamics.spotlightPosition.x * width,
+        dynamics.spotlightPosition.y * height,
+        0,
+        dynamics.spotlightPosition.x * width,
+        dynamics.spotlightPosition.y * height,
+        Math.max(width, height) * 0.3,
+      );
+      spotlight.addColorStop(
+        0,
+        this.rgbCss(
+          primary,
+          dynamics.spotlightStrength * 0.06,
+        ),
+      );
+      spotlight.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      context.fillStyle = spotlight;
+      context.fillRect(0, 0, width, height);
+    }
+
     if (scene.recording) {
       context.fillStyle = 'rgba(92, 10, 32, 0.035)';
       context.fillRect(0, 0, width, height);
@@ -360,12 +422,20 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
 
       const drift = Math.sin(time * (0.7 + particle.depth) + particle.phase);
       const parallax = dynamics.pointerStrength * particle.depth * motion;
+      const dragDx = particle.x - dynamics.dragPosition.x;
+      const dragDy = particle.y - dynamics.dragPosition.y;
+      const dragDistance = Math.hypot(dragDx, dragDy);
+      const wake = Math.exp(
+        -dragDistance * dragDistance * 34,
+      ) * dynamics.dragStrength * particle.depth * motion;
       let x = particle.x
         + drift * 0.006 * particle.depth
-        + pointerX * parallax * 0.045;
+        + pointerX * parallax * 0.045
+        + dynamics.dragDelta.x * wake * 0.07;
       let y = particle.y
         + Math.cos(time * 0.83 + particle.phase) * 0.004 * particle.depth
-        + pointerY * parallax * 0.04;
+        + pointerY * parallax * 0.04
+        + dynamics.dragDelta.y * wake * 0.07;
 
       x = x - Math.floor(x);
       y = y - Math.floor(y);
@@ -442,7 +512,11 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       return;
     }
 
-    if (event.kind === 'pointer-disturbance') {
+    if (
+      event.kind === 'pointer-disturbance'
+      || event.kind === 'orb-drop'
+      || event.kind === 'orb-charge'
+    ) {
       return;
     }
 

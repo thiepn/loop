@@ -36,6 +36,11 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_pointer_strength;\n'
   + 'uniform vec2 u_event_position;\n'
   + 'uniform float u_event_strength;\n'
+  + 'uniform vec2 u_drag_position;\n'
+  + 'uniform vec2 u_drag_delta;\n'
+  + 'uniform float u_drag_strength;\n'
+  + 'uniform vec2 u_spotlight_position;\n'
+  + 'uniform float u_spotlight_strength;\n'
   + 'out vec4 out_color;\n'
   + '\n'
   + 'float hash21(vec2 p) {\n'
@@ -89,7 +94,10 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  float time = u_time_ms * 0.000055 * awakeMotion;\n'
   + '  vec2 parallax = (u_pointer - 0.5) * u_pointer_strength * u_motion_scale;\n'
   + '  float pointerLocal = exp(-dot(uv - u_pointer, uv - u_pointer) * 22.0);\n'
-  + '  vec2 warpedUv = uv + u_pointer_delta * pointerLocal * u_pointer_strength * u_motion_scale * 0.11;\n'
+  + '  float dragLocal = exp(-dot(uv - u_drag_position, uv - u_drag_position) * 30.0);\n'
+  + '  vec2 warpedUv = uv\n'
+  + '    + u_pointer_delta * pointerLocal * u_pointer_strength * u_motion_scale * 0.11\n'
+  + '    + u_drag_delta * dragLocal * u_drag_strength * u_motion_scale * 0.065;\n'
   + '  vec2 p = vec2((warpedUv.x - 0.5) * aspect, warpedUv.y - 0.5);\n'
   + '\n'
   + '  vec2 hazeCenterA = vec2(\n'
@@ -112,6 +120,8 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '\n'
   + '  float eventGlow = exp(-dot(uv - u_event_position, uv - u_event_position) * 13.0) * u_event_strength;\n'
   + '  float pointerGlow = pointerLocal * u_pointer_strength;\n'
+  + '  float dragGlow = dragLocal * u_drag_strength;\n'
+  + '  float spotlight = exp(-dot(uv - u_spotlight_position, uv - u_spotlight_position) * 10.0) * u_spotlight_strength;\n'
   + '  vec2 listenerP = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);\n'
   + '  float listenerDistance = length(listenerP);\n'
   + '  float bassWave = sin(listenerDistance * 31.0 - u_time_ms * 0.012)\n'
@@ -125,6 +135,9 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  color += vec3(0.76, 0.82, 1.0) * nearStars * (0.10 + u_awake * 0.08);\n'
   + '  color += u_primary * eventGlow * (0.035 + u_energy * 0.10) * (0.45 + u_bloom_scale * 0.55);\n'
   + '  color += u_secondary * pointerGlow * 0.035;\n'
+  + '  color += mix(u_primary, u_secondary, 0.42) * dragGlow * 0.045;\n'
+  + '  color *= 1.0 - u_spotlight_strength * 0.045;\n'
+  + '  color += mix(u_primary, vec3(0.76, 0.80, 1.0), 0.22) * spotlight * 0.055;\n'
   + '  color += mix(u_secondary, u_primary, 0.45) * abs(bassWave) * 0.045;\n'
   + '  color += vec3(1.0, 0.62, 0.72) * u_transient * 0.012;\n'
   + '  color += vec3(0.18, 0.018, 0.045) * u_recording * 0.16;\n'
@@ -238,6 +251,11 @@ export class WebGLEnvironmentLayer {
   private readonly pointerStrength: WebGLUniformLocation;
   private readonly eventPosition: WebGLUniformLocation;
   private readonly eventStrength: WebGLUniformLocation;
+  private readonly dragPosition: WebGLUniformLocation;
+  private readonly dragDelta: WebGLUniformLocation;
+  private readonly dragStrength: WebGLUniformLocation;
+  private readonly spotlightPosition: WebGLUniformLocation;
+  private readonly spotlightStrength: WebGLUniformLocation;
 
   public constructor(
     private readonly gl: WebGL2RenderingContext,
@@ -263,6 +281,11 @@ export class WebGLEnvironmentLayer {
     this.pointerStrength = uniform(gl, this.program, 'u_pointer_strength');
     this.eventPosition = uniform(gl, this.program, 'u_event_position');
     this.eventStrength = uniform(gl, this.program, 'u_event_strength');
+    this.dragPosition = uniform(gl, this.program, 'u_drag_position');
+    this.dragDelta = uniform(gl, this.program, 'u_drag_delta');
+    this.dragStrength = uniform(gl, this.program, 'u_drag_strength');
+    this.spotlightPosition = uniform(gl, this.program, 'u_spotlight_position');
+    this.spotlightStrength = uniform(gl, this.program, 'u_spotlight_strength');
   }
 
   public render(
@@ -333,6 +356,29 @@ export class WebGLEnvironmentLayer {
     gl.uniform1f(
       this.eventStrength,
       dynamics.eventStrength,
+    );
+    gl.uniform2f(
+      this.dragPosition,
+      dynamics.dragPosition.x,
+      dynamics.dragPosition.y,
+    );
+    gl.uniform2f(
+      this.dragDelta,
+      dynamics.dragDelta.x,
+      dynamics.dragDelta.y,
+    );
+    gl.uniform1f(
+      this.dragStrength,
+      dynamics.dragStrength,
+    );
+    gl.uniform2f(
+      this.spotlightPosition,
+      dynamics.spotlightPosition.x,
+      dynamics.spotlightPosition.y,
+    );
+    gl.uniform1f(
+      this.spotlightStrength,
+      dynamics.spotlightStrength,
     );
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
