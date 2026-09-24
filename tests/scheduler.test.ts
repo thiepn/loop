@@ -35,6 +35,34 @@ describe('LookaheadScheduler', () => {
     expect(times.some((time) => Math.abs(time - 1.375) < 1e-8)).toBe(true);
   });
 
+  it('never emits stale ticks after a shorter scheduler gap', () => {
+    let now = 0;
+    const transport = new MusicalTransport({ bpm: 120 });
+    transport.start(0, 0);
+
+    const scheduler = new LookaheadScheduler(
+      () => now,
+      transport,
+      {
+        scheduleAheadSeconds: 0.1,
+        stepsPerBeat: 4,
+      },
+    );
+
+    const times: number[] = [];
+    scheduler.subscribe((tick) => times.push(tick.time));
+
+    scheduler.pulse();
+    const beforeGap = times.length;
+
+    now = 0.55;
+    scheduler.pulse();
+
+    expect(times.slice(beforeGap).every(
+      (time) => time >= now - 0.002,
+    )).toBe(true);
+  });
+
   it('resynchronizes after a long main-thread gap instead of bursting old ticks', () => {
     let now = 0;
     const transport = new MusicalTransport({ bpm: 120 });
