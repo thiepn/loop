@@ -168,7 +168,7 @@ Implement:
 - undo reconstruction;
 - bounded cinematic state changes.
 
-## Phase 12 — Home, Library, Branding & Application Surfaces
+## Phase 12 — Home, Library, Branding & Application Surfaces — implemented; certification pending
 
 Revamp:
 - Home environment;
