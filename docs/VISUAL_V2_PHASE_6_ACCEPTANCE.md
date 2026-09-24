@@ -124,3 +124,24 @@ Phase 6 is complete only when the exact final Phase 6 head passes:
 - complete unit/soak suite;
 - production build;
 - Phase 16 browser certification without relaxing its budgets.
+
+
+## Verification record
+
+The implemented Phase 6 head passed the existing repository verification gates without changing certification budgets:
+
+- strict TypeScript typecheck: passed;
+- unit/soak suite: **43 files, 240 tests passed**;
+- production Vite build: passed;
+- Phase 16 browser certification: passed;
+- JS+CSS gzip: **99,449 bytes** (< 120 KiB budget);
+- navigation load: **429.9 ms** (< 3,000 ms budget);
+- Home → World: **779.6 ms** (< 1,500 ms budget);
+- sampled animation-frame p95: **16.7 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **3.77 ms** (< 8 ms budget);
+- post-GC heap growth: **538,772 bytes** (< 5 MiB budget);
+- DOM node growth: **119** (< 250 budget);
+- longest observed long task: **0 ms**;
+- frozen → active lifecycle recovery: passed.
+
+Renderer-level ribbon trails therefore fit inside the existing release-performance envelope while replacing the DOM trail-point system and preserving headroom for Phase 7 Field materials.
