@@ -245,6 +245,33 @@ export class App {
       onSurprise: () => {
         void this.chooseSurprise();
       },
+      onOpenWorld: (worldId) => {
+        void this.openLibraryWorld(worldId);
+      },
+      onRenameWorld: (worldId, name) => {
+        void this.renameLibraryWorld(worldId, name);
+      },
+      onDuplicateWorld: (worldId) => {
+        void this.duplicateLibraryWorld(worldId);
+      },
+      onTrashWorld: (worldId) => {
+        void this.trashLibraryWorld(worldId);
+      },
+      onRestoreWorld: (worldId) => {
+        void this.restoreLibraryWorld(worldId);
+      },
+      onPurgeWorld: (worldId) => {
+        void this.purgeLibraryWorld(worldId);
+      },
+      onExportWorld: (worldId) => {
+        void this.exportLibraryWorld(worldId);
+      },
+      onExportAll: () => {
+        void this.exportAllWorlds();
+      },
+      onImportBackup: (text) => {
+        void this.importBackup(text);
+      },
     });
   }
 
