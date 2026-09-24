@@ -113,6 +113,8 @@ export class MotionView {
     toysButton.type = 'button';
     toysButton.className = 'toys-button';
     toysButton.innerHTML = '<span aria-hidden="true">✣</span> Toys';
+    toysButton.setAttribute('aria-haspopup', 'dialog');
+    toysButton.setAttribute('aria-expanded', 'false');
     toysButton.addEventListener('click', callbacks.onOpenToyPalette);
     dock.append(toysButton);
     this.toysButton = toysButton;
@@ -131,22 +133,22 @@ export class MotionView {
           <button class="motion-close" type="button" data-motion-close aria-label="Close Motion">×</button>
         </header>
 
-        <div class="motion-mode-grid" data-motion-modes></div>
+        <div class="motion-mode-grid" data-motion-modes role="group" aria-label="Motion behavior"></div>
 
         <div class="motion-macros">
           <div class="motion-macro">
             <span>Speed</span>
-            <div class="motion-options" data-motion-speed></div>
+            <div class="motion-options" data-motion-speed role="group" aria-label="Motion speed"></div>
           </div>
           <div class="motion-macro">
             <span>Range</span>
-            <div class="motion-options" data-motion-range></div>
+            <div class="motion-options" data-motion-range role="group" aria-label="Motion range"></div>
           </div>
         </div>
 
         <div class="follow-target-group" data-follow-group hidden>
           <span>Follow</span>
-          <div class="follow-targets" data-follow-targets></div>
+          <div class="follow-targets" data-follow-targets role="group" aria-label="Sound to follow"></div>
         </div>
       </section>
     `;
@@ -749,6 +751,7 @@ export class MotionView {
 
   private renderToyPalette(state: Readonly<AppState>): void {
     this.toyPalette.hidden = !state.toyPaletteOpen;
+    this.toysButton.setAttribute('aria-expanded', String(state.toyPaletteOpen));
     this.toyPaletteFocus.sync(state.toyPaletteOpen);
     this.toysButton.disabled = state.world.playgroundToys.length >= MAX_PLAYGROUND_TOYS;
 
