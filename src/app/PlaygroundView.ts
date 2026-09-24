@@ -667,6 +667,8 @@ export class PlaygroundView {
       }
 
       event.preventDefault();
+      this.callbacks.onSelectOrb(orb.id);
+
       const current = {
         x: Number.parseFloat(element.dataset.x ?? '0.5'),
         y: Number.parseFloat(element.dataset.y ?? '0.5'),
