@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 11.
+Introduced in Phase 3 and updated through Phase 12.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -465,6 +465,88 @@ Longer recordings still provide the browser-native Download Audio path.
 
 No codec/bit-depth/routing controls are exposed in the normal UI.
 
+## Visual identity & game feel
+
+Phase 12 completes the major V1 visual pass without changing musical behavior.
+
+### Sound Orbs
+Sound Orbs now combine:
+- role-colored aura;
+- role-specific detail shape;
+- circular wave/rhythm halo;
+- luminous core;
+- bounded built-in particles;
+- selection/mute state;
+- audio-timed burst particles;
+- role-colored Motion trails.
+
+Each role has distinct pulse timing/weight:
+- Beat — crisp/heavy;
+- Percussion — short/bright;
+- Bass — slower/heavier;
+- Harmony — broad/slow;
+- Melody — nimble;
+- Texture — soft/atmospheric;
+- Voice — elastic/expressive.
+
+### Trails and particles
+VisualSystemView receives the same live positions already used by Motion/spatial audio.
+
+It adds trail points only after meaningful movement and removes them after a bounded lifetime.
+
+Scheduled audio activity spawns role-colored burst particles at the orb's current rendered position.
+
+There is no new visual requestAnimationFrame loop.
+
+### Field / toy / Link identity
+Fields now have stronger distinct materials:
+- Space — starry nebula/rings;
+- Echo — ghost ripples;
+- Heat — molten turbulence;
+- Frost — crystal geometry;
+- Filter — spectral gradient.
+
+Toys use animated physical metaphors.
+
+Links retain relationship curves and gain quality-aware glow/energy flow without becoming patch cables.
+
+### World state ambience
+Playing slightly wakes the listener/canvas.
+
+Recording adds a restrained rose capture tint.
+
+New orbs/fields/toys/Links receive short bounded entrance feedback.
+
+### Dense Worlds
+At 9+ Sound Orbs, decorative aura/particles/labels de-emphasize automatically while selected/hovered labels remain clear.
+
+### Visual quality
+The visual-settings control offers:
+- High;
+- Balanced;
+- Battery Saver.
+
+Initial quality uses lightweight browser hints; explicit choices persist globally in localStorage.
+
+Quality changes only:
+- ambient particle count;
+- burst density;
+- trail length/lifetime;
+- bloom/decorative intensity;
+- continuous decorative animation.
+
+Audio behavior is identical.
+
+### Accessibility
+Independent switches:
+- Reduce Motion;
+- Reduce Particles;
+- Reduce Glow.
+
+Reduce Motion preserves brightness/state feedback while removing travel-heavy Motion/trails and continuous decorative loops.
+
+Visual preferences are not part of the World, autosave, undo/redo, Snapshots, or backups.
+
 ## World schema
 
 World schema version 8 includes:
@@ -505,4 +587,4 @@ The playground currently includes:
 - browser-native audio download;
 - bounded optional WAV export.
 
-The remaining roadmap work is visual/game-feel hardening, mobile/PWA/offline hardening, and release certification—not deeper studio production features.
+The only remaining product-build phase is mobile/PWA/offline hardening. After Phase 13, V1 enters feature freeze and only audit/certification/release work remains.
