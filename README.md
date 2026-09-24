@@ -16,9 +16,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 7 — Motion Playground: complete and CI-verified**
 - **Phase 8 — Links & Reactive Music: complete and CI-verified**
 - **Phase 9 — Magic, Mutation & Controlled Randomness: complete and CI-verified**
-- **Next: Phase 10 — Worlds, Snapshots & Persistence**
+- **Phase 10 — Worlds, Snapshots & Persistence: complete; final CI verification pending**
+- **Next: Phase 11 — Play, Capture & Export**
 
-Loop now behaves as a living reactive music playground with controlled experimentation: users can shape patterns, move sounds through Effect Fields, animate them with Motion/toys, create reactive Links, then use per-object ✦ Magic or global ✦ Remix to generate seeded compatible variations with Retry/Keep/Revert safety.
+Loop is now a durable local music playground: Worlds autosave to IndexedDB, restore after refresh, live in a recoverable local library, support eight playable Snapshots, bounded undo/redo, Trash/recovery, schema migration/quarantine, and versioned JSON backup/import—without accounts or a backend.
 
 ## Product contract
 
@@ -39,6 +40,7 @@ The authoritative specifications live in `docs/`:
 - [MOTION_PLAYGROUND.md](docs/MOTION_PLAYGROUND.md) — Motion presets, live-position runtime, playground toys, previews, and performance boundaries
 - [LINKS_REACTIVE_MUSIC.md](docs/LINKS_REACTIVE_MUSIC.md) — Link vocabulary, reactive timing, relationship safety, visual connections, and lifecycle rules
 - [MAGIC.md](docs/MAGIC.md) — seeded mutation, intents, per-object Magic, Remix, preview transactions, and undo safety
+- [PERSISTENCE.md](docs/PERSISTENCE.md) — World library, autosave/restore, IndexedDB, Snapshots, history, migration, Trash, quarantine, and backups
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
@@ -48,6 +50,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_7_ACCEPTANCE.md](docs/PHASE_7_ACCEPTANCE.md) — Phase 7 verification gate
 - [PHASE_8_ACCEPTANCE.md](docs/PHASE_8_ACCEPTANCE.md) — Phase 8 verification gate
 - [PHASE_9_ACCEPTANCE.md](docs/PHASE_9_ACCEPTANCE.md) — Phase 9 verification gate
+- [PHASE_10_ACCEPTANCE.md](docs/PHASE_10_ACCEPTANCE.md) — Phase 10 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -68,14 +71,9 @@ npm run build
 
 ## Current automated verification
 
-The final Phase 9 implementation passed CI with:
+Phase 9 remains fully verified.
 
-- **24 test files**
-- **124 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The Magic suite covers deterministic seeded mutation, role-safe sound changes, intent-aware pattern/tempo behavior, bounded field/toy mutation, coherent Remix structure, Link validity preservation, and every prior Phase 1–8 regression test.
+The integrated Phase 10 implementation passed its acceptance/documentation gate with **30 test files / 150 tests**, strict TypeScript, and a production build. The exact final shared-documentation/status head is verified before Phase 10 is marked CI-complete.
 
 ## Product rule
 
