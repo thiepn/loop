@@ -2229,6 +2229,12 @@ export class App {
       return;
     }
 
+    const historyWorld = this.history.undo();
+
+    if (historyWorld !== undo.beforeWorld) {
+      this.history.reset(undo.beforeWorld);
+    }
+
     appStore.patch({
       world: undo.beforeWorld,
       magicUndo: null,
