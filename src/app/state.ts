@@ -80,6 +80,10 @@ export interface AppState {
   readonly visualReduceMotion: boolean;
   readonly visualReduceParticles: boolean;
   readonly visualReduceBloom: boolean;
+  readonly pwaInstallAvailable: boolean;
+  readonly pwaInstalled: boolean;
+  readonly pwaUpdateReady: boolean;
+  readonly pwaOffline: boolean;
   readonly captureStatus: CaptureStatus;
   readonly captureStartedAt: number | null;
   readonly captureDurationMs: number;
@@ -121,6 +125,10 @@ export const appStore = new Store<AppState>({
   visualReduceMotion: false,
   visualReduceParticles: false,
   visualReduceBloom: false,
+  pwaInstallAvailable: false,
+  pwaInstalled: false,
+  pwaUpdateReady: false,
+  pwaOffline: false,
   captureStatus: 'idle',
   captureStartedAt: null,
   captureDurationMs: 0,
