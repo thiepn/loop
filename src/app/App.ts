@@ -17,6 +17,7 @@ import { classifyPersistenceError } from '../core/persistence/PersistenceError';
 import { WorldRepository } from '../core/persistence/WorldRepository';
 import {
   PlaygroundEngine,
+  type ChoreographyActivity,
   type LinkActivity,
   type OrbActivity,
 } from '../core/music/PlaygroundEngine';
@@ -127,6 +128,7 @@ export class App {
   private unsubscribeStore: (() => void) | null = null;
   private unsubscribeActivity: (() => void) | null = null;
   private unsubscribeLinkActivity: (() => void) | null = null;
+  private unsubscribeChoreography: (() => void) | null = null;
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
   private captureView: CaptureView | null = null;
@@ -1860,6 +1862,9 @@ export class App {
         this.unsubscribeLinkActivity = this.playground.subscribeLinkActivity((activity) => {
           this.scheduleLinkVisual(activity);
         });
+        this.unsubscribeChoreography = this.playground.subscribeChoreography((activity) => {
+          this.scheduleChoreographyVisual(activity);
+        });
       } else {
         this.playground.syncWorld(latest.world);
       }
@@ -3392,6 +3397,9 @@ export class App {
     this.unsubscribeLinkActivity?.();
     this.unsubscribeLinkActivity = null;
 
+    this.unsubscribeChoreography?.();
+    this.unsubscribeChoreography = null;
+
     this.playground?.dispose();
     this.playground = null;
   }
@@ -3401,6 +3409,28 @@ export class App {
       clearTimeout(timer);
     }
     this.activityTimers.clear();
+  }
+
+  private scheduleChoreographyVisual(
+    activity: ChoreographyActivity,
+  ): void {
+    const runtime = audioEngine.getRuntime();
+
+    if (!runtime) {
+      return;
+    }
+
+    const delayMs = Math.max(
+      0,
+      (activity.time - runtime.context.currentTime) * 1000,
+    );
+
+    const timer = setTimeout(() => {
+      this.activityTimers.delete(timer);
+      this.worldRendererView?.choreographyTick(activity);
+    }, delayMs);
+
+    this.activityTimers.add(timer);
   }
 
   private scheduleLinkVisual(activity: LinkActivity): void {

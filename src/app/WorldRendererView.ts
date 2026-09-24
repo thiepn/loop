@@ -1,4 +1,5 @@
 import type { AppState } from './state';
+import type { ChoreographyActivity } from '../core/music/PlaygroundEngine';
 import type { EffectFieldDocument } from '../core/world/EffectField';
 import type { PlaygroundToyDocument } from '../core/world/PlaygroundToy';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
@@ -105,6 +106,8 @@ export class WorldRendererView {
   private activeOrbPointer: ActiveOrbPointer | null = null;
   private activeFieldPointer: ActiveFieldPointer | null = null;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastPlayingState: boolean | null = null;
+  private lastRecordingState: boolean | null = null;
 
   private readonly handleWindowResize = () => {
     this.syncViewport();
@@ -647,6 +650,39 @@ export class WorldRendererView {
   }
 
   public render(state: Readonly<AppState>): void {
+    const recording = state.captureStatus === 'recording';
+
+    if (
+      this.lastPlayingState !== null
+      && this.lastPlayingState !== state.playing
+    ) {
+      this.events.emit(
+        {
+          kind: 'choreography-state',
+          cue: state.playing ? 'play' : 'stop',
+          intensity: 1,
+        },
+        performance.now(),
+      );
+    }
+
+    if (
+      this.lastRecordingState !== null
+      && this.lastRecordingState !== recording
+    ) {
+      this.events.emit(
+        {
+          kind: 'choreography-state',
+          cue: recording ? 'record-start' : 'record-stop',
+          intensity: 1,
+        },
+        performance.now(),
+      );
+    }
+
+    this.lastPlayingState = state.playing;
+    this.lastRecordingState = recording;
+
     if (this.currentWorldId !== state.world.id) {
       this.clearRuntimeOverrides();
       this.trailHistory.clear();
@@ -801,6 +837,67 @@ export class WorldRendererView {
       },
       performance.now(),
     );
+    this.requestRender();
+  }
+
+  public choreographyTick(
+    activity: Readonly<ChoreographyActivity>,
+  ): void {
+    const density = Math.max(
+      0,
+      Math.min(1, activity.activeOrbCount / 12),
+    );
+    const downbeat = activity.stepInBar === 0;
+    const silent = downbeat
+      && activity.previousBarEventCount === 0;
+
+    if (downbeat) {
+      this.events.emit(
+        {
+          kind: 'choreography-bar',
+          bar: activity.bar,
+          phrasePosition: activity.phrasePosition,
+          density,
+          silent,
+          durationMs: activity.barDurationMs,
+        },
+        performance.now(),
+      );
+    }
+
+    if (
+      downbeat
+      || activity.eventCount >= 2
+      || activity.reentry
+    ) {
+      const simultaneous = Math.max(
+        0,
+        activity.eventCount - 1,
+      );
+
+      this.events.emit(
+        {
+          kind: 'choreography-hit',
+          bar: activity.bar,
+          downbeat,
+          simultaneousCount: simultaneous,
+          density,
+          reentry: activity.reentry,
+          intensity: Math.max(
+            0.25,
+            Math.min(
+              1,
+              0.34
+              + (downbeat ? 0.22 : 0)
+              + simultaneous * 0.16
+              + (activity.reentry ? 0.28 : 0),
+            ),
+          ),
+        },
+        performance.now(),
+      );
+    }
+
     this.requestRender();
   }
 
