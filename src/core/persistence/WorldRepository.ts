@@ -29,6 +29,7 @@ export class WorldRepository {
     for (const record of records) {
       try {
         const migrated = migrateWorldDocument(record.world);
+        this.assertRecordIdentity(record, migrated.world);
 
         items.push({
           id: migrated.world.id,
@@ -73,6 +74,7 @@ export class WorldRepository {
 
     try {
       migrated = migrateWorldDocument(record.world);
+      this.assertRecordIdentity(record, migrated.world);
     } catch (error) {
       await this.quarantine(record, error);
       return null;
@@ -234,6 +236,20 @@ export class WorldRepository {
     return imported;
   }
 
+  private assertRecordIdentity(
+    record: StoredWorldRecord,
+    world: WorldDocument,
+  ): void {
+    if (record.id === world.id) {
+      return;
+    }
+
+    throw new PersistenceError(
+      'corrupt',
+      `Stored World key ${record.id} does not match document id ${world.id}.`,
+    );
+  }
+
   private async quarantine(
     record: StoredWorldRecord,
     error: unknown,
@@ -260,6 +276,14 @@ export class WorldRepository {
         `World ${record.id} is corrupt and could not be isolated.`,
         { cause: error },
       );
+    }
+
+    try {
+      if (await this.storage.getActiveWorldId() === record.id) {
+        await this.storage.setActiveWorldId(null);
+      }
+    } catch {
+      // A stale active pointer is recoverable on the next active-World load.
     }
   }
 }
