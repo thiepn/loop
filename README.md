@@ -36,7 +36,8 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Post-V1 Visual V2 Phase 8 — Cross-System Visual Interaction: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 9 — Links, Listener & Light Propagation: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 10 — Musical Choreography: complete and CI-verified**
-- **Next Visual V2 phase after certification: Phase 11 — Magic, Portal, Snapshot & State Transitions**
+- **Post-V1 Visual V2 Phase 11 — Magic, Portal, Snapshot & State Transitions: implemented; certification pending**
+- **Next Visual V2 phase after certification: Phase 12 — Home, Library, Branding & Application Surfaces**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
@@ -89,6 +90,8 @@ The authoritative specifications live in `docs/`:
 - [VISUAL_V2_PHASE_9_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_9_ACCEPTANCE.md) — Phase 9 Links/listener/light-propagation gate
 - [VISUAL_V2_CHOREOGRAPHY.md](docs/VISUAL_V2_CHOREOGRAPHY.md) — scheduler-driven play/stop, downbeat, phrase, silence, re-entry, role, density, and recording choreography
 - [VISUAL_V2_PHASE_10_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_10_ACCEPTANCE.md) — Phase 10 musical choreography gate
+- [VISUAL_V2_TRANSITIONS.md](docs/VISUAL_V2_TRANSITIONS.md) — deterministic Magic/Snapshot/history/delete/Portal cinematic transitions and interruption rules
+- [VISUAL_V2_PHASE_11_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_11_ACCEPTANCE.md) — Phase 11 state-transition gate
 
 ## Development
 
