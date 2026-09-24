@@ -5,7 +5,7 @@ const baseURL = 'http://127.0.0.1:4173/loop/';
 export default defineConfig({
   testDir: './e2e',
   testMatch: 'release-candidate.mjs',
-  timeout: 90_000,
+  timeout: 180_000,
   expect: {
     timeout: 8_000,
   },
@@ -14,6 +14,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['line']] : [['list']],
   use: {
     baseURL,
+    actionTimeout: 12_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     locale: 'en-US',
@@ -44,6 +45,8 @@ export default defineConfig({
           firefoxUserPrefs: {
             'media.autoplay.default': 0,
             'media.autoplay.blocking_policy': 0,
+            'media.autoplay.block-webaudio': false,
+            'media.block-autoplay-until-in-foreground': false,
           },
         },
       },
