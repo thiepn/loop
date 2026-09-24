@@ -6,6 +6,7 @@ import {
 } from '../core/visual/VisualQuality';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface VisualSystemCallbacks {
   readonly onOpenSettings: () => void;
@@ -45,6 +46,7 @@ export class VisualSystemView {
   private readonly burstLayer: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
   private readonly settingsBackdrop: HTMLElement;
+  private readonly settingsFocus: ModalFocusController;
   private readonly qualityButtons = new Map<VisualQuality, HTMLButtonElement>();
   private readonly reduceMotionInput: HTMLInputElement;
   private readonly reduceParticlesInput: HTMLInputElement;
@@ -102,6 +104,8 @@ export class VisualSystemView {
     settingsButton.type = 'button';
     settingsButton.className = 'visual-settings-button';
     settingsButton.setAttribute('aria-label', 'Visual settings');
+    settingsButton.setAttribute('aria-haspopup', 'dialog');
+    settingsButton.setAttribute('aria-expanded', 'false');
     settingsButton.title = 'Visual settings';
     settingsButton.innerHTML = '<span aria-hidden="true">✺</span>';
     settingsButton.addEventListener('click', callbacks.onOpenSettings);
@@ -153,6 +157,10 @@ export class VisualSystemView {
     `;
     shell.append(settingsBackdrop);
     this.settingsBackdrop = settingsBackdrop;
+    this.settingsFocus = new ModalFocusController(settingsBackdrop, {
+      onEscape: callbacks.onCloseSettings,
+      initialFocusSelector: '[data-visual-close]',
+    });
 
     const qualityGrid = settingsBackdrop.querySelector<HTMLElement>(
       '[data-visual-quality]',
@@ -272,16 +280,16 @@ export class VisualSystemView {
     this.shell.dataset.reduceBloom = String(state.visualReduceBloom);
 
     this.settingsBackdrop.hidden = !state.visualSettingsOpen;
+    this.settingsFocus.sync(state.visualSettingsOpen);
     this.settingsButton.setAttribute(
       'aria-expanded',
       String(state.visualSettingsOpen),
     );
 
     for (const [quality, button] of this.qualityButtons) {
-      button.classList.toggle(
-        'is-active',
-        state.visualQuality === quality,
-      );
+      const selected = state.visualQuality === quality;
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', String(selected));
     }
 
     this.reduceMotionInput.checked = state.visualReduceMotion;
@@ -443,6 +451,8 @@ export class VisualSystemView {
   }
 
   public destroy(): void {
+    this.settingsFocus.destroy();
+
     for (const timer of this.cleanupTimers) {
       clearTimeout(timer);
     }
