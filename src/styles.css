@@ -5469,8 +5469,10 @@ a:focus-visible {
 }
 
 .playground-shell[data-reduce-motion="true"] .orb-wave,
+.playground-shell[data-reduce-motion="true"] .orb-core,
 .playground-shell[data-reduce-motion="true"] .orb-aura,
 .playground-shell[data-reduce-motion="true"] .orb-detail,
+.playground-shell[data-reduce-motion="true"] .orb-particle,
 .playground-shell[data-reduce-motion="true"] .field-surface,
 .playground-shell[data-reduce-motion="true"] .field-surface::before,
 .playground-shell[data-reduce-motion="true"] .field-surface::after,
@@ -5479,7 +5481,8 @@ a:focus-visible {
 .playground-shell[data-reduce-motion="true"] .portal-exit-surface,
 .playground-shell[data-reduce-motion="true"] .listener-rings span,
 .playground-shell[data-reduce-motion="true"] .link-path,
-.playground-shell[data-reduce-motion="true"] .ambient-particle {
+.playground-shell[data-reduce-motion="true"] .ambient-particle,
+.playground-shell[data-reduce-motion="true"] .capture-live-dot {
   animation: none !important;
 }
 
@@ -5938,6 +5941,15 @@ a:focus-visible {
 
 .playground-shell[data-visual-quality="battery"] .link-path {
   filter: none;
+}
+
+.playground-shell[data-visual-quality="battery"] .orb-particle-b,
+.playground-shell[data-visual-quality="battery"] .orb-particle-c {
+  display: none;
+}
+
+.playground-shell[data-visual-quality="battery"] .orb-wave {
+  opacity: 0.45;
 }
 
 /* Explicit user reductions override decorative extras. */
