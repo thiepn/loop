@@ -1,6 +1,5 @@
 import {
   effectAmountsAtPoint,
-  type EffectAmounts,
   type EffectFieldDocument,
 } from '../../world/EffectField';
 import {
