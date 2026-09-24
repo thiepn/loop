@@ -1,5 +1,12 @@
 import { audioEngine } from '../core/audio/AudioEngine';
 import {
+  decodeLoopBackup,
+  encodeLoopBackup,
+} from '../core/persistence/Backup';
+import { IndexedDbWorldStorage } from '../core/persistence/IndexedDbWorldStorage';
+import { classifyPersistenceError } from '../core/persistence/PersistenceError';
+import { WorldRepository } from '../core/persistence/WorldRepository';
+import {
   PlaygroundEngine,
   type LinkActivity,
   type OrbActivity,
@@ -9,6 +16,7 @@ import {
   worldHasActiveMotion,
 } from '../core/music/MotionEngine';
 import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
+import { WorldHistory } from '../core/state/WorldHistory';
 import type { MotionMode, MotionRange, MotionSpeed } from '../core/world/Motion';
 import type { LinkType } from '../core/world/Link';
 import {
@@ -67,6 +75,16 @@ import {
   type StarterWorldId,
 } from '../core/world/StarterWorlds';
 import {
+  addSnapshot,
+  deleteSnapshot,
+  recallSnapshot,
+  renameSnapshot,
+} from '../core/world/Snapshot';
+import {
+  renameWorld,
+} from '../core/world/WorldLibraryActions';
+import type { WorldDocument } from '../core/world/World';
+import {
   addSoundOrb,
   deleteSoundOrb,
   duplicateSoundOrb,
@@ -82,6 +100,7 @@ import { LinkView } from './LinkView';
 import { MagicView } from './MagicView';
 import { MotionView } from './MotionView';
 import { PatternEditorView } from './PatternEditorView';
+import { PersistenceView } from './PersistenceView';
 import { PlaygroundView } from './PlaygroundView';
 import { appStore, type AppScreen, type AppState } from './state';
 
@@ -96,6 +115,7 @@ export class App {
   private magicView: MagicView | null = null;
   private motionView: MotionView | null = null;
   private patternEditorView: PatternEditorView | null = null;
+  private persistenceView: PersistenceView | null = null;
   private playground: PlaygroundEngine | null = null;
   private mountedScreen: AppScreen | null = null;
   private onboardingComplete = false;
@@ -105,26 +125,34 @@ export class App {
   private readonly fieldPreviewOverrides = new Map<string, EffectFieldDocument>();
   private readonly toyPreviewOverrides = new Map<string, PlaygroundToyDocument>();
   private readonly activityTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly storage = new IndexedDbWorldStorage();
+  private readonly repository = new WorldRepository(this.storage);
+  private readonly history = new WorldHistory(appStore.getState().world);
+  private persistenceReady = false;
+  private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private autosavePendingWorld: WorldDocument | null = null;
+  private autosaveInFlightWorld: WorldDocument | null = null;
+  private lastSavedWorld: WorldDocument | null = null;
+  private snapshotRecallTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly capabilities = detectCapabilities();
 
   public constructor(private readonly root: HTMLElement) {}
 
   public mount(): void {
     this.unsubscribeStore = appStore.subscribe((state) => {
+      this.trackHistory(state);
       this.renderState(state);
       this.playground?.syncWorld(state.world);
+      this.scheduleAutosave(state);
     });
 
-    appStore.patch({
-      boot: 'ready',
-      message: this.capabilities.audio
-        ? 'Pick a starting point.'
-        : 'Your browser cannot play Loop audio.',
-    });
+    void this.initializePersistence();
   }
 
   public destroy(): void {
     this.clearActivityTimers();
+    this.cancelAutosave();
+    this.cancelSnapshotRecall();
     this.cancelMotionLoop();
     this.clearPlaygroundRuntime();
 
@@ -136,6 +164,9 @@ export class App {
 
     this.patternEditorView?.destroy();
     this.patternEditorView = null;
+
+    this.persistenceView?.destroy();
+    this.persistenceView = null;
 
     this.motionView?.destroy();
     this.motionView = null;
@@ -153,6 +184,7 @@ export class App {
     this.playgroundView = null;
     this.mountedScreen = null;
 
+    this.storage.close();
     void audioEngine.close();
   }
 
@@ -163,6 +195,9 @@ export class App {
 
       this.patternEditorView?.destroy();
       this.patternEditorView = null;
+
+      this.persistenceView?.destroy();
+      this.persistenceView = null;
 
       this.motionView?.destroy();
       this.motionView = null;
@@ -188,7 +223,12 @@ export class App {
       }
     }
 
+    this.homeView?.render(state);
     this.playgroundView?.render(state);
+    this.persistenceView?.render(state, {
+      canUndo: this.history.canUndo,
+      canRedo: this.history.canRedo,
+    });
     this.effectFieldView?.render(state);
     this.linkView?.render(state);
     this.magicView?.render(state);
