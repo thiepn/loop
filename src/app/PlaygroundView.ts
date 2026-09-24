@@ -370,21 +370,108 @@ export class PlaygroundView {
     }
 
     const amount = Math.min(1, Math.max(0.2, intensity));
+    const role = element?.dataset.role ?? 'melody';
+
+    const profile = (() => {
+      switch (role) {
+        case 'beat':
+          return {
+            scale: 1 + amount * 0.18,
+            brightness: 1 + amount * 0.5,
+            duration: 180,
+            easing: 'cubic-bezier(.12,.85,.2,1)',
+          };
+
+        case 'percussion':
+          return {
+            scale: 1 + amount * 0.1,
+            brightness: 1 + amount * 0.65,
+            duration: 130,
+            easing: 'cubic-bezier(.15,.9,.3,1)',
+          };
+
+        case 'bass':
+          return {
+            scale: 1 + amount * 0.15,
+            brightness: 1 + amount * 0.28,
+            duration: 320,
+            easing: 'cubic-bezier(.2,.65,.2,1)',
+          };
+
+        case 'harmony':
+          return {
+            scale: 1 + amount * 0.11,
+            brightness: 1 + amount * 0.26,
+            duration: 360,
+            easing: 'ease-out',
+          };
+
+        case 'texture':
+          return {
+            scale: 1 + amount * 0.08,
+            brightness: 1 + amount * 0.2,
+            duration: 440,
+            easing: 'ease-out',
+          };
+
+        case 'voice':
+          return {
+            scale: 1 + amount * 0.14,
+            brightness: 1 + amount * 0.34,
+            duration: 300,
+            easing: 'cubic-bezier(.2,.75,.25,1)',
+          };
+
+        case 'melody':
+        default:
+          return {
+            scale: 1 + amount * 0.13,
+            brightness: 1 + amount * 0.38,
+            duration: 230,
+            easing: 'cubic-bezier(.2,.8,.2,1)',
+          };
+      }
+    })();
+
     visual.animate(
       [
-        { transform: 'scale(1)', filter: 'brightness(1)' },
         {
-          transform: `scale(${1 + amount * 0.13})`,
-          filter: `brightness(${1 + amount * 0.42})`,
-          offset: 0.28,
+          transform: 'scale(1)',
+          filter: 'brightness(1)',
         },
-        { transform: 'scale(1)', filter: 'brightness(1)' },
+        {
+          transform: `scale(${profile.scale})`,
+          filter: `brightness(${profile.brightness})`,
+          offset: role === 'bass' || role === 'texture'
+            ? 0.42
+            : 0.26,
+        },
+        {
+          transform: 'scale(1)',
+          filter: 'brightness(1)',
+        },
       ],
       {
-        duration: 220,
-        easing: 'cubic-bezier(.2,.8,.2,1)',
+        duration: profile.duration,
+        easing: profile.easing,
       },
     );
+
+    const detail = element?.querySelector<HTMLElement>('.orb-detail');
+
+    if (detail && role === 'percussion') {
+      detail.animate(
+        [
+          { opacity: 0.45, rotate: '0deg' },
+          { opacity: 1, rotate: '10deg', offset: 0.3 },
+          { opacity: 0.58, rotate: '0deg' },
+        ],
+        {
+          duration: 150,
+          easing: 'ease-out',
+        },
+      );
+    }
   }
 
   public destroy(): void {
