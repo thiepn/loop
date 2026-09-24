@@ -110,11 +110,13 @@ export function profileForVisualPreferences(
     }
   })();
 
+  let profile = base;
+
   if (preferences.reduceMotion) {
-    return {
-      ...base,
-      ambientParticleCount: preferences.reduceParticles ? 0 : Math.min(3, base.ambientParticleCount),
-      burstParticleCount: preferences.reduceParticles ? 0 : 1,
+    profile = {
+      ...profile,
+      ambientParticleCount: Math.min(3, profile.ambientParticleCount),
+      burstParticleCount: Math.min(1, profile.burstParticleCount),
       trailPointLimit: 0,
       trailLifetimeMs: 0,
       animateAmbient: false,
@@ -123,21 +125,21 @@ export function profileForVisualPreferences(
   }
 
   if (preferences.reduceParticles) {
-    return {
-      ...base,
+    profile = {
+      ...profile,
       ambientParticleCount: 0,
       burstParticleCount: 0,
     };
   }
 
   if (preferences.reduceBloom) {
-    return {
-      ...base,
-      bloomScale: Math.min(0.3, base.bloomScale),
+    profile = {
+      ...profile,
+      bloomScale: Math.min(0.3, profile.bloomScale),
     };
   }
 
-  return base;
+  return profile;
 }
 
 export function readBrowserVisualHints(): VisualEnvironmentHints {
