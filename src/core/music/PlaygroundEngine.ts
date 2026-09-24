@@ -141,7 +141,8 @@ export class PlaygroundEngine {
     }
 
     const startTime = this.context.currentTime + 0.08;
-    this.transport.start(startTime, 0);
+    const resumeBeat = this.transport.beatAt(this.context.currentTime);
+    this.transport.start(startTime, resumeBeat);
     this.unsubscribeTicks = this.scheduler.subscribe((tick) => this.scheduleTick(tick));
     this.scheduler.start();
     this.playing = true;
