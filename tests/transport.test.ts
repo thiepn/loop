@@ -35,6 +35,20 @@ describe('MusicalTransport', () => {
     expect(transport.beatAt(2)).toBeCloseTo(3);
   });
 
+  it('preserves the paused beat when restarted later', () => {
+    const transport = new MusicalTransport({ bpm: 120 });
+    transport.start(0, 0);
+
+    transport.stop(1.25);
+    expect(transport.beatAt(10)).toBeCloseTo(2.5);
+
+    const pausedBeat = transport.beatAt(10);
+    transport.start(10.5, pausedBeat);
+
+    expect(transport.beatAt(10.5)).toBeCloseTo(2.5);
+    expect(transport.beatAt(11)).toBeCloseTo(3.5);
+  });
+
   it('clamps extreme tempos to the supported range', () => {
     const fast = new MusicalTransport({ bpm: 999 });
     const slow = new MusicalTransport({ bpm: 1 });
