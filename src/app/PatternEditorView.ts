@@ -146,6 +146,13 @@ export class PatternEditorView {
     this.grid.addEventListener('pointermove', (event) => this.continuePaint(event));
     this.grid.addEventListener('pointerup', () => this.endPaint());
     this.grid.addEventListener('pointercancel', () => this.endPaint());
+    this.grid.addEventListener('click', (event) => {
+      if (event.detail !== 0) {
+        return;
+      }
+
+      this.activatePatternCell(event.target);
+    });
   }
 
   public render(state: Readonly<AppState>): void {
@@ -272,6 +279,42 @@ export class PatternEditorView {
       button.addEventListener('click', () => this.callbacks.onGroove(orbId, value));
       this.grooveControls.append(button);
     }
+  }
+
+  private activatePatternCell(target: EventTarget | null): void {
+    const cell = this.patternCellFromTarget(target);
+    const orbId = this.currentOrbId();
+
+    if (!cell || !orbId) {
+      return;
+    }
+
+    const step = Number.parseInt(cell.dataset.step ?? '', 10);
+
+    if (!Number.isFinite(step)) {
+      return;
+    }
+
+    if (cell.classList.contains('rhythm-step')) {
+      this.callbacks.onPaintRhythm(
+        orbId,
+        step,
+        cell.dataset.active !== 'true',
+      );
+      return;
+    }
+
+    const degree = Number.parseInt(cell.dataset.degree ?? '', 10);
+
+    if (!Number.isFinite(degree)) {
+      return;
+    }
+
+    this.callbacks.onPaintMelody(
+      orbId,
+      step,
+      cell.dataset.active === 'true' ? null : degree,
+    );
   }
 
   private beginPaint(event: PointerEvent): void {
