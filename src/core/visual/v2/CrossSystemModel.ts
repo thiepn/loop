@@ -320,10 +320,8 @@ function strongestFieldAtPoint(
   field: EffectFieldDocument;
   amount: number;
 } | null {
-  let strongest: {
-    field: EffectFieldDocument;
-    amount: number;
-  } | null = null;
+  let selectedField: EffectFieldDocument | undefined;
+  let selectedAmount = 0;
 
   for (const field of fields) {
     const amount = effectAmountsAtPoint(
@@ -332,25 +330,28 @@ function strongestFieldAtPoint(
     )[field.type];
 
     if (
-      amount > (strongest?.amount ?? 0)
+      amount > selectedAmount
       || (
-        amount === (strongest?.amount ?? -1)
+        amount === selectedAmount
+        && amount > 0
         && field.id.localeCompare(
-          strongest?.field.id ?? '',
+          selectedField?.id ?? '',
         ) < 0
       )
     ) {
-      strongest = { field, amount };
+      selectedField = field;
+      selectedAmount = amount;
     }
   }
 
-  if (!strongest) {
+  if (!selectedField || selectedAmount <= 0.03) {
     return null;
   }
 
-  return strongest.amount > 0.03
-    ? strongest
-    : null;
+  return {
+    field: selectedField,
+    amount: selectedAmount,
+  };
 }
 
 export function deriveLinkCrossInteraction(
