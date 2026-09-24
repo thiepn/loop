@@ -1937,6 +1937,9 @@ export class App {
 
     const becameEmpty = world.soundOrbs.length === 0;
 
+    this.liveOrbOverrides.delete(orbId);
+    this.playground?.releaseOrbMotionOverride(orbId);
+
     if (becameEmpty && current.playing) {
       this.playground?.stop();
       this.clearActivityTimers();
@@ -2164,6 +2167,8 @@ export class App {
       });
       return;
     }
+
+    this.cancelSnapshotRecall();
 
     const result = mutateWithMagic(
       current.world,
