@@ -35,9 +35,10 @@ export class IndexedDbWorldStorage implements WorldStorage {
   public async listWorldRecords(): Promise<readonly StoredWorldRecord[]> {
     return this.run(async (database) => {
       const transaction = database.transaction(WORLDS_STORE, 'readonly');
+      const done = transactionDone(transaction);
       const request = transaction.objectStore(WORLDS_STORE).getAll();
       const records = await requestResult(request) as StoredWorldRecord[];
-      await transactionDone(transaction);
+      await done;
       return records;
     });
   }
@@ -45,9 +46,10 @@ export class IndexedDbWorldStorage implements WorldStorage {
   public async getWorldRecord(id: string): Promise<StoredWorldRecord | null> {
     return this.run(async (database) => {
       const transaction = database.transaction(WORLDS_STORE, 'readonly');
+      const done = transactionDone(transaction);
       const request = transaction.objectStore(WORLDS_STORE).get(id);
       const record = await requestResult(request) as StoredWorldRecord | undefined;
-      await transactionDone(transaction);
+      await done;
       return record ?? null;
     });
   }
@@ -55,25 +57,28 @@ export class IndexedDbWorldStorage implements WorldStorage {
   public async putWorldRecord(record: StoredWorldRecord): Promise<void> {
     await this.run(async (database) => {
       const transaction = database.transaction(WORLDS_STORE, 'readwrite');
+      const done = transactionDone(transaction);
       transaction.objectStore(WORLDS_STORE).put(record);
-      await transactionDone(transaction);
+      await done;
     });
   }
 
   public async deleteWorldRecord(id: string): Promise<void> {
     await this.run(async (database) => {
       const transaction = database.transaction(WORLDS_STORE, 'readwrite');
+      const done = transactionDone(transaction);
       transaction.objectStore(WORLDS_STORE).delete(id);
-      await transactionDone(transaction);
+      await done;
     });
   }
 
   public async getActiveWorldId(): Promise<string | null> {
     return this.run(async (database) => {
       const transaction = database.transaction(META_STORE, 'readonly');
+      const done = transactionDone(transaction);
       const request = transaction.objectStore(META_STORE).get('active-world');
       const meta = await requestResult(request) as PersistenceMeta | undefined;
-      await transactionDone(transaction);
+      await done;
       return meta?.worldId ?? null;
     });
   }
@@ -81,20 +86,22 @@ export class IndexedDbWorldStorage implements WorldStorage {
   public async setActiveWorldId(id: string | null): Promise<void> {
     await this.run(async (database) => {
       const transaction = database.transaction(META_STORE, 'readwrite');
+      const done = transactionDone(transaction);
       const meta: PersistenceMeta = {
         key: 'active-world',
         worldId: id,
       };
       transaction.objectStore(META_STORE).put(meta);
-      await transactionDone(transaction);
+      await done;
     });
   }
 
   public async putQuarantineRecord(record: QuarantineRecord): Promise<void> {
     await this.run(async (database) => {
       const transaction = database.transaction(QUARANTINE_STORE, 'readwrite');
+      const done = transactionDone(transaction);
       transaction.objectStore(QUARANTINE_STORE).put(record);
-      await transactionDone(transaction);
+      await done;
     });
   }
 
