@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clampRenderDevicePixelRatio,
   renderPolicyForPreferences,
+  motionRenderIntervalMs,
   selectRendererKind,
 } from '../src/core/visual/v2/RendererPolicy';
 import { VisualEventBridge } from '../src/core/visual/v2/VisualEventBridge';
@@ -22,6 +23,13 @@ describe('Visual V2 renderer policy', () => {
       webgl2: false,
       canvas2d: false,
     })).toBe('none');
+  });
+
+  it('throttles software-canvas Motion while leaving WebGL externally unthrottled', () => {
+    expect(motionRenderIntervalMs('webgl2', 'battery')).toBe(0);
+    expect(motionRenderIntervalMs('canvas2d', 'high')).toBeCloseTo(16.67, 1);
+    expect(motionRenderIntervalMs('canvas2d', 'balanced')).toBe(25);
+    expect(motionRenderIntervalMs('canvas2d', 'battery')).toBeCloseTo(33.33, 1);
   });
 
   it('caps DPR by visual quality', () => {

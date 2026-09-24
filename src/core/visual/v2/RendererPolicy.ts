@@ -85,3 +85,22 @@ export function clampRenderDevicePixelRatio(
     renderPolicyForPreferences(preferences).dprCap,
   );
 }
+
+
+export function motionRenderIntervalMs(
+  renderer: RendererKind,
+  quality: VisualQuality,
+): number {
+  if (renderer !== 'canvas2d') {
+    return 0;
+  }
+
+  switch (quality) {
+    case 'high':
+      return 1000 / 60;
+    case 'balanced':
+      return 1000 / 40;
+    case 'battery':
+      return 1000 / 30;
+  }
+}

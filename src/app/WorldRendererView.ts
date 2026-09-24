@@ -4,7 +4,10 @@ import type { PlaygroundToyDocument } from '../core/world/PlaygroundToy';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { VisualPreferences } from '../core/visual/VisualQuality';
 import { AnimationClock } from '../core/visual/v2/AnimationClock';
-import { clampRenderDevicePixelRatio } from '../core/visual/v2/RendererPolicy';
+import {
+  clampRenderDevicePixelRatio,
+  motionRenderIntervalMs,
+} from '../core/visual/v2/RendererPolicy';
 import { projectWorldToRenderScene } from '../core/visual/v2/SceneAdapter';
 import type {
   RenderScene,
@@ -54,6 +57,7 @@ export class WorldRendererView {
   private contextLosses = 0;
   private contextLost = false;
   private currentWorldId: string | null = null;
+  private lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
 
   private readonly handleWindowResize = () => {
     this.syncViewport();
@@ -165,9 +169,26 @@ export class WorldRendererView {
 
   public updateLivePositions(
     positions: ReadonlyMap<string, NormalizedPoint>,
+    timestampMs?: number,
   ): void {
     for (const [orbId, position] of positions) {
       this.liveOrbPositions.set(orbId, position);
+    }
+
+    if (timestampMs !== undefined) {
+      const interval = motionRenderIntervalMs(
+        this.renderer.kind,
+        this.preferences.quality,
+      );
+
+      if (
+        interval > 0
+        && timestampMs - this.lastMotionInvalidationMs < interval
+      ) {
+        return;
+      }
+
+      this.lastMotionInvalidationMs = timestampMs;
     }
 
     this.rebuildScene();
@@ -244,6 +265,7 @@ export class WorldRendererView {
     this.fieldOverrides.clear();
     this.toyOverrides.clear();
     this.events.clear();
+    this.lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
     this.rebuildScene();
   }
 

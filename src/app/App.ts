@@ -3338,7 +3338,10 @@ export class App {
     }
 
     this.linkView?.updateLivePositions(visiblePositions);
-    this.worldRendererView?.updateLivePositions(visiblePositions);
+    this.worldRendererView?.updateLivePositions(
+      visiblePositions,
+      timestamp,
+    );
 
     this.motionFrameRequest = requestAnimationFrame((nextTimestamp) => {
       this.runMotionFrame(nextTimestamp);
