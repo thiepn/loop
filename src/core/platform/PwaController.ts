@@ -1,3 +1,8 @@
+import {
+  pwaServiceWorkerScope,
+  pwaServiceWorkerUrl,
+} from './PwaPaths';
+
 export interface PwaRuntimeState {
   readonly installAvailable: boolean;
   readonly installed: boolean;
@@ -254,9 +259,9 @@ export class PwaController {
 
     try {
       const registration = await navigator.serviceWorker.register(
-        `${import.meta.env.BASE_URL}sw.js`,
+        pwaServiceWorkerUrl(import.meta.env.BASE_URL),
         {
-          scope: import.meta.env.BASE_URL,
+          scope: pwaServiceWorkerScope(import.meta.env.BASE_URL),
           updateViaCache: 'none',
         },
       );
