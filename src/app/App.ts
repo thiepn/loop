@@ -2241,6 +2241,13 @@ export class App {
 
     const latest = appStore.getState();
 
+    if (latest.persistence !== 'ready') {
+      appStore.patch({
+        message: 'Update postponed because local saving is unavailable.',
+      });
+      return;
+    }
+
     if (latest.screen === 'playground') {
       if (!this.persistenceReady || latest.persistence !== 'ready') {
         appStore.patch({
