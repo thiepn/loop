@@ -282,6 +282,24 @@ export class LinkView {
     dy /= length;
 
     const amount = 8 + Math.max(0, Math.min(1, intensity)) * 10;
+    const reducedMotion = this.root
+      .querySelector<HTMLElement>('.playground-shell')
+      ?.dataset.reduceMotion === 'true';
+
+    if (reducedMotion) {
+      targetElement.animate(
+        [
+          { filter: 'brightness(1)' },
+          { filter: 'brightness(1.35)', offset: 0.35 },
+          { filter: 'brightness(1)' },
+        ],
+        {
+          duration: 180,
+          easing: 'ease-out',
+        },
+      );
+      return;
+    }
 
     targetElement.animate(
       [
