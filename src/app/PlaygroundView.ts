@@ -349,6 +349,7 @@ export class PlaygroundView {
 
     this.playButton.setAttribute('aria-pressed', String(state.playing));
     this.playButton.classList.toggle('is-playing', state.playing);
+    this.addButton.disabled = Boolean(state.magicSession);
     this.addButton.setAttribute(
       'aria-expanded',
       String(state.palette?.mode === 'add'),
@@ -557,6 +558,7 @@ export class PlaygroundView {
       }
 
       this.updateOrbElement(element, orb, state.selectedOrbId === orb.id);
+      element.disabled = Boolean(state.magicSession);
     }
   }
 
