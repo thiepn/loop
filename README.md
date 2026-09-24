@@ -26,6 +26,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 17 — Release Candidate: complete and tagged as `v1.0.0-rc.1`**
 - **V1 feature development remains frozen**
 - **Next: Phase 18 — Production Release & GitHub Pages**
+- **Post-V1 Visual V2 Phase 1 — Specification & Art Direction Lock: complete (documentation only; runtime unchanged)**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
@@ -56,7 +57,10 @@ The authoritative specifications live in `docs/`:
 - [PHASE_15_ACCEPTANCE.md](docs/PHASE_15_ACCEPTANCE.md) — UX, accessibility, keyboard, reduced-motion, and regression gate
 - [PHASE_16_ACCEPTANCE.md](docs/PHASE_16_ACCEPTANCE.md) — performance, soak, bundle, memory, lifecycle, and browser certification gate
 - [PHASE_17_ACCEPTANCE.md](docs/PHASE_17_ACCEPTANCE.md) — release-candidate matrix, release blockers, and RC tag gate
-- [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
+- [ROADMAP.md](docs/ROADMAP.md) — closed V1 development sequence through release
+- [VISUAL_V2.md](docs/VISUAL_V2.md) — locked post-V1 visual thesis, materials, depth, lighting, motion, VFX, accessibility, performance, and state boundaries
+- [VISUAL_V2_ROADMAP.md](docs/VISUAL_V2_ROADMAP.md) — complete post-V1 visual revamp sequence
+- [VISUAL_V2_PHASE_1_ACCEPTANCE.md](docs/VISUAL_V2_PHASE_1_ACCEPTANCE.md) — Phase 1 art-direction/specification gate
 
 ## Development
 
