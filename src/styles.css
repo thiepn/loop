@@ -6070,8 +6070,32 @@ a:focus-visible {
 }
 
 .pwa-install-button[hidden],
+.pwa-manual-install-hint[hidden],
 .pwa-update-banner[hidden],
 .pwa-offline-badge[hidden] {
+  display: none;
+}
+
+.pwa-manual-install-hint {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid rgba(196,181,253,0.12);
+  border-radius: 12px;
+  color: #ddd6fe;
+  background: rgba(24,20,36,0.9);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.32);
+  backdrop-filter: blur(18px);
+  font-size: 9px;
+  font-weight: 680;
+}
+
+.pwa-manual-install-hint[hidden] {
   display: none;
 }
 
@@ -6337,7 +6361,8 @@ a:focus-visible {
     -webkit-overflow-scrolling: touch;
   }
 
-  .pwa-install-button {
+  .pwa-install-button,
+  .pwa-manual-install-hint {
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
     min-height: 44px;
