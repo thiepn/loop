@@ -1,4 +1,5 @@
 import type { NormalizedPoint } from '../../world/SoundOrb';
+import type { RenderLinkCrossInteraction } from './RenderTypes';
 
 export interface PixelPoint {
   readonly x: number;
@@ -49,4 +50,75 @@ export function curvedLinkPoints(
   }
 
   return points;
+}
+
+
+export function crossAffectedLinkPoints(
+  points: readonly PixelPoint[],
+  interaction: Readonly<RenderLinkCrossInteraction>,
+  width: number,
+  height: number,
+): readonly PixelPoint[] {
+  if (points.length < 2) {
+    return points;
+  }
+
+  const baseScale = Math.min(width, height);
+  const result: PixelPoint[] = [];
+
+  for (let index = 0; index < points.length; index += 1) {
+    const point = points[index]!;
+    const t = index / Math.max(1, points.length - 1);
+    const bell = Math.sin(t * Math.PI);
+    let offsetX = interaction.refractionDirection.x
+      * interaction.refractionStrength
+      * baseScale
+      * 0.022
+      * bell;
+    let offsetY = interaction.refractionDirection.y
+      * interaction.refractionStrength
+      * baseScale
+      * 0.022
+      * bell;
+
+    const toy = interaction.toyInfluence;
+
+    if (toy) {
+      switch (toy.type) {
+        case 'spinner': {
+          const wave = Math.sin(t * Math.PI * 2) * toy.amount;
+          offsetX += -interaction.refractionDirection.y
+            * wave
+            * baseScale
+            * 0.01;
+          offsetY += interaction.refractionDirection.x
+            * wave
+            * baseScale
+            * 0.01;
+          break;
+        }
+        case 'magnet':
+          offsetX *= 1 - toy.amount * 0.28;
+          offsetY *= 1 - toy.amount * 0.28;
+          break;
+        case 'repulsor':
+          offsetX *= 1 + toy.amount * 0.38;
+          offsetY *= 1 + toy.amount * 0.38;
+          break;
+        case 'portal':
+          offsetX += Math.sin(t * Math.PI * 4)
+            * toy.amount
+            * baseScale
+            * 0.004;
+          break;
+      }
+    }
+
+    result.push({
+      x: point.x + offsetX,
+      y: point.y + offsetY,
+    });
+  }
+
+  return result;
 }
