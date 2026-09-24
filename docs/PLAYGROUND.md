@@ -1,7 +1,7 @@
 # Loop — Sound Orb Playground
 
 ## Status
-Introduced in Phase 3 and updated through Phase 12.
+Introduced in Phase 3 and updated through Phase 13.
 
 Loop's main product surface is a bounded spatial World containing living Sound Orbs. Later phases extend what those orbs can do without replacing the canvas-first interaction model.
 
@@ -547,6 +547,52 @@ Reduce Motion preserves brightness/state feedback while removing travel-heavy Mo
 
 Visual preferences are not part of the World, autosave, undo/redo, Snapshots, or backups.
 
+## Mobile, PWA & offline
+
+Phase 13 is the final V1 product-build layer.
+
+### Phone/tablet
+The same playground adapts rather than switching to a separate mobile product.
+
+On phones:
+- top-bar controls remain one compact grouped cluster;
+- brand/World copy can collapse before controls do;
+- canvas remains dominant;
+- bottom dock stays one horizontally scrollable row;
+- dock/selection panels respect safe areas;
+- contextual panels sit above the dock;
+- modal sheets fit inside the dynamic viewport;
+- Home/library may scroll internally while the musical canvas remains non-scrolling.
+
+### Landscape phone
+Short-height landscape hides nonessential text/status copy, keeps core actions reachable, holds contextual panels above the dock, and constrains sheets to available dvh.
+
+### Touch
+Creative objects continue using Pointer Events.
+
+Coarse-pointer controls use larger hit targets and field resize affordance, but there is no separate touch-only musical engine.
+
+### Install
+Supported browsers may show **Install Loop** on Home.
+
+iPhone/iPad environments without a browser install prompt receive concise **Share → Add to Home Screen** guidance when not already standalone.
+
+### Offline
+The production PWA precaches the built /loop/ application shell/assets and runtime-caches same-origin scoped assets.
+
+Together with Phase 10 IndexedDB Worlds, a previously loaded/installed Loop can reopen its cached app shell and local Worlds without an account/backend.
+
+A small Offline badge communicates connectivity state.
+
+### Updates
+A waiting app update never reloads an active session automatically.
+
+Loop shows **Loop update ready → Update** and reloads only after explicit user action.
+
+### Feature freeze
+With Phase 13 complete, all V1 product-build features are implemented.
+
+Phases 14–18 are audit, bug-fix, certification, RC, and release work only.
 ## World schema
 
 World schema version 8 includes:
@@ -587,4 +633,4 @@ The playground currently includes:
 - browser-native audio download;
 - bounded optional WAV export.
 
-The only remaining product-build phase is mobile/PWA/offline hardening. After Phase 13, V1 enters feature freeze and only audit/certification/release work remains.
+V1 product-build work is now complete. The product is feature-frozen; remaining phases are audit, certification, release-candidate, and production-release work only.
