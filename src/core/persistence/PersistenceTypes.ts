@@ -1,4 +1,5 @@
 import type { WorldDocument } from '../world/World';
+import type { WorldVisualIdentity } from '../world/WorldVisualIdentity';
 
 export type PersistenceStatus = 'loading' | 'ready' | 'error';
 export type AutosaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -17,6 +18,7 @@ export interface WorldLibraryItem {
   readonly lastOpenedAt: number;
   readonly deletedAt: number | null;
   readonly snapshotCount: number;
+  readonly visual: WorldVisualIdentity;
 }
 
 export interface QuarantineRecord {

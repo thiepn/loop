@@ -2,6 +2,7 @@ import {
   duplicateWorldDocument,
 } from '../world/WorldLibraryActions';
 import type { WorldDocument } from '../world/World';
+import { deriveWorldVisualIdentity } from '../world/WorldVisualIdentity';
 import {
   classifyPersistenceError,
   PersistenceError,
@@ -38,6 +39,7 @@ export class WorldRepository {
           lastOpenedAt: record.lastOpenedAt,
           deletedAt: record.deletedAt,
           snapshotCount: migrated.world.snapshots.length,
+          visual: deriveWorldVisualIdentity(migrated.world),
         });
       } catch (error) {
         await this.quarantine(record, error);
