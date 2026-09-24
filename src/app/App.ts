@@ -134,6 +134,8 @@ export class App {
   private autosaveInFlightWorld: WorldDocument | null = null;
   private lastSavedWorld: WorldDocument | null = null;
   private snapshotRecallTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingHomeSave: Promise<void> | null = null;
+  private bootstrapInteractionOccurred = false;
   private readonly handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
       void this.flushAutosave();
@@ -772,7 +774,11 @@ export class App {
 
       this.persistenceReady = true;
 
-      if (active && appStore.getState().screen === 'home') {
+      if (
+        active
+        && !this.bootstrapInteractionOccurred
+        && appStore.getState().screen === 'home'
+      ) {
         this.history.reset(active.world);
         this.lastSavedWorld = active.world;
 
@@ -951,6 +957,7 @@ export class App {
   }
 
   private async chooseStarter(starterId: StarterWorldId): Promise<void> {
+    this.bootstrapInteractionOccurred = true;
     const world = createStarterWorld(starterId);
     await this.enterWorld(world, {
       autoPlay: true,
@@ -959,6 +966,7 @@ export class App {
   }
 
   private async chooseSurprise(): Promise<void> {
+    this.bootstrapInteractionOccurred = true;
     const world = createSurpriseWorld(Date.now());
     await this.enterWorld(world, {
       autoPlay: true,
@@ -1025,6 +1033,10 @@ export class App {
       ? this.startPlayback()
       : Promise.resolve();
 
+    if (this.pendingHomeSave) {
+      await this.pendingHomeSave;
+    }
+
     if (this.persistenceReady) {
       try {
         if (saveBeforeEnter) {
@@ -1050,8 +1062,10 @@ export class App {
     this.cancelSnapshotRecall();
     this.clearPlaygroundRuntime();
 
+    this.bootstrapInteractionOccurred = true;
+
     if (this.persistenceReady) {
-      void (async () => {
+      const save = (async () => {
         try {
           await this.repository.saveWorld(leavingWorld);
           this.lastSavedWorld = leavingWorld;
@@ -1064,6 +1078,12 @@ export class App {
           );
         }
       })();
+
+      this.pendingHomeSave = save.finally(() => {
+        if (this.pendingHomeSave === save) {
+          this.pendingHomeSave = null;
+        }
+      });
     }
 
     appStore.patch({
@@ -1631,7 +1651,14 @@ export class App {
     });
   }
 
+  private async waitForPendingHomeSave(): Promise<void> {
+    if (this.pendingHomeSave) {
+      await this.pendingHomeSave;
+    }
+  }
+
   private async openLibraryWorld(worldId: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1666,6 +1693,7 @@ export class App {
     worldId: string,
     name: string,
   ): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1701,6 +1729,7 @@ export class App {
   }
 
   private async duplicateLibraryWorld(worldId: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1717,6 +1746,7 @@ export class App {
   }
 
   private async trashLibraryWorld(worldId: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1733,6 +1763,7 @@ export class App {
   }
 
   private async restoreLibraryWorld(worldId: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1749,6 +1780,7 @@ export class App {
   }
 
   private async purgeLibraryWorld(worldId: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1765,6 +1797,7 @@ export class App {
   }
 
   private async exportLibraryWorld(worldId: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1791,6 +1824,7 @@ export class App {
   }
 
   private async exportAllWorlds(): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       return;
     }
@@ -1829,6 +1863,7 @@ export class App {
   }
 
   private async importBackup(text: string): Promise<void> {
+    await this.waitForPendingHomeSave();
     if (!this.persistenceReady) {
       appStore.patch({
         message: 'Local storage is unavailable, so the backup cannot be imported.',
