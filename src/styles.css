@@ -5768,3 +5768,252 @@ a:focus-visible {
     opacity: 0;
   }
 }
+
+
+/* Phase 12 — final delight and density resilience */
+
+.sound-orb {
+  animation: orb-arrive 260ms cubic-bezier(.16,.9,.25,1) both;
+}
+
+.effect-field {
+  animation: field-arrive 340ms cubic-bezier(.16,.85,.25,1) both;
+}
+
+.playground-toy,
+.portal-exit {
+  animation: toy-arrive 300ms cubic-bezier(.16,.9,.25,1) both;
+}
+
+.link-connection {
+  animation: link-arrive 260ms ease-out both;
+}
+
+.playground-shell:has(.play-toggle.is-playing) .world-canvas {
+  border-color: rgba(196, 181, 253, 0.075);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,0.03),
+    0 24px 80px rgba(0,0,0,0.24),
+    0 0 calc(32px * var(--visual-bloom))
+      rgba(124,92,246,calc(0.035 * var(--visual-bloom)));
+}
+
+#app[data-capture-status="recording"] .world-canvas {
+  border-color: rgba(251,113,133,0.1);
+}
+
+#app[data-capture-status="recording"] .listener-dot {
+  box-shadow:
+    0 0 0 9px rgba(251,113,133,0.025),
+    0 0 calc(34px * var(--visual-bloom))
+      rgba(251,113,133,calc(0.12 * var(--visual-bloom)));
+}
+
+/* At higher orb counts, protect visual hierarchy automatically. */
+
+.orb-layer:has(.sound-orb:nth-child(9)) .sound-orb {
+  --density-clarity: 0.82;
+}
+
+.orb-layer:has(.sound-orb:nth-child(9)) .orb-aura {
+  opacity: calc(0.34 * var(--density-clarity, 1));
+}
+
+.orb-layer:has(.sound-orb:nth-child(9)) .orb-particle {
+  opacity: 0.28;
+}
+
+.orb-layer:has(.sound-orb:nth-child(9)) .orb-label {
+  opacity: 0.72;
+}
+
+.orb-layer:has(.sound-orb:nth-child(9)) .sound-orb:hover .orb-label,
+.orb-layer:has(.sound-orb:nth-child(9)) .sound-orb.is-selected .orb-label {
+  opacity: 1;
+}
+
+/* Home gets the same living-object visual language. */
+
+.home-shell::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 26% 28%, rgba(255,255,255,0.025) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 71% 64%, rgba(196,181,253,0.035) 0 1px, transparent 1.5px);
+  background-size:
+    82px 82px,
+    113px 113px;
+  mask-image:
+    radial-gradient(circle at 50% 45%, black, transparent 78%);
+  opacity: 0.7;
+}
+
+.home-shell .brand-mark {
+  animation: home-brand-breathe 5s ease-in-out infinite;
+}
+
+.starter-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 78% 16%,
+      rgba(255,255,255,0.055),
+      transparent 28%
+    );
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.starter-card:hover::before,
+.starter-card:focus-visible::before {
+  opacity: 1;
+}
+
+.starter-card:hover .starter-art i:nth-child(1) {
+  scale: 1.08;
+}
+
+.starter-card:hover .starter-art i:nth-child(2) {
+  translate: 2px -3px;
+}
+
+.starter-card:hover .starter-art i:nth-child(3) {
+  translate: -2px 2px;
+}
+
+.starter-art i {
+  transition:
+    translate 220ms cubic-bezier(.2,.8,.2,1),
+    scale 220ms cubic-bezier(.2,.8,.2,1),
+    opacity 180ms ease;
+}
+
+.world-library-card {
+  transition:
+    translate 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.world-library-card:hover {
+  translate: 0 -2px;
+  border-color: rgba(167,139,250,0.11);
+  background: rgba(255,255,255,0.024);
+}
+
+.world-library-card:hover .world-library-art i {
+  animation: library-orb-wake 1.9s ease-in-out infinite alternate;
+}
+
+.world-library-art {
+  box-shadow:
+    inset 0 0 20px rgba(167,139,250,0.025),
+    0 0 24px rgba(96,165,250,0.025);
+}
+
+/* Quality-specific expensive decoration */
+
+.playground-shell[data-visual-quality="high"] .field-surface {
+  box-shadow:
+    inset 0 0 62px var(--field-soft),
+    0 0 46px color-mix(in srgb, var(--field-color) 13%, transparent);
+}
+
+.playground-shell[data-visual-quality="high"] .sound-orb.is-selected .orb-visual::after {
+  box-shadow:
+    0 0 0 5px rgba(255,255,255,0.04),
+    0 0 40px var(--orb-color-soft);
+}
+
+.playground-shell[data-visual-quality="battery"] .orb-detail,
+.playground-shell[data-visual-quality="battery"] .field-surface::before {
+  opacity: 0.34;
+}
+
+.playground-shell[data-visual-quality="battery"] .link-path {
+  filter: none;
+}
+
+/* Explicit user reductions override decorative extras. */
+
+.playground-shell[data-reduce-particles="true"] .ambient-particle-layer,
+.playground-shell[data-reduce-particles="true"] .orb-burst-layer {
+  display: none;
+}
+
+.playground-shell[data-reduce-bloom="true"] .world-glow,
+.playground-shell[data-reduce-bloom="true"] .home-aurora {
+  opacity: 0.06;
+}
+
+.playground-shell[data-reduce-motion="true"] .sound-orb,
+.playground-shell[data-reduce-motion="true"] .effect-field,
+.playground-shell[data-reduce-motion="true"] .playground-toy,
+.playground-shell[data-reduce-motion="true"] .portal-exit,
+.playground-shell[data-reduce-motion="true"] .link-connection {
+  animation-duration: 1ms !important;
+}
+
+@keyframes orb-arrive {
+  from {
+    scale: 0.82;
+    opacity: 0;
+  }
+
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes field-arrive {
+  from {
+    scale: 0.86;
+    opacity: 0;
+  }
+
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes toy-arrive {
+  from {
+    scale: 0.72;
+    opacity: 0;
+  }
+
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes link-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes home-brand-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 18px rgba(139,92,246,0.2);
+  }
+
+  50% {
+    box-shadow:
+      0 0 28px rgba(139,92,246,0.34);
+  }
+}
+
+@keyframes library-orb-wake {
+  0% { opacity: 0.66; }
+  100% { opacity: 1; }
+}
