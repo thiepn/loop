@@ -1079,11 +1079,13 @@ export class App {
         }
       })();
 
-      this.pendingHomeSave = save.finally(() => {
-        if (this.pendingHomeSave === save) {
+      const trackedSave = save.finally(() => {
+        if (this.pendingHomeSave === trackedSave) {
           this.pendingHomeSave = null;
         }
       });
+
+      this.pendingHomeSave = trackedSave;
     }
 
     appStore.patch({
