@@ -39,7 +39,7 @@ See:
 - [VISUAL_V2.md](VISUAL_V2.md)
 - [VISUAL_V2_PHASE_1_ACCEPTANCE.md](VISUAL_V2_PHASE_1_ACCEPTANCE.md)
 
-## Phase 2 — Rendering Architecture V2
+## Phase 2 — Rendering Architecture V2 — complete
 
 Build the visual runtime foundation:
 

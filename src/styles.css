@@ -6654,3 +6654,67 @@ a:focus-visible,
     outline: 2px solid Highlight;
   }
 }
+
+
+/* Visual V2 Phase 2 — renderer architecture and semantic DOM overlay */
+
+.world-renderer-v2 {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.world-grid {
+  z-index: 0;
+}
+
+.playground-shell[data-renderer-v2="webgl2"] .orb-visual,
+.playground-shell[data-renderer-v2="canvas2d"] .orb-visual,
+.playground-shell[data-renderer-v2="webgl2"] .field-surface,
+.playground-shell[data-renderer-v2="canvas2d"] .field-surface,
+.playground-shell[data-renderer-v2="webgl2"] .toy-surface,
+.playground-shell[data-renderer-v2="canvas2d"] .toy-surface,
+.playground-shell[data-renderer-v2="webgl2"] .toy-symbol,
+.playground-shell[data-renderer-v2="canvas2d"] .toy-symbol,
+.playground-shell[data-renderer-v2="webgl2"] .portal-exit-surface,
+.playground-shell[data-renderer-v2="canvas2d"] .portal-exit-surface,
+.playground-shell[data-renderer-v2="webgl2"] .link-path,
+.playground-shell[data-renderer-v2="canvas2d"] .link-path,
+.playground-shell[data-renderer-v2="webgl2"] .link-node,
+.playground-shell[data-renderer-v2="canvas2d"] .link-node,
+.playground-shell[data-renderer-v2="webgl2"] .listener-rings,
+.playground-shell[data-renderer-v2="canvas2d"] .listener-rings,
+.playground-shell[data-renderer-v2="webgl2"] .listener-dot,
+.playground-shell[data-renderer-v2="canvas2d"] .listener-dot {
+  opacity: 0 !important;
+}
+
+.playground-shell[data-renderer-state="lost"] .world-renderer-v2,
+.playground-shell[data-renderer-state="error"] .world-renderer-v2 {
+  opacity: 0;
+}
+
+.playground-shell[data-renderer-state="lost"] .orb-visual,
+.playground-shell[data-renderer-state="error"] .orb-visual,
+.playground-shell[data-renderer-state="lost"] .field-surface,
+.playground-shell[data-renderer-state="error"] .field-surface,
+.playground-shell[data-renderer-state="lost"] .toy-surface,
+.playground-shell[data-renderer-state="error"] .toy-surface,
+.playground-shell[data-renderer-state="lost"] .toy-symbol,
+.playground-shell[data-renderer-state="error"] .toy-symbol,
+.playground-shell[data-renderer-state="lost"] .portal-exit-surface,
+.playground-shell[data-renderer-state="error"] .portal-exit-surface,
+.playground-shell[data-renderer-state="lost"] .link-path,
+.playground-shell[data-renderer-state="error"] .link-path,
+.playground-shell[data-renderer-state="lost"] .link-node,
+.playground-shell[data-renderer-state="error"] .link-node,
+.playground-shell[data-renderer-state="lost"] .listener-rings,
+.playground-shell[data-renderer-state="error"] .listener-rings,
+.playground-shell[data-renderer-state="lost"] .listener-dot,
+.playground-shell[data-renderer-state="error"] .listener-dot {
+  opacity: initial !important;
+}

@@ -120,6 +120,7 @@ import { PersistenceView } from './PersistenceView';
 import { PlaygroundView } from './PlaygroundView';
 import { PwaView } from './PwaView';
 import { VisualSystemView } from './VisualSystemView';
+import { WorldRendererView } from './WorldRendererView';
 import { appStore, type AppScreen, type AppState } from './state';
 
 export class App {
@@ -137,6 +138,7 @@ export class App {
   private persistenceView: PersistenceView | null = null;
   private pwaView: PwaView | null = null;
   private visualSystemView: VisualSystemView | null = null;
+  private worldRendererView: WorldRendererView | null = null;
   private playground: PlaygroundEngine | null = null;
   private mountedScreen: AppScreen | null = null;
   private onboardingComplete = false;
@@ -332,6 +334,9 @@ export class App {
     this.pwaView?.destroy();
     this.pwaView = null;
 
+    this.worldRendererView?.destroy();
+    this.worldRendererView = null;
+
     this.visualSystemView?.destroy();
     this.visualSystemView = null;
 
@@ -380,6 +385,9 @@ export class App {
       this.pwaView?.destroy();
       this.pwaView = null;
 
+      this.worldRendererView?.destroy();
+      this.worldRendererView = null;
+
       this.visualSystemView?.destroy();
       this.visualSystemView = null;
 
@@ -426,6 +434,7 @@ export class App {
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
+    this.worldRendererView?.render(state);
     this.visualSystemView?.render(state);
     this.captureView?.render(state, this.root);
     this.effectFieldView?.render(state);
@@ -502,6 +511,10 @@ export class App {
 
         for (const [changedOrbId, changedPosition] of updates) {
           this.playgroundView?.previewOrbPosition(
+            changedOrbId,
+            changedPosition,
+          );
+          this.worldRendererView?.previewOrbPosition(
             changedOrbId,
             changedPosition,
           );
@@ -610,6 +623,8 @@ export class App {
         });
       },
     });
+
+    this.worldRendererView = new WorldRendererView(this.root);
 
     this.visualSystemView = new VisualSystemView(
       this.root,
@@ -829,6 +844,7 @@ export class App {
       },
       onToyPreview: (toy) => {
         this.toyPreviewOverrides.set(toy.id, toy);
+        this.worldRendererView?.previewToy(toy);
         this.playground?.previewPlaygroundToy(toy);
       },
       onToyMoveCommit: (toyId, position) => {
@@ -839,6 +855,7 @@ export class App {
       },
       onToyPreviewEnd: (toyId) => {
         this.toyPreviewOverrides.delete(toyId);
+        this.worldRendererView?.releaseToyPreview(toyId);
         this.playground?.releasePlaygroundToyPreview(toyId);
       },
       onDeleteToy: (toyId) => {
@@ -3028,6 +3045,7 @@ export class App {
 
   private previewField(field: EffectFieldDocument): void {
     this.fieldPreviewOverrides.set(field.id, field);
+    this.worldRendererView?.previewField(field);
     this.playground?.previewEffectField(field);
     this.effectFieldView?.previewFieldEffects(field);
   }
@@ -3320,6 +3338,7 @@ export class App {
     }
 
     this.linkView?.updateLivePositions(visiblePositions);
+    this.worldRendererView?.updateLivePositions(visiblePositions);
 
     this.motionFrameRequest = requestAnimationFrame((nextTimestamp) => {
       this.runMotionFrame(nextTimestamp);
@@ -3333,6 +3352,7 @@ export class App {
     }
 
     this.motionEpochMs = null;
+    this.worldRendererView?.clearRuntimeOverrides();
     this.liveOrbOverrides.clear();
     this.fieldPreviewOverrides.clear();
     this.toyPreviewOverrides.clear();
@@ -3398,6 +3418,10 @@ export class App {
     const timer = setTimeout(() => {
       this.activityTimers.delete(timer);
       this.linkView?.pulseLink(activity.linkId);
+      this.worldRendererView?.pulseLink(
+        activity.linkId,
+        activity.intensity,
+      );
 
       if (activity.type === 'kick-pushes-bass') {
         this.linkView?.pushOrb(
@@ -3426,10 +3450,18 @@ export class App {
     const timer = setTimeout(() => {
       this.activityTimers.delete(timer);
       this.playgroundView?.pulseOrb(activity.orbId, activity.intensity);
+      const renderedPosition = this.playgroundView?.getOrbPosition(
+        activity.orbId,
+      ) ?? undefined;
       this.visualSystemView?.pulseOrb(
         activity.orbId,
         activity.intensity,
-        this.playgroundView?.getOrbPosition(activity.orbId) ?? undefined,
+        renderedPosition,
+      );
+      this.worldRendererView?.pulseOrb(
+        activity.orbId,
+        activity.intensity,
+        renderedPosition,
       );
     }, delayMs);
 
