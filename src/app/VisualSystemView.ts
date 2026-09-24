@@ -126,7 +126,7 @@ export class VisualSystemView {
           <button class="visual-settings-close" type="button" data-visual-close aria-label="Close visual settings">×</button>
         </header>
 
-        <div class="visual-quality-grid" data-visual-quality></div>
+        <div class="visual-quality-grid" data-visual-quality role="group" aria-label="Visual quality"></div>
 
         <div class="visual-accessibility-list">
           <label>
