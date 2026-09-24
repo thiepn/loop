@@ -9,6 +9,7 @@ import type {
   RenderEventSample,
   RenderOrbCoupling,
 } from './RenderTypes';
+import { deriveTransitionFrame } from './TransitionModel';
 
 function pulseForCoupling(
   coupling: RenderOrbCoupling,
@@ -86,6 +87,40 @@ export class CanvasCrossSystemLayer {
       context.lineWidth = (
         12 + coupling.strength * 18 + pulse * 7
       ) * dpr;
+      context.lineCap = 'round';
+      context.globalCompositeOperation = 'lighter';
+      context.stroke();
+      context.restore();
+    }
+
+    const transitions = deriveTransitionFrame(
+      events,
+      preferences,
+    );
+
+    for (const beam of transitions.beams) {
+      context.save();
+      context.beginPath();
+      context.moveTo(
+        beam.from.x * width,
+        beam.from.y * height,
+      );
+      context.lineTo(
+        beam.to.x * width,
+        beam.to.y * height,
+      );
+      context.strokeStyle = renderColorCss(
+        withAlpha(
+          beam.color,
+          beam.strength * (
+            preferences.reduceBloom ? 0.28 : 0.5
+          ),
+        ),
+      );
+      context.lineWidth = Math.max(
+        1.2 * dpr,
+        beam.width * Math.min(width, height),
+      );
       context.lineCap = 'round';
       context.globalCompositeOperation = 'lighter';
       context.stroke();

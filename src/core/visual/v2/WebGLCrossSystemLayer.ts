@@ -3,6 +3,7 @@ import {
   ROLE_RENDER_COLORS,
 } from './RenderPalette';
 import { renderPolicyForPreferences } from './RendererPolicy';
+import { deriveTransitionFrame } from './TransitionModel';
 import type {
   RenderEventSample,
   RenderOrbCoupling,
@@ -176,7 +177,17 @@ export class WebGLCrossSystemLayer {
     height: number,
     dpr: number,
   ): void {
-    if (couplings.length === 0) return;
+    const transitions = deriveTransitionFrame(
+      events,
+      preferences,
+    );
+
+    if (
+      couplings.length === 0
+      && transitions.beams.length === 0
+    ) {
+      return;
+    }
 
     const policy = renderPolicyForPreferences(preferences);
     const gl = this.gl;
@@ -236,6 +247,55 @@ export class WebGLCrossSystemLayer {
       );
       gl.uniform1f(this.strength, strength);
       gl.uniform1f(this.pulse, pulse);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    for (const beam of transitions.beams) {
+      const ax = beam.from.x * width;
+      const ay = beam.from.y * height;
+      const bx = beam.to.x * width;
+      const by = beam.to.y * height;
+      const halfX = (bx - ax) / 2;
+      const halfY = (by - ay) / 2;
+
+      gl.uniform2f(
+        this.center,
+        (ax + bx) / 2,
+        (ay + by) / 2,
+      );
+      gl.uniform2f(
+        this.halfVector,
+        halfX,
+        halfY,
+      );
+      gl.uniform1f(
+        this.halfWidth,
+        Math.max(
+          2 * dpr,
+          beam.width * Math.min(width, height),
+        ),
+      );
+      gl.uniform4f(
+        this.colorA,
+        beam.color[0],
+        beam.color[1],
+        beam.color[2],
+        1,
+      );
+      gl.uniform4f(
+        this.colorB,
+        beam.color[0],
+        beam.color[1],
+        beam.color[2],
+        1,
+      );
+      gl.uniform1f(
+        this.strength,
+        beam.strength * (
+          preferences.reduceBloom ? 0.52 : 1
+        ),
+      );
+      gl.uniform1f(this.pulse, 0.65);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
   }

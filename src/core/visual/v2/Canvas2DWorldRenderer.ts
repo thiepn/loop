@@ -21,6 +21,10 @@ import {
   deriveChoreographyFrame,
   type ChoreographyFrame,
 } from './ChoreographyModel';
+import {
+  deriveTransitionFrame,
+  type TransitionFrame,
+} from './TransitionModel';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
@@ -99,6 +103,10 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       events,
       preferences,
     );
+    const transition = deriveTransitionFrame(
+      events,
+      preferences,
+    );
     const particles = environmentParticleLayout(
       scene.environment,
       preferences,
@@ -108,6 +116,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       scene,
       dynamics,
       choreography,
+      transition,
       preferences,
       timestampMs,
       width,
@@ -275,6 +284,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     scene: Readonly<RenderScene>,
     dynamics: ReturnType<typeof deriveEnvironmentDynamics>,
     choreography: Readonly<ChoreographyFrame>,
+    transition: Readonly<TransitionFrame>,
     preferences: Readonly<VisualPreferences>,
     timestampMs: number,
     width: number,
@@ -553,6 +563,46 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
         ).toFixed(3)
         + ')';
       context.fillRect(0, 0, width, height);
+    }
+
+    if (transition.worldEnergy > 0.001) {
+      context.save();
+      context.beginPath();
+      context.arc(
+        listenerX,
+        listenerY,
+        minDimension * (
+          preferences.reduceMotion
+            ? 0.52
+            : 0.1 + transition.worldPhase * 0.95
+        ),
+        0,
+        Math.PI * 2,
+      );
+      context.strokeStyle = 'rgba(176, 146, 255, '
+        + (transition.worldEnergy * 0.1).toFixed(3)
+        + ')';
+      context.lineWidth = Math.max(
+        1,
+        minDimension * 0.014 * transition.worldEnergy,
+      );
+      context.stroke();
+      context.restore();
+    }
+
+    if (
+      transition.dissolve > 0.001
+      || transition.reconstruct > 0.001
+    ) {
+      context.fillStyle = 'rgba(95, 82, 150, '
+        + (
+          transition.reconstruct * 0.028
+          - transition.dissolve * 0.012
+        ).toFixed(3)
+        + ')';
+      if (transition.reconstruct > transition.dissolve) {
+        context.fillRect(0, 0, width, height);
+      }
     }
 
     if (

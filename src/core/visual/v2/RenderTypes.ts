@@ -277,7 +277,8 @@ export type StateTransitionKind =
 export type StateTransitionObjectKind =
   | 'orb'
   | 'field'
-  | 'toy';
+  | 'toy'
+  | 'link';
 
 export interface StateTransitionNode {
   readonly id: string;

@@ -1,6 +1,7 @@
 import type { VisualPreferences } from '../VisualQuality';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import type { ChoreographyFrame } from './ChoreographyModel';
+import type { TransitionFrame } from './TransitionModel';
 import type {
   EnvironmentDynamics,
   RenderCrossEnvironment,
@@ -58,6 +59,10 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_choreo_harmony;\n'
   + 'uniform float u_choreo_record_start;\n'
   + 'uniform float u_choreo_record_stop;\n'
+  + 'uniform float u_transition_energy;\n'
+  + 'uniform float u_transition_phase;\n'
+  + 'uniform float u_transition_dissolve;\n'
+  + 'uniform float u_transition_reconstruct;\n'
   + 'uniform vec2 u_drag_position;\n'
   + 'uniform vec2 u_drag_delta;\n'
   + 'uniform float u_drag_strength;\n'
@@ -191,6 +196,11 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  color += mix(u_secondary, vec3(0.78, 0.72, 1.0), 0.35) * u_choreo_phrase_release * 0.06;\n'
   + '  color += vec3(0.32, 0.04, 0.09) * u_choreo_record_start * 0.04;\n'
   + '  color += vec3(0.12, 0.16, 0.28) * u_choreo_record_stop * 0.028;\n'
+  + '  float transitionRadius = 0.10 + u_transition_phase * 0.95;\n'
+  + '  float transitionWave = smoothstep(0.08, 0.012, abs(listenerDistance - transitionRadius));\n'
+  + '  color += mix(u_primary, vec3(0.72, 0.58, 1.0), 0.42) * transitionWave * u_transition_energy * 0.10;\n'
+  + '  color += vec3(0.22, 0.18, 0.38) * u_transition_reconstruct * 0.035;\n'
+  + '  color *= 1.0 - u_transition_dissolve * 0.035;\n'
   + '  color += vec3(0.22, 0.3, 0.4) * forceLocal * 0.018;\n'
   + '  float vignette = smoothstep(1.02, 0.28, length(listenerP));\n'
   + '  color *= 1.0 - u_choreo_settle * 0.07 - u_choreo_silence * 0.10;\n'
@@ -323,6 +333,10 @@ export class WebGLEnvironmentLayer {
   private readonly choreoHarmony: WebGLUniformLocation;
   private readonly choreoRecordStart: WebGLUniformLocation;
   private readonly choreoRecordStop: WebGLUniformLocation;
+  private readonly transitionEnergy: WebGLUniformLocation;
+  private readonly transitionPhase: WebGLUniformLocation;
+  private readonly transitionDissolve: WebGLUniformLocation;
+  private readonly transitionReconstruct: WebGLUniformLocation;
   private readonly dragPosition: WebGLUniformLocation;
   private readonly dragDelta: WebGLUniformLocation;
   private readonly dragStrength: WebGLUniformLocation;
@@ -372,6 +386,10 @@ export class WebGLEnvironmentLayer {
     this.choreoHarmony = uniform(gl, this.program, 'u_choreo_harmony');
     this.choreoRecordStart = uniform(gl, this.program, 'u_choreo_record_start');
     this.choreoRecordStop = uniform(gl, this.program, 'u_choreo_record_stop');
+    this.transitionEnergy = uniform(gl, this.program, 'u_transition_energy');
+    this.transitionPhase = uniform(gl, this.program, 'u_transition_phase');
+    this.transitionDissolve = uniform(gl, this.program, 'u_transition_dissolve');
+    this.transitionReconstruct = uniform(gl, this.program, 'u_transition_reconstruct');
     this.dragPosition = uniform(gl, this.program, 'u_drag_position');
     this.dragDelta = uniform(gl, this.program, 'u_drag_delta');
     this.dragStrength = uniform(gl, this.program, 'u_drag_strength');
@@ -384,6 +402,7 @@ export class WebGLEnvironmentLayer {
     fields: Readonly<RenderFieldEnvironment>,
     cross: Readonly<RenderCrossEnvironment>,
     choreography: Readonly<ChoreographyFrame>,
+    transition: Readonly<TransitionFrame>,
     dynamics: Readonly<EnvironmentDynamics>,
     preferences: Readonly<VisualPreferences>,
     timestampMs: number,
@@ -494,6 +513,13 @@ export class WebGLEnvironmentLayer {
     gl.uniform1f(this.choreoHarmony, choreography.harmonyBloom);
     gl.uniform1f(this.choreoRecordStart, choreography.recordStart);
     gl.uniform1f(this.choreoRecordStop, choreography.recordStop);
+    gl.uniform1f(this.transitionEnergy, transition.worldEnergy);
+    gl.uniform1f(
+      this.transitionPhase,
+      preferences.reduceMotion ? 0.5 : transition.worldPhase,
+    );
+    gl.uniform1f(this.transitionDissolve, transition.dissolve);
+    gl.uniform1f(this.transitionReconstruct, transition.reconstruct);
     gl.uniform2f(
       this.dragPosition,
       dynamics.dragPosition.x,

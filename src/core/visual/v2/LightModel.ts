@@ -8,6 +8,7 @@ import {
 } from './RenderPalette';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import { deriveChoreographyFrame } from './ChoreographyModel';
+import { deriveTransitionFrame } from './TransitionModel';
 import type {
   RenderEventSample,
   RenderLink,
@@ -111,7 +112,19 @@ export function deriveLightFrame(
     events,
     preferences,
   );
-  const localLights: LocalLightSource[] = [];
+  const transition = deriveTransitionFrame(
+    events,
+    preferences,
+  );
+  const localLights: LocalLightSource[] = transition.lights.map(
+    (light) => ({
+      id: 'transition:' + light.id,
+      position: light.position,
+      color: light.color,
+      intensity: light.intensity * policy.lightScale,
+      radius: light.radius,
+    }),
+  );
   const listenerPackets: ListenerPacket[] = [];
   const listenerColors: Array<{
     color: RenderColor;
@@ -286,6 +299,8 @@ export function deriveLightFrame(
         + choreography.reentry * 0.28
         + choreography.recordStart * 0.12
         + choreography.recordStop * 0.06
+        + transition.worldEnergy * 0.12
+        + transition.reconstruct * 0.08
         - choreography.settle * 0.08
         - choreography.silence * 0.06,
       ),

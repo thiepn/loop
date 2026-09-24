@@ -4,6 +4,7 @@ import type { PlaygroundToyDocument } from '../../world/PlaygroundToy';
 import type { NormalizedPoint } from '../../world/SoundOrb';
 import {
   FIELD_RENDER_COLORS,
+  LINK_RENDER_COLORS,
   ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
   type RenderColor,
@@ -101,6 +102,33 @@ function worldNodes(
       to: toy.position,
       color: [color[0], color[1], color[2]],
       radius: Math.min(0.075, toy.radius * 0.5),
+    });
+  }
+
+  const positions = new Map(
+    world.soundOrbs.map((orb) => [orb.id, orb.position]),
+  );
+
+  for (const link of world.links) {
+    const source = positions.get(link.sourceOrbId);
+    const target = positions.get(link.targetOrbId);
+
+    if (!source || !target) {
+      continue;
+    }
+
+    const color = LINK_RENDER_COLORS[link.type];
+
+    nodes.push({
+      id: 'link:' + link.id,
+      kind: 'link',
+      from: null,
+      to: {
+        x: (source.x + target.x) / 2,
+        y: (source.y + target.y) / 2,
+      },
+      color: [color[0], color[1], color[2]],
+      radius: 0.032,
     });
   }
 

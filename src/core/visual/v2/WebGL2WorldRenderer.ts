@@ -14,6 +14,7 @@ import { WebGLLinkLightLayer } from './WebGLLinkLightLayer';
 import { WebGLListenerLayer } from './WebGLListenerLayer';
 import { deriveLightFrame } from './LightModel';
 import { deriveChoreographyFrame } from './ChoreographyModel';
+import { deriveTransitionFrame } from './TransitionModel';
 import { WebGLFieldMaterialLayer } from './WebGLFieldMaterialLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import { WebGLTrailLayer } from './WebGLTrailLayer';
@@ -264,6 +265,10 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       events,
       preferences,
     );
+    const transition = deriveTransitionFrame(
+      events,
+      preferences,
+    );
     const discVertices: number[] = [];
 
     for (const toy of scene.toys) {
@@ -350,6 +355,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       scene.fieldEnvironment,
       scene.crossEnvironment,
       choreography,
+      transition,
       dynamics,
       preferences,
       timestampMs,
