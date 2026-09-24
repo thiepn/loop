@@ -701,19 +701,225 @@ export class App {
     });
   }
 
+  private async initializePersistence(): Promise<void> {
+    try {
+      const active = await this.repository.loadActiveWorld();
+      const library = await this.repository.listLibrary();
+
+      this.persistenceReady = true;
+
+      if (active) {
+        this.history.reset(active.world);
+        this.lastSavedWorld = active.world;
+
+        appStore.patch({
+          boot: 'ready',
+          persistence: 'ready',
+          autosave: 'saved',
+          library,
+          screen: 'playground',
+          world: active.world,
+          selectedOrbId: null,
+          selectedFieldId: null,
+          selectedToyId: null,
+          selectedLinkId: null,
+          palette: null,
+          effectPaletteOpen: false,
+          toyPaletteOpen: false,
+          patternEditorOrbId: null,
+          motionEditorOrbId: null,
+          linkEditorSourceOrbId: null,
+          linkEditorTargetOrbId: null,
+          magicIntentOpen: false,
+          magicSession: null,
+          magicUndo: null,
+          snapshotsOpen: false,
+          onboardingStep: 'done',
+          playing: false,
+          message: active.warnings.length > 0
+            ? `World restored with ${active.warnings.length} repair${active.warnings.length === 1 ? '' : 's'}. Press Play.`
+            : 'World restored. Press Play.',
+        });
+        return;
+      }
+
+      appStore.patch({
+        boot: 'ready',
+        persistence: 'ready',
+        autosave: 'idle',
+        library,
+        message: this.capabilities.audio
+          ? 'Pick a starting point.'
+          : 'Your browser cannot play Loop audio.',
+      });
+    } catch (error) {
+      const failure = classifyPersistenceError(error);
+      this.persistenceReady = false;
+
+      appStore.patch({
+        boot: 'ready',
+        persistence: 'error',
+        autosave: 'error',
+        library: [],
+        message: `Local saving unavailable: ${failure.message}`,
+      });
+    }
+  }
+
+  private trackHistory(state: Readonly<AppState>): void {
+    if (state.magicSession) {
+      return;
+    }
+
+    if (state.world !== this.history.present) {
+      this.history.record(state.world);
+    }
+  }
+
+  private scheduleAutosave(state: Readonly<AppState>): void {
+    if (
+      !this.persistenceReady
+      || state.persistence !== 'ready'
+      || state.screen !== 'playground'
+      || state.magicSession
+      || state.world === this.lastSavedWorld
+      || state.world === this.autosavePendingWorld
+      || state.world === this.autosaveInFlightWorld
+    ) {
+      return;
+    }
+
+    if (this.autosaveTimer !== null) {
+      clearTimeout(this.autosaveTimer);
+    }
+
+    this.autosavePendingWorld = state.world;
+    this.autosaveTimer = setTimeout(() => {
+      this.autosaveTimer = null;
+      void this.flushAutosave();
+    }, 450);
+  }
+
+  private async flushAutosave(): Promise<void> {
+    const world = this.autosavePendingWorld;
+
+    if (!world || !this.persistenceReady) {
+      return;
+    }
+
+    this.autosavePendingWorld = null;
+    this.autosaveInFlightWorld = world;
+
+    if (appStore.getState().autosave !== 'saving') {
+      appStore.patch({ autosave: 'saving' });
+    }
+
+    try {
+      await this.repository.saveWorld(world);
+      await this.repository.setActiveWorld(world.id);
+      this.lastSavedWorld = world;
+
+      if (appStore.getState().world === world) {
+        appStore.patch({ autosave: 'saved' });
+      }
+
+      await this.refreshLibrary();
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Autosave failed');
+    } finally {
+      this.autosaveInFlightWorld = null;
+
+      const current = appStore.getState();
+      if (
+        this.persistenceReady
+        && current.screen === 'playground'
+        && !current.magicSession
+        && current.world !== this.lastSavedWorld
+      ) {
+        this.scheduleAutosave(current);
+      }
+    }
+  }
+
+  private cancelAutosave(): void {
+    if (this.autosaveTimer !== null) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+
+    this.autosavePendingWorld = null;
+  }
+
+  private async refreshLibrary(): Promise<void> {
+    if (!this.persistenceReady) {
+      return;
+    }
+
+    try {
+      const library = await this.repository.listLibrary();
+      appStore.patch({ library });
+    } catch (error) {
+      this.handlePersistenceFailure(error, 'Could not refresh Worlds');
+    }
+  }
+
+  private handlePersistenceFailure(
+    error: unknown,
+    prefix: string,
+  ): void {
+    const failure = classifyPersistenceError(error);
+
+    appStore.patch({
+      persistence: 'error',
+      autosave: 'error',
+      message: `${prefix}: ${failure.message}`,
+    });
+  }
+
   private async chooseStarter(starterId: StarterWorldId): Promise<void> {
     const world = createStarterWorld(starterId);
-    await this.enterWorld(world);
+    await this.enterWorld(world, {
+      autoPlay: true,
+      saveBeforeEnter: true,
+    });
   }
 
   private async chooseSurprise(): Promise<void> {
     const world = createSurpriseWorld(Date.now());
-    await this.enterWorld(world);
+    await this.enterWorld(world, {
+      autoPlay: true,
+      saveBeforeEnter: true,
+    });
   }
 
-  private async enterWorld(world: ReturnType<typeof createStarterWorld>): Promise<void> {
+  private async enterWorld(
+    world: WorldDocument,
+    options: {
+      readonly autoPlay?: boolean;
+      readonly saveBeforeEnter?: boolean;
+    } = {},
+  ): Promise<void> {
+    const autoPlay = options.autoPlay ?? true;
+    const saveBeforeEnter = options.saveBeforeEnter ?? true;
+
     this.clearActivityTimers();
+    this.cancelSnapshotRecall();
     this.clearPlaygroundRuntime();
+    this.history.reset(world);
+
+    if (this.persistenceReady) {
+      try {
+        if (saveBeforeEnter) {
+          await this.repository.saveWorld(world);
+        }
+
+        await this.repository.setActiveWorld(world.id);
+        this.lastSavedWorld = world;
+        await this.refreshLibrary();
+      } catch (error) {
+        this.handlePersistenceFailure(error, 'Could not save World');
+      }
+    }
 
     const hasSounds = world.soundOrbs.length > 0;
     const onboardingStep = this.onboardingComplete
@@ -739,21 +945,32 @@ export class App {
       magicIntentOpen: false,
       magicSession: null,
       magicUndo: null,
+      snapshotsOpen: false,
       onboardingStep,
       playing: false,
-      message: hasSounds
+      autosave: this.persistenceReady ? 'saved' : 'error',
+      message: hasSounds && autoPlay
         ? 'Starting your World…'
-        : 'Add something to begin.',
+        : hasSounds
+          ? 'World opened. Press Play.'
+          : 'Add something to begin.',
     });
 
-    if (hasSounds) {
+    if (hasSounds && autoPlay) {
       await this.startPlayback();
     }
   }
 
   private openHome(): void {
     this.clearActivityTimers();
+    this.cancelSnapshotRecall();
     this.clearPlaygroundRuntime();
+
+    if (this.persistenceReady) {
+      void this.repository.setActiveWorld(null).catch((error) => {
+        this.handlePersistenceFailure(error, 'Could not update active World');
+      });
+    }
 
     appStore.patch({
       screen: 'home',
@@ -771,9 +988,12 @@ export class App {
       magicIntentOpen: false,
       magicSession: null,
       magicUndo: null,
+      snapshotsOpen: false,
       playing: false,
       message: 'Pick a starting point.',
     });
+
+    void this.refreshLibrary();
   }
 
   private async togglePlayback(): Promise<void> {
