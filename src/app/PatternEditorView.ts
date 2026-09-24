@@ -8,6 +8,7 @@ import {
 } from '../core/music/Pattern';
 import { soundById } from '../core/sounds/coreCatalog';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface PatternEditorCallbacks {
   readonly onClose: () => void;
@@ -47,6 +48,7 @@ function pitchLabel(degree: number): string {
 
 export class PatternEditorView {
   private readonly backdrop: HTMLElement;
+  private readonly modalFocus: ModalFocusController;
   private readonly title: HTMLElement;
   private readonly subtitle: HTMLElement;
   private readonly grid: HTMLElement;
@@ -110,6 +112,10 @@ export class PatternEditorView {
     }
 
     this.backdrop = backdrop;
+    this.modalFocus = new ModalFocusController(backdrop, {
+      onEscape: callbacks.onClose,
+      initialFocusSelector: '[data-pattern-close]',
+    });
     this.title = title;
     this.subtitle = subtitle;
     this.grid = grid;
@@ -151,7 +157,9 @@ export class PatternEditorView {
     const pattern = orb && sound ? effectivePattern(orb.pattern, sound) : null;
 
     this.root.dataset.patternOrbId = orbId ?? '';
-    this.backdrop.hidden = !orb || !sound || !pattern;
+    const open = Boolean(orb && sound && pattern);
+    this.backdrop.hidden = !open;
+    this.modalFocus.sync(open);
 
     if (!orb || !sound || !pattern) {
       this.paintSession = null;
@@ -174,6 +182,7 @@ export class PatternEditorView {
   }
 
   public destroy(): void {
+    this.modalFocus.destroy();
     this.paintSession = null;
     this.backdrop.remove();
   }
@@ -239,6 +248,7 @@ export class PatternEditorView {
       button.type = 'button';
       button.textContent = label;
       button.classList.toggle('is-active', value === selected);
+      button.setAttribute('aria-pressed', String(value === selected));
       button.addEventListener('click', () => this.callbacks.onDensity(orbId, value));
       this.densityControls.append(button);
     }
