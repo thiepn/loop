@@ -10,6 +10,7 @@ import {
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface EffectFieldCallbacks {
   readonly onOpenPalette: () => void;
@@ -82,7 +83,7 @@ export class EffectFieldView {
     const effectsButton = document.createElement('button');
     effectsButton.type = 'button';
     effectsButton.className = 'effects-button';
-    effectsButton.innerHTML = '<span aria-hidden="true">◌</span> Effects';
+    effectsButton.innerHTML = loopIcon('effects') + '<span>Effects</span>';
     effectsButton.setAttribute('aria-haspopup', 'dialog');
     effectsButton.setAttribute('aria-expanded', 'false');
     effectsButton.addEventListener('click', callbacks.onOpenPalette);
@@ -99,8 +100,8 @@ export class EffectFieldView {
       </div>
       <div class="field-selection-actions">
         <span class="field-help">Drag to move · corner to resize</span>
-        <button class="magic-action" type="button" data-field-magic>✦ Magic</button>
-        <button class="danger-action" type="button" data-field-delete>Delete</button>
+        <button class="magic-action" type="button" data-field-magic>${loopIcon('magic')}<span>Magic</span></button>
+        <button class="danger-action" type="button" data-field-delete>${loopIcon('trash')}<span>Delete</span></button>
       </div>
     `;
     root.querySelector<HTMLElement>('.playground-shell')?.append(fieldPanel);
@@ -137,7 +138,7 @@ export class EffectFieldView {
             <h2 id="effects-title">Add a field</h2>
             <p>Move sounds through a field to transform them.</p>
           </div>
-          <button class="effect-palette-close" type="button" data-effects-close aria-label="Close effects">×</button>
+          <button class="effect-palette-close" type="button" data-effects-close aria-label="Close effects">${loopIcon('close')}</button>
         </header>
         <div class="effect-palette-grid" data-effect-choices></div>
       </section>
@@ -461,6 +462,7 @@ export class EffectFieldView {
     this.fieldPanel.hidden = !selected;
 
     if (selected) {
+      this.fieldPanel.dataset.fieldType = selected.type;
       this.fieldPanelName.textContent = effectFieldLabel(selected.type);
     }
   }
