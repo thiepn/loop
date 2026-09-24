@@ -34,3 +34,6 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Phase 16 browser certification
+        run: npm run cert:browser
