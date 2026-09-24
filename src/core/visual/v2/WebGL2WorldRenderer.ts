@@ -1,7 +1,5 @@
 import type { VisualPreferences } from '../VisualQuality';
 import {
-  LINK_RENDER_COLORS,
-  LISTENER_RENDER_COLOR,
   ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
   fieldInfluencedColor,
@@ -9,17 +7,19 @@ import {
   type RenderColor,
 } from './RenderPalette';
 import {
-  crossAffectedLinkPoints,
   curvedLinkPoints,
 } from './LinkGeometry';
 import { deriveEnvironmentDynamics } from './EnvironmentModel';
 import { WebGLCrossSystemLayer } from './WebGLCrossSystemLayer';
 import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
+import { WebGLLightPropagationLayer } from './WebGLLightPropagationLayer';
+import { WebGLLinkLightLayer } from './WebGLLinkLightLayer';
+import { WebGLListenerLayer } from './WebGLListenerLayer';
+import { deriveLightFrame } from './LightModel';
 import { WebGLFieldMaterialLayer } from './WebGLFieldMaterialLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import { WebGLTrailLayer } from './WebGLTrailLayer';
 import {
-  listenerDiameterPixels,
   orbDiameterPixels,
   toyDiameterPixels,
 } from './RenderMetrics';
@@ -233,6 +233,9 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private environment: WebGLEnvironmentLayer | null = null;
   private crossLayer: WebGLCrossSystemLayer | null = null;
   private fieldLayer: WebGLFieldMaterialLayer | null = null;
+  private linkLayer: WebGLLinkLightLayer | null = null;
+  private lightLayer: WebGLLightPropagationLayer | null = null;
+  private listenerLayer: WebGLListenerLayer | null = null;
   private trailLayer: WebGLTrailLayer | null = null;
   private orbMaterial: WebGLOrbMaterialLayer | null = null;
   private viewport: RenderViewport = {
@@ -277,75 +280,12 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       events,
       preferences,
     );
+    const lightFrame = deriveLightFrame(
+      scene,
+      events,
+      preferences,
+    );
     const discVertices: number[] = [];
-    const lineVertices: number[] = [];
-
-    for (const linkItem of scene.links) {
-      const points = crossAffectedLinkPoints(
-        curvedLinkPoints(
-          linkItem.id,
-          linkItem.source,
-          linkItem.target,
-          width,
-          height,
-        ),
-        linkItem.cross,
-        width,
-        height,
-      );
-      const base = fieldInfluencedColor(
-        LINK_RENDER_COLORS[linkItem.type],
-        linkItem.cross.fieldInfluence,
-      );
-      const color = withAlpha(
-        base,
-        linkItem.selected ? 0.95 : base[3],
-      );
-      const frost = linkItem.cross.fieldInfluence.frost;
-      const echo = linkItem.cross.fieldInfluence.echo;
-      const directionX = linkItem.target.x - linkItem.source.x;
-      const directionY = linkItem.target.y - linkItem.source.y;
-      const directionLength = Math.hypot(directionX, directionY) || 1;
-      const normalX = -directionY / directionLength;
-      const normalY = directionX / directionLength;
-      const ghostOffset = echo * 6 * dpr;
-
-      for (let index = 1; index < points.length; index += 1) {
-        const from = points[index - 1];
-        const to = points[index];
-
-        if (!from || !to) {
-          continue;
-        }
-
-        if (frost > 0.34 && index % 2 === 0) {
-          continue;
-        }
-
-        pushLineSegment(
-          lineVertices,
-          from.x,
-          from.y,
-          to.x,
-          to.y,
-          color,
-        );
-
-        if (echo > 0.08) {
-          pushLineSegment(
-            lineVertices,
-            from.x + normalX * ghostOffset,
-            from.y + normalY * ghostOffset,
-            to.x + normalX * ghostOffset,
-            to.y + normalY * ghostOffset,
-            withAlpha(
-              color,
-              color[3] * echo * 0.34,
-            ),
-          );
-        }
-      }
-    }
 
     for (const toy of scene.toys) {
       const [diameterX, diameterY] = toyDiameterPixels(
@@ -409,27 +349,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       }
     }
 
-    const listenerDiameter = listenerDiameterPixels(dpr);
-    pushDisc(
-      discVertices,
-      scene.listener.x * width,
-      scene.listener.y * height,
-      listenerDiameter * 0.75,
-      listenerDiameter * 0.75,
-      withAlpha(
-        LISTENER_RENDER_COLOR,
-        scene.playing ? 0.14 : 0.07,
-      ),
-    );
-    pushDisc(
-      discVertices,
-      scene.listener.x * width,
-      scene.listener.y * height,
-      listenerDiameter * 0.5,
-      listenerDiameter * 0.5,
-      LISTENER_RENDER_COLOR,
-    );
-
     for (const sample of events) {
       this.pushEventDiscs(
         discVertices,
@@ -481,9 +400,14 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    if (lineVertices.length > 0) {
-      this.drawLines(line, lineVertices, width, height);
-    }
+    this.linkLayer?.render(
+      scene.links,
+      preferences,
+      events,
+      width,
+      height,
+      dpr,
+    );
 
     this.trailLayer?.render(
       scene.trails,
@@ -502,6 +426,26 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       scene.orbs,
       preferences,
       events,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
+
+    this.lightLayer?.render(
+      lightFrame,
+      preferences,
+      width,
+      height,
+      dpr,
+    );
+
+    this.listenerLayer?.render(
+      scene.listener,
+      lightFrame.listener,
+      scene.playing,
+      scene.recording,
+      preferences,
       timestampMs,
       width,
       height,
@@ -552,6 +496,9 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     this.environment = new WebGLEnvironmentLayer(gl);
     this.crossLayer = new WebGLCrossSystemLayer(gl);
     this.fieldLayer = new WebGLFieldMaterialLayer(gl);
+    this.linkLayer = new WebGLLinkLightLayer(gl);
+    this.lightLayer = new WebGLLightPropagationLayer(gl);
+    this.listenerLayer = new WebGLListenerLayer(gl);
     this.trailLayer = new WebGLTrailLayer(gl);
     this.orbMaterial = new WebGLOrbMaterialLayer(gl);
   }
@@ -561,6 +508,12 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     this.environment = null;
     this.crossLayer?.destroy();
     this.crossLayer = null;
+    this.linkLayer?.destroy();
+    this.linkLayer = null;
+    this.lightLayer?.destroy();
+    this.lightLayer = null;
+    this.listenerLayer?.destroy();
+    this.listenerLayer = null;
     this.fieldLayer?.destroy();
     this.fieldLayer = null;
     this.trailLayer?.destroy();
@@ -717,6 +670,8 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     ) {
       return;
     }
+
+    return;
 
     const link = scene.links.find(
       (candidate) => candidate.id === event.linkId,

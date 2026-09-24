@@ -1,7 +1,5 @@
 import type { VisualPreferences } from '../VisualQuality';
 import {
-  LINK_RENDER_COLORS,
-  LISTENER_RENDER_COLOR,
   ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
   fieldInfluencedColor,
@@ -10,7 +8,6 @@ import {
   type RenderColor,
 } from './RenderPalette';
 import {
-  crossAffectedLinkPoints,
   curvedLinkPoints,
 } from './LinkGeometry';
 import {
@@ -19,10 +16,13 @@ import {
 } from './EnvironmentModel';
 import { CanvasCrossSystemLayer } from './CanvasCrossSystemLayer';
 import { CanvasFieldMaterialLayer } from './CanvasFieldMaterialLayer';
+import { CanvasLightPropagationLayer } from './CanvasLightPropagationLayer';
+import { CanvasLinkLightLayer } from './CanvasLinkLightLayer';
+import { CanvasListenerLayer } from './CanvasListenerLayer';
+import { deriveLightFrame } from './LightModel';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
-  listenerDiameterPixels,
   orbDiameterPixels,
   toyDiameterPixels,
 } from './RenderMetrics';
@@ -42,6 +42,9 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
   };
   private readonly crossLayer: CanvasCrossSystemLayer;
   private readonly fieldLayer: CanvasFieldMaterialLayer;
+  private readonly linkLayer: CanvasLinkLightLayer;
+  private readonly lightLayer: CanvasLightPropagationLayer;
+  private readonly listenerLayer: CanvasListenerLayer;
   private readonly trailLayer: CanvasTrailLayer;
   private readonly orbMaterial: CanvasOrbMaterialLayer;
 
@@ -51,6 +54,9 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
   ) {
     this.crossLayer = new CanvasCrossSystemLayer(context);
     this.fieldLayer = new CanvasFieldMaterialLayer(context);
+    this.linkLayer = new CanvasLinkLightLayer(context);
+    this.lightLayer = new CanvasLightPropagationLayer(context);
+    this.listenerLayer = new CanvasListenerLayer(context);
     this.trailLayer = new CanvasTrailLayer(context);
     this.orbMaterial = new CanvasOrbMaterialLayer(context);
   }
@@ -78,6 +84,11 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     this.context.lineJoin = 'round';
 
     const dynamics = deriveEnvironmentDynamics(
+      scene,
+      events,
+      preferences,
+    );
+    const lightFrame = deriveLightFrame(
       scene,
       events,
       preferences,
@@ -125,81 +136,14 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       dpr,
     );
 
-    for (const link of scene.links) {
-      const points = crossAffectedLinkPoints(
-        curvedLinkPoints(
-          link.id,
-          link.source,
-          link.target,
-          width,
-          height,
-        ),
-        link.cross,
-        width,
-        height,
-      );
-      const base = fieldInfluencedColor(
-        LINK_RENDER_COLORS[link.type],
-        link.cross.fieldInfluence,
-      );
-      const color = withAlpha(
-        base,
-        link.selected ? 0.92 : base[3],
-      );
-      const frost = link.cross.fieldInfluence.frost;
-      const echo = link.cross.fieldInfluence.echo;
-
-      this.context.beginPath();
-      points.forEach((point, index) => {
-        if (frost > 0.34 && index > 0 && index % 2 === 0) {
-          return;
-        }
-        if (index === 0) {
-          this.context.moveTo(point.x, point.y);
-        } else {
-          this.context.lineTo(point.x, point.y);
-        }
-      });
-      this.context.strokeStyle = renderColorCss(color);
-      this.context.lineWidth = (
-        link.selected ? 3 : 1.5
-      ) * dpr * (
-        1 + link.cross.fieldInfluence.space * 0.14
-      );
-      this.context.stroke();
-
-      if (echo > 0.08) {
-        const dx = link.target.x - link.source.x;
-        const dy = link.target.y - link.source.y;
-        const len = Math.hypot(dx, dy) || 1;
-        const normalX = -dy / len;
-        const normalY = dx / len;
-        const offset = echo * 6 * dpr;
-
-        this.context.beginPath();
-        points.forEach((point, index) => {
-          if (index === 0) {
-            this.context.moveTo(
-              point.x + normalX * offset,
-              point.y + normalY * offset,
-            );
-          } else {
-            this.context.lineTo(
-              point.x + normalX * offset,
-              point.y + normalY * offset,
-            );
-          }
-        });
-        this.context.strokeStyle = renderColorCss(
-          withAlpha(
-            color,
-            color[3] * echo * 0.3,
-          ),
-        );
-        this.context.lineWidth = 1.2 * dpr;
-        this.context.stroke();
-      }
-    }
+    this.linkLayer.render(
+      scene.links,
+      preferences,
+      events,
+      width,
+      height,
+      dpr,
+    );
 
     for (const toy of scene.toys) {
       const [radiusX, radiusY] = toyDiameterPixels(
@@ -278,23 +222,29 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       dpr,
     );
 
-    const listenerDiameter = listenerDiameterPixels(dpr);
-    this.drawCircle(
-      scene.listener.x * width,
-      scene.listener.y * height,
-      listenerDiameter * 0.75,
-      withAlpha(LISTENER_RENDER_COLOR, scene.playing ? 0.14 : 0.07),
-    );
-    this.drawCircle(
-      scene.listener.x * width,
-      scene.listener.y * height,
-      listenerDiameter * 0.5,
-      LISTENER_RENDER_COLOR,
-    );
-
     for (const sample of events) {
       this.drawEvent(sample, scene, width, height, minDimension, dpr);
     }
+
+    this.lightLayer.render(
+      lightFrame,
+      preferences,
+      width,
+      height,
+      dpr,
+    );
+
+    this.listenerLayer.render(
+      scene.listener,
+      lightFrame.listener,
+      scene.playing,
+      scene.recording,
+      preferences,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
 
     this.drawEnvironmentParticles(
       scene,
@@ -679,6 +629,8 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     ) {
       return;
     }
+
+    return;
 
     const link = scene.links.find(
       (candidate) => candidate.id === event.linkId,
