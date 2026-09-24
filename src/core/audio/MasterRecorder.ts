@@ -22,6 +22,8 @@ export interface RecordingResult {
 export interface StartRecordingOptions {
   readonly maxDurationMs?: number;
   readonly onLimitReached?: () => void;
+  readonly onUnexpectedStop?: (result: RecordingResult) => void;
+  readonly onError?: (error: unknown) => void;
 }
 
 export type MasterRecorderState =
@@ -39,6 +41,8 @@ export class MasterRecorder {
   private stopPromise: Promise<RecordingResult> | null = null;
   private stopResolve: ((result: RecordingResult) => void) | null = null;
   private stopReject: ((error: unknown) => void) | null = null;
+  private onUnexpectedStop: ((result: RecordingResult) => void) | null = null;
+  private onError: ((error: unknown) => void) | null = null;
 
   public get state(): MasterRecorderState {
     return this.stateValue;
@@ -91,6 +95,8 @@ export class MasterRecorder {
     this.chunks = [];
     this.startedAt = Date.now();
     this.stateValue = 'recording';
+    this.onUnexpectedStop = options.onUnexpectedStop ?? null;
+    this.onError = options.onError ?? null;
 
     recorder.addEventListener('dataavailable', (event) => {
       if (event.data.size > 0) {
@@ -206,14 +212,30 @@ export class MasterRecorder {
     };
 
     const resolve = this.stopResolve;
+    const onUnexpectedStop = this.onUnexpectedStop;
+    const requested = Boolean(resolve);
+
     this.cleanup();
-    resolve?.(result);
+
+    if (requested) {
+      resolve?.(result);
+    } else {
+      onUnexpectedStop?.(result);
+    }
   }
 
   private rejectStop(error: unknown): void {
     const reject = this.stopReject;
+    const onError = this.onError;
+    const requested = Boolean(reject);
+
     this.cleanup();
-    reject?.(error);
+
+    if (requested) {
+      reject?.(error);
+    } else {
+      onError?.(error);
+    }
   }
 
   private clearLimitTimer(): void {
@@ -237,5 +259,7 @@ export class MasterRecorder {
     this.stopPromise = null;
     this.stopResolve = null;
     this.stopReject = null;
+    this.onUnexpectedStop = null;
+    this.onError = null;
   }
 }
