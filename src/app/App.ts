@@ -30,7 +30,6 @@ import {
   loadVisualPreferences,
   saveVisualPreferences,
   type VisualPreferences,
-  type VisualQuality,
 } from '../core/visual/VisualQuality';
 import type { MotionMode, MotionRange, MotionSpeed } from '../core/world/Motion';
 import type { LinkType } from '../core/world/Link';
