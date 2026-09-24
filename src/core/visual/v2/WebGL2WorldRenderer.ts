@@ -14,6 +14,7 @@ import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import {
   listenerDiameterPixels,
+  orbDiameterPixels,
   toyDiameterPixels,
 } from './RenderMetrics';
 import type {

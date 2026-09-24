@@ -17,6 +17,7 @@ import {
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import {
   listenerDiameterPixels,
+  orbDiameterPixels,
   toyDiameterPixels,
 } from './RenderMetrics';
 import type {
