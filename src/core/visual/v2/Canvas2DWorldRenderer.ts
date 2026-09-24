@@ -3,7 +3,6 @@ import {
   FIELD_RENDER_COLORS,
   LINK_RENDER_COLORS,
   LISTENER_RENDER_COLOR,
-  ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
   renderColorCss,
   withAlpha,
@@ -14,9 +13,9 @@ import {
   deriveEnvironmentDynamics,
   environmentParticleLayout,
 } from './EnvironmentModel';
+import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import {
   listenerDiameterPixels,
-  orbDiameterPixels,
   toyDiameterPixels,
 } from './RenderMetrics';
 import type {
@@ -33,11 +32,14 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     height: 1,
     dpr: 1,
   };
+  private readonly orbMaterial: CanvasOrbMaterialLayer;
 
   public constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly context: CanvasRenderingContext2D,
-  ) {}
+  ) {
+    this.orbMaterial = new CanvasOrbMaterialLayer(context);
+  }
 
   public resize(viewport: RenderViewport): void {
     this.viewport = viewport;
@@ -174,38 +176,15 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       }
     }
 
-    for (const orb of scene.orbs) {
-      const diameter = orbDiameterPixels(
-        orb.role,
-        minDimension,
-        dpr,
-      );
-      const color = ROLE_RENDER_COLORS[orb.role];
-      const alpha = orb.muted ? 0.28 : 0.92;
-
-      this.drawCircle(
-        orb.position.x * width,
-        orb.position.y * height,
-        diameter * 0.67,
-        withAlpha(color, orb.muted ? 0.05 : 0.09),
-      );
-
-      if (orb.selected) {
-        this.drawCircle(
-          orb.position.x * width,
-          orb.position.y * height,
-          diameter * 0.55,
-          [1, 1, 1, 0.22],
-        );
-      }
-
-      this.drawCircle(
-        orb.position.x * width,
-        orb.position.y * height,
-        diameter * 0.47,
-        withAlpha(color, alpha),
-      );
-    }
+    this.orbMaterial.render(
+      scene.orbs,
+      preferences,
+      events,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
 
     const listenerDiameter = listenerDiameterPixels(dpr);
     this.drawCircle(

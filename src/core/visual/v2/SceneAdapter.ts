@@ -1,9 +1,13 @@
 import type { WorldDocument } from '../../world/World';
-import type { EffectFieldDocument } from '../../world/EffectField';
+import {
+  effectAmountsAtPoint,
+  type EffectFieldDocument,
+} from '../../world/EffectField';
 import type { PlaygroundToyDocument } from '../../world/PlaygroundToy';
 import type { NormalizedPoint } from '../../world/SoundOrb';
 import type { RenderLink, RenderScene } from './RenderTypes';
 import { deriveWorldEnvironment } from './EnvironmentModel';
+import { deriveOrbMaterial } from './OrbMaterialModel';
 
 export interface SceneProjectionOptions {
   readonly selectedOrbId: string | null;
@@ -48,6 +52,10 @@ export function projectWorldToRenderScene(
   options: SceneProjectionOptions,
 ): RenderScene {
   const positions = new Map<string, NormalizedPoint>();
+  const fieldDocuments = effectiveFields(
+    world,
+    options.fieldOverrides,
+  );
 
   const orbs = world.soundOrbs.map((orb) => {
     const position = options.liveOrbPositions?.get(orb.id) ?? orb.position;
@@ -59,10 +67,14 @@ export function projectWorldToRenderScene(
       position,
       muted: orb.muted,
       selected: options.selectedOrbId === orb.id,
+      material: deriveOrbMaterial(
+        orb,
+        effectAmountsAtPoint(fieldDocuments, position),
+      ),
     };
   });
 
-  const fields = effectiveFields(world, options.fieldOverrides).map(
+  const fields = fieldDocuments.map(
     (field) => ({
       id: field.id,
       type: field.type,

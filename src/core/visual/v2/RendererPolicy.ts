@@ -9,6 +9,7 @@ export interface RendererSupport {
 export interface RenderQualityPolicy {
   readonly dprCap: number;
   readonly fieldDetail: number;
+  readonly orbDetail: number;
   readonly trailDetail: number;
   readonly particleScale: number;
   readonly bloomScale: number;
@@ -34,6 +35,7 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
       return {
         dprCap: 2,
         fieldDetail: 1,
+        orbDetail: 1,
         trailDetail: 1,
         particleScale: 1,
         bloomScale: 1,
@@ -42,6 +44,7 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
       return {
         dprCap: 1.5,
         fieldDetail: 0.72,
+        orbDetail: 0.72,
         trailDetail: 0.72,
         particleScale: 0.62,
         bloomScale: 0.72,
@@ -50,6 +53,7 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
       return {
         dprCap: 1,
         fieldDetail: 0.42,
+        orbDetail: 0.38,
         trailDetail: 0.34,
         particleScale: 0.24,
         bloomScale: 0.3,

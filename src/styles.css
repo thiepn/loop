@@ -6718,3 +6718,17 @@ a:focus-visible,
 .playground-shell[data-renderer-state="error"] .listener-dot {
   opacity: initial !important;
 }
+
+
+/* Visual V2 Phase 4 — GPU/Canvas Orb material ownership */
+
+.playground-shell[data-renderer-v2="webgl2"] .orb-visual *,
+.playground-shell[data-renderer-v2="canvas2d"] .orb-visual * {
+  animation: none !important;
+}
+
+.playground-shell[data-renderer-v2="webgl2"][data-renderer-state="ready"] .orb-visual,
+.playground-shell[data-renderer-v2="canvas2d"][data-renderer-state="ready"] .orb-visual {
+  filter: none !important;
+  will-change: auto;
+}

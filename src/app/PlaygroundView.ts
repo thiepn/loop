@@ -411,8 +411,18 @@ export class PlaygroundView {
   public pulseOrb(orbId: string, intensity: number): void {
     const element = this.orbElements.get(orbId);
     const visual = element?.querySelector<HTMLElement>('.orb-visual');
+    const shell = this.root.querySelector<HTMLElement>('.playground-shell');
+    const rendererReady = shell?.dataset.rendererState === 'ready'
+      && (
+        shell.dataset.rendererV2 === 'webgl2'
+        || shell.dataset.rendererV2 === 'canvas2d'
+      );
 
-    if (!visual || visual.matches(':active')) {
+    if (
+      rendererReady
+      || !visual
+      || visual.matches(':active')
+    ) {
       return;
     }
 

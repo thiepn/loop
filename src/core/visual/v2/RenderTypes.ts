@@ -1,5 +1,8 @@
 import type { VisualPreferences } from '../VisualQuality';
-import type { EffectFieldType } from '../../world/EffectField';
+import type {
+  EffectAmounts,
+  EffectFieldType,
+} from '../../world/EffectField';
 import type { LinkType } from '../../world/Link';
 import type { PlaygroundToyType } from '../../world/PlaygroundToy';
 import type { NormalizedPoint } from '../../world/SoundOrb';
@@ -43,12 +46,26 @@ export interface EnvironmentParticle {
   readonly near: boolean;
 }
 
+export interface RenderOrbMaterial {
+  readonly energy: number;
+  readonly brightness: number;
+  readonly density: number;
+  readonly groove: number;
+  readonly contour: number;
+  readonly spread: number;
+  readonly variation: number;
+  readonly seed: number;
+  readonly pattern: readonly number[];
+  readonly fieldInfluence: EffectAmounts;
+}
+
 export interface RenderOrb {
   readonly id: string;
   readonly role: SoundRole;
   readonly position: NormalizedPoint;
   readonly muted: boolean;
   readonly selected: boolean;
+  readonly material: RenderOrbMaterial;
 }
 
 export interface RenderField {

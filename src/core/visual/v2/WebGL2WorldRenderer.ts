@@ -3,7 +3,6 @@ import {
   FIELD_RENDER_COLORS,
   LINK_RENDER_COLORS,
   LISTENER_RENDER_COLOR,
-  ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
   withAlpha,
   type RenderColor,
@@ -11,9 +10,9 @@ import {
 import { curvedLinkPoints } from './LinkGeometry';
 import { deriveEnvironmentDynamics } from './EnvironmentModel';
 import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
+import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import {
   listenerDiameterPixels,
-  orbDiameterPixels,
   toyDiameterPixels,
 } from './RenderMetrics';
 import type {
@@ -224,6 +223,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private disc: DiscProgramResources | null = null;
   private line: ProgramResources | null = null;
   private environment: WebGLEnvironmentLayer | null = null;
+  private orbMaterial: WebGLOrbMaterialLayer | null = null;
   private viewport: RenderViewport = {
     width: 1,
     height: 1,
@@ -364,44 +364,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       }
     }
 
-    for (const orb of scene.orbs) {
-      const diameter = orbDiameterPixels(
-        orb.role,
-        minDimension,
-        dpr,
-      );
-      const color = ROLE_RENDER_COLORS[orb.role];
-
-      pushDisc(
-        discVertices,
-        orb.position.x * width,
-        orb.position.y * height,
-        diameter * 0.67,
-        diameter * 0.67,
-        withAlpha(color, orb.muted ? 0.05 : 0.09),
-      );
-
-      if (orb.selected) {
-        pushDisc(
-          discVertices,
-          orb.position.x * width,
-          orb.position.y * height,
-          diameter * 0.55,
-          diameter * 0.55,
-          [1, 1, 1, 0.22],
-        );
-      }
-
-      pushDisc(
-        discVertices,
-        orb.position.x * width,
-        orb.position.y * height,
-        diameter * 0.47,
-        diameter * 0.47,
-        withAlpha(color, orb.muted ? 0.28 : 0.92),
-      );
-    }
-
     const listenerDiameter = listenerDiameterPixels(dpr);
     pushDisc(
       discVertices,
@@ -461,6 +423,16 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     if (discVertices.length > 0) {
       this.drawDiscs(disc, discVertices, width, height);
     }
+
+    this.orbMaterial?.render(
+      scene.orbs,
+      preferences,
+      events,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
   }
 
   public restore(): void {
@@ -504,11 +476,14 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     };
 
     this.environment = new WebGLEnvironmentLayer(gl);
+    this.orbMaterial = new WebGLOrbMaterialLayer(gl);
   }
 
   private releaseResources(): void {
     this.environment?.destroy();
     this.environment = null;
+    this.orbMaterial?.destroy();
+    this.orbMaterial = null;
 
     if (this.disc) {
       this.gl.deleteBuffer(this.disc.buffer);
