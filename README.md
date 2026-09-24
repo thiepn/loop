@@ -21,8 +21,9 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 12 — Visual Identity, Game Feel & Delight: complete and CI-verified**
 - **Phase 13 — Mobile, PWA & Offline Hardening: complete and CI-verified**
 - **Phase 14 — Functional & Data-Integrity Audit: complete and CI-verified**
+- **Phase 15 — UX, Accessibility & Regression Audit: complete and CI-verified**
 - **V1 feature development remains frozen**
-- **Next: Phase 15 — UX, Accessibility & Regression Audit**
+- **Next: Phase 16 — Performance & Soak Certification**
 
 Loop's planned V1 product feature set is now implemented: the visual music playground works across responsive pointer/touch layouts, is installable as a scoped `/loop/` PWA, caches its built application shell for offline use, preserves local Worlds in IndexedDB, exposes non-disruptive update/offline/install state, and is now under feature freeze for audit/certification.
 
@@ -63,6 +64,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_12_ACCEPTANCE.md](docs/PHASE_12_ACCEPTANCE.md) — Phase 12 verification gate
 - [PHASE_13_ACCEPTANCE.md](docs/PHASE_13_ACCEPTANCE.md) — Phase 13 verification / feature-freeze gate
 - [PHASE_14_ACCEPTANCE.md](docs/PHASE_14_ACCEPTANCE.md) — functional/data-integrity audit, confirmed fixes, and regression gate
+- [PHASE_15_ACCEPTANCE.md](docs/PHASE_15_ACCEPTANCE.md) — UX, accessibility, keyboard, reduced-motion, and regression gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -83,16 +85,16 @@ npm run build
 
 ## Current automated verification
 
-The integrated Phase 14 audit suite passed CI with:
+The integrated Phase 15 audit suite passed CI with:
 
 - **36 test files**
-- **184 tests**
+- **185 tests**
 - strict TypeScript typecheck
 - production Vite build
 - generated `dist/sw.js`
 - **9 verified precached URLs**
 
-Phase 14 adds regression coverage for scheduler gaps, pause/resume transport continuity, recording cancellation/restart, corrupt World identity and oversized recovery, failed-import rollback, and an integrated Motion → Links → Magic → backup → Trash/restore → Snapshot → history round-trip. The V1 feature set remains frozen; Phase 15 is the UX/accessibility/regression audit.
+Phase 15 hardens modal focus/isolation, keyboard parity across creative objects and the pattern grid, programmatic selection state, reduced-motion behavior, focus/contrast, coarse-pointer targets, screen-reader status behavior, and beginner-facing terminology. The V1 feature set remains frozen; Phase 16 is performance and soak certification.
 
 ## Product rule
 
