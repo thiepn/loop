@@ -54,6 +54,12 @@ export class SpatialVoice {
     this.reactiveGain.gain.exponentialRampToValueAtTime(1, start + 0.22);
   }
 
+  public resetReactiveGain(): void {
+    const now = this.context.currentTime;
+    this.reactiveGain.gain.cancelScheduledValues(now);
+    this.reactiveGain.gain.setValueAtTime(1, now);
+  }
+
   public dispose(): void {
     this.gain.disconnect();
     this.reactiveGain.disconnect();
