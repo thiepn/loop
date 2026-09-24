@@ -3277,6 +3277,8 @@ export class App {
         || this.toyPreviewOverrides.size > 0
       );
 
+    this.worldRendererView?.setExternalFrameDriver(active);
+
     if (!active) {
       this.cancelMotionLoop();
       return;
@@ -3349,6 +3351,8 @@ export class App {
   }
 
   private cancelMotionLoop(): void {
+    this.worldRendererView?.setExternalFrameDriver(false);
+
     if (this.motionFrameRequest !== null) {
       cancelAnimationFrame(this.motionFrameRequest);
       this.motionFrameRequest = null;

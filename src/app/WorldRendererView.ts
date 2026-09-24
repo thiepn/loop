@@ -58,10 +58,11 @@ export class WorldRendererView {
   private contextLost = false;
   private currentWorldId: string | null = null;
   private lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
+  private externalFrameDriverActive = false;
 
   private readonly handleWindowResize = () => {
     this.syncViewport();
-    this.clock.invalidate();
+    this.requestRender();
   };
 
   private readonly handleContextLost = (event: Event) => {
@@ -85,7 +86,7 @@ export class WorldRendererView {
       this.contextLost = false;
       this.shell.dataset.rendererState = 'ready';
       this.syncViewport();
-      this.clock.invalidate();
+      this.requestRender();
     } catch (error) {
       console.warn('[Loop] Visual renderer restore failed.', error);
       this.shell.dataset.rendererState = 'error';
@@ -130,7 +131,7 @@ export class WorldRendererView {
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => {
         this.syncViewport();
-        this.clock.invalidate();
+        this.requestRender();
       });
       this.resizeObserver.observe(worldCanvas);
     } else {
@@ -155,6 +156,22 @@ export class WorldRendererView {
     };
     this.rebuildScene();
     this.syncViewport();
+    this.requestRender();
+  }
+
+  public setExternalFrameDriver(active: boolean): void {
+    if (this.externalFrameDriverActive === active) {
+      return;
+    }
+
+    this.externalFrameDriverActive = active;
+    this.lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
+
+    if (active) {
+      this.clock.destroy();
+      return;
+    }
+
     this.clock.invalidate();
   }
 
@@ -164,7 +181,7 @@ export class WorldRendererView {
   ): void {
     this.liveOrbPositions.set(orbId, position);
     this.rebuildScene();
-    this.clock.invalidate();
+    this.requestRender();
   }
 
   public updateLivePositions(
@@ -192,39 +209,48 @@ export class WorldRendererView {
     }
 
     this.rebuildScene();
-    this.clock.invalidate();
+
+    if (
+      timestampMs !== undefined
+      && this.externalFrameDriverActive
+    ) {
+      this.renderFrame(timestampMs);
+      return;
+    }
+
+    this.requestRender();
   }
 
   public releaseOrbPreview(orbId: string): void {
     if (this.liveOrbPositions.delete(orbId)) {
       this.rebuildScene();
-      this.clock.invalidate();
+      this.requestRender();
     }
   }
 
   public previewField(field: EffectFieldDocument): void {
     this.fieldOverrides.set(field.id, field);
     this.rebuildScene();
-    this.clock.invalidate();
+    this.requestRender();
   }
 
   public releaseFieldPreview(fieldId: string): void {
     if (this.fieldOverrides.delete(fieldId)) {
       this.rebuildScene();
-      this.clock.invalidate();
+      this.requestRender();
     }
   }
 
   public previewToy(toy: PlaygroundToyDocument): void {
     this.toyOverrides.set(toy.id, toy);
     this.rebuildScene();
-    this.clock.invalidate();
+    this.requestRender();
   }
 
   public releaseToyPreview(toyId: string): void {
     if (this.toyOverrides.delete(toyId)) {
       this.rebuildScene();
-      this.clock.invalidate();
+      this.requestRender();
     }
   }
 
@@ -242,7 +268,7 @@ export class WorldRendererView {
       },
       performance.now(),
     );
-    this.clock.invalidate();
+    this.requestRender();
   }
 
   public pulseLink(
@@ -257,7 +283,7 @@ export class WorldRendererView {
       },
       performance.now(),
     );
-    this.clock.invalidate();
+    this.requestRender();
   }
 
   public clearRuntimeOverrides(): void {
@@ -349,6 +375,12 @@ export class WorldRendererView {
       dpr,
     };
     this.renderer.resize(this.viewport);
+  }
+
+  private requestRender(): void {
+    if (!this.externalFrameDriverActive) {
+      this.clock.invalidate();
+    }
   }
 
   private renderFrame(timestampMs: number): boolean {

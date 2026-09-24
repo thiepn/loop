@@ -100,15 +100,21 @@ Runtime preview values remain outside `WorldDocument`.
 
 Visual V2 does **not** add another permanent animation loop.
 
-The new `AnimationClock` runs only when:
+The new `AnimationClock` is demand-driven and runs only when no existing frame source is already authoritative.
 
-- scene state invalidates;
-- viewport/DPR changes;
-- a preview moves;
-- Motion provides a new position;
-- a transient visual event remains active.
+When Motion is active, the existing Motion `requestAnimationFrame` loop becomes the renderer's external frame driver:
 
-The existing Motion loop remains authoritative for live creative positions.
+- Motion computes the authoritative live positions;
+- those positions are projected into render state;
+- the renderer draws on the same Motion timestamp;
+- transient visual events are sampled on that same frame;
+- the renderer's own AnimationClock is cancelled for the duration.
+
+When Motion is inactive, `AnimationClock` handles bounded invalidations such as state changes, viewport/DPR changes and transient event decay.
+
+Canvas2D Motion rendering is additionally quality-aware: High targets 60 fps, Balanced 40 fps and Battery Saver 30 fps. Skipped software-renderer frames update only the live-position map and do not rebuild the scene.
+
+There is therefore no competing permanent renderer RAF while the existing Motion loop is active.
 
 ## Device pixel ratio
 
