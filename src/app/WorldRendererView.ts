@@ -31,6 +31,7 @@ import type {
 } from '../core/visual/v2/RenderTypes';
 import { VisualEventBridge } from '../core/visual/v2/VisualEventBridge';
 import { TrailHistory } from '../core/visual/v2/TrailModel';
+import { FieldInfluenceTransitions } from '../core/visual/v2/FieldMaterialModel';
 import { createWorldRenderer } from '../core/visual/v2/createWorldRenderer';
 
 export interface WorldRendererDiagnostics {
@@ -68,6 +69,7 @@ export class WorldRendererView {
   private renderer: WorldRenderer;
   private readonly events = new VisualEventBridge();
   private readonly trailHistory = new TrailHistory();
+  private readonly fieldTransitions = new FieldInfluenceTransitions();
   private readonly clock: AnimationClock;
   private readonly liveOrbPositions = new Map<string, NormalizedPoint>();
   private readonly orbInteractions = new Map<string, RenderOrbInteraction>();
@@ -94,6 +96,7 @@ export class WorldRendererView {
   private contextLosses = 0;
   private contextLost = false;
   private currentWorldId: string | null = null;
+  private fieldTransitionsActive = false;
   private lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
   private externalFrameDriverActive = false;
   private lastPointerPosition: NormalizedPoint | null = null;
@@ -647,6 +650,7 @@ export class WorldRendererView {
     if (this.currentWorldId !== state.world.id) {
       this.clearRuntimeOverrides();
       this.trailHistory.clear();
+      this.fieldTransitions.clear();
       this.currentWorldId = state.world.id;
     }
 
@@ -831,6 +835,7 @@ export class WorldRendererView {
     this.clock.destroy();
     this.events.clear();
     this.trailHistory.clear();
+    this.fieldTransitions.clear();
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     window.removeEventListener('resize', this.handleWindowResize);
@@ -894,13 +899,23 @@ export class WorldRendererView {
     delete this.shell.dataset.rendererState;
   }
 
-  private rebuildScene(): void {
+  private rebuildScene(
+    timestampMs = performance.now(),
+  ): void {
     const state = this.state;
 
     if (!state) {
       this.scene = null;
       return;
     }
+
+    this.fieldTransitionsActive = this.fieldTransitions.update(
+      state.world.soundOrbs,
+      this.liveOrbPositions,
+      this.effectFieldsWithPreviews(state),
+      timestampMs,
+      this.preferences.reduceMotion,
+    );
 
     this.scene = projectWorldToRenderScene(
       state.world,
@@ -914,6 +929,7 @@ export class WorldRendererView {
         recording: state.captureStatus === 'recording',
         liveOrbPositions: this.liveOrbPositions,
         orbInteractions: this.orbInteractions,
+        orbFieldInfluenceOverrides: this.fieldTransitions.snapshot(),
         trails: this.trailHistory.snapshot(state.world),
         fieldInteractions: this.fieldInteractions,
         fieldOverrides: this.fieldOverrides,
@@ -1135,13 +1151,13 @@ export class WorldRendererView {
       return false;
     }
 
-    if (
-      this.trailHistory.prune(
-        timestampMs,
-        this.preferences,
-      )
-    ) {
-      this.rebuildScene();
+    const trailChanged = this.trailHistory.prune(
+      timestampMs,
+      this.preferences,
+    );
+
+    if (trailChanged || this.fieldTransitionsActive) {
+      this.rebuildScene(timestampMs);
     }
 
     const snapshot = this.events.sample(timestampMs);
@@ -1171,6 +1187,7 @@ export class WorldRendererView {
     }
 
     return snapshot.hasActiveEvents
+      || this.fieldTransitionsActive
       || this.trailHistory.hasVisible(
         timestampMs,
         this.preferences,

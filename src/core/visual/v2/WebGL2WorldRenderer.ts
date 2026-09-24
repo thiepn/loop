@@ -1,6 +1,5 @@
 import type { VisualPreferences } from '../VisualQuality';
 import {
-  FIELD_RENDER_COLORS,
   LINK_RENDER_COLORS,
   LISTENER_RENDER_COLOR,
   ROLE_RENDER_COLORS,
@@ -11,6 +10,7 @@ import {
 import { curvedLinkPoints } from './LinkGeometry';
 import { deriveEnvironmentDynamics } from './EnvironmentModel';
 import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
+import { WebGLFieldMaterialLayer } from './WebGLFieldMaterialLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import { WebGLTrailLayer } from './WebGLTrailLayer';
 import {
@@ -226,6 +226,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private disc: DiscProgramResources | null = null;
   private line: ProgramResources | null = null;
   private environment: WebGLEnvironmentLayer | null = null;
+  private fieldLayer: WebGLFieldMaterialLayer | null = null;
   private trailLayer: WebGLTrailLayer | null = null;
   private orbMaterial: WebGLOrbMaterialLayer | null = null;
   private viewport: RenderViewport = {
@@ -272,46 +273,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     );
     const discVertices: number[] = [];
     const lineVertices: number[] = [];
-
-    for (const field of scene.fields) {
-      const color = FIELD_RENDER_COLORS[field.type];
-
-      if (field.selected) {
-        pushDisc(
-          discVertices,
-          field.position.x * width,
-          field.position.y * height,
-          field.radius * width * 1.02,
-          field.radius * height * 1.02,
-          [1, 1, 1, 0.1],
-        );
-      }
-
-      if (field.interaction.resizing || field.interaction.dragging) {
-        const tensionScale = 1.025
-          + field.interaction.tension * 0.065;
-        pushDisc(
-          discVertices,
-          field.position.x * width,
-          field.position.y * height,
-          field.radius * width * tensionScale,
-          field.radius * height * tensionScale,
-          withAlpha(
-            color,
-            0.055 + field.interaction.tension * 0.09,
-          ),
-        );
-      }
-
-      pushDisc(
-        discVertices,
-        field.position.x * width,
-        field.position.y * height,
-        field.radius * width,
-        field.radius * height,
-        color,
-      );
-    }
 
     for (const linkItem of scene.links) {
       const points = curvedLinkPoints(
@@ -424,6 +385,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
 
     this.environment?.render(
       scene.environment,
+      scene.fieldEnvironment,
       dynamics,
       preferences,
       timestampMs,
@@ -431,6 +393,15 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       height,
       scene.playing,
       scene.recording,
+    );
+
+    this.fieldLayer?.render(
+      scene.fields,
+      scene.fieldIntersections,
+      preferences,
+      timestampMs,
+      width,
+      height,
     );
 
     gl.enable(gl.BLEND);
@@ -505,6 +476,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     };
 
     this.environment = new WebGLEnvironmentLayer(gl);
+    this.fieldLayer = new WebGLFieldMaterialLayer(gl);
     this.trailLayer = new WebGLTrailLayer(gl);
     this.orbMaterial = new WebGLOrbMaterialLayer(gl);
   }
@@ -512,6 +484,8 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private releaseResources(): void {
     this.environment?.destroy();
     this.environment = null;
+    this.fieldLayer?.destroy();
+    this.fieldLayer = null;
     this.trailLayer?.destroy();
     this.trailLayer = null;
     this.orbMaterial?.destroy();

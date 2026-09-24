@@ -3,6 +3,7 @@ import { renderPolicyForPreferences } from './RendererPolicy';
 import type {
   EnvironmentDynamics,
   RenderEnvironment,
+  RenderFieldEnvironment,
 } from './RenderTypes';
 
 const VERTEX_SOURCE = '#version 300 es\n'
@@ -36,6 +37,9 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_pointer_strength;\n'
   + 'uniform vec2 u_event_position;\n'
   + 'uniform float u_event_strength;\n'
+  + 'uniform vec4 u_field_mix;\n'
+  + 'uniform float u_field_filter;\n'
+  + 'uniform float u_field_overlap;\n'
   + 'uniform vec2 u_drag_position;\n'
   + 'uniform vec2 u_drag_delta;\n'
   + 'uniform float u_drag_strength;\n'
@@ -141,6 +145,12 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  color += mix(u_secondary, u_primary, 0.45) * abs(bassWave) * 0.045;\n'
   + '  color += vec3(1.0, 0.62, 0.72) * u_transient * 0.012;\n'
   + '  color += vec3(0.18, 0.018, 0.045) * u_recording * 0.16;\n'
+  + '  color += vec3(0.18, 0.12, 0.42) * u_field_mix.x * 0.045;\n'
+  + '  color += vec3(0.04, 0.34, 0.42) * u_field_mix.y * (0.018 + 0.008 * sin(time * 2.0));\n'
+  + '  color += vec3(0.42, 0.08, 0.018) * u_field_mix.z * 0.052;\n'
+  + '  color += vec3(0.16, 0.34, 0.46) * u_field_mix.w * 0.042;\n'
+  + '  color += vec3(0.02, 0.34, 0.22) * u_field_filter * 0.038;\n'
+  + '  color += vec3(0.28, 0.24, 0.48) * u_field_overlap * 0.028;\n'
   + '  color *= 0.82 + u_awake * 0.10 + u_energy * 0.12;\n'
   + '\n'
   + '  float vignette = smoothstep(1.02, 0.28, length(listenerP));\n'
@@ -251,6 +261,9 @@ export class WebGLEnvironmentLayer {
   private readonly pointerStrength: WebGLUniformLocation;
   private readonly eventPosition: WebGLUniformLocation;
   private readonly eventStrength: WebGLUniformLocation;
+  private readonly fieldMix: WebGLUniformLocation;
+  private readonly fieldFilter: WebGLUniformLocation;
+  private readonly fieldOverlap: WebGLUniformLocation;
   private readonly dragPosition: WebGLUniformLocation;
   private readonly dragDelta: WebGLUniformLocation;
   private readonly dragStrength: WebGLUniformLocation;
@@ -281,6 +294,9 @@ export class WebGLEnvironmentLayer {
     this.pointerStrength = uniform(gl, this.program, 'u_pointer_strength');
     this.eventPosition = uniform(gl, this.program, 'u_event_position');
     this.eventStrength = uniform(gl, this.program, 'u_event_strength');
+    this.fieldMix = uniform(gl, this.program, 'u_field_mix');
+    this.fieldFilter = uniform(gl, this.program, 'u_field_filter');
+    this.fieldOverlap = uniform(gl, this.program, 'u_field_overlap');
     this.dragPosition = uniform(gl, this.program, 'u_drag_position');
     this.dragDelta = uniform(gl, this.program, 'u_drag_delta');
     this.dragStrength = uniform(gl, this.program, 'u_drag_strength');
@@ -290,6 +306,7 @@ export class WebGLEnvironmentLayer {
 
   public render(
     environment: Readonly<RenderEnvironment>,
+    fields: Readonly<RenderFieldEnvironment>,
     dynamics: Readonly<EnvironmentDynamics>,
     preferences: Readonly<VisualPreferences>,
     timestampMs: number,
@@ -357,6 +374,15 @@ export class WebGLEnvironmentLayer {
       this.eventStrength,
       dynamics.eventStrength,
     );
+    gl.uniform4f(
+      this.fieldMix,
+      fields.space,
+      fields.echo,
+      fields.heat,
+      fields.frost,
+    );
+    gl.uniform1f(this.fieldFilter, fields.filter);
+    gl.uniform1f(this.fieldOverlap, fields.overlap);
     gl.uniform2f(
       this.dragPosition,
       dynamics.dragPosition.x,

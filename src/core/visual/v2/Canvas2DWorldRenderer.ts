@@ -1,6 +1,5 @@
 import type { VisualPreferences } from '../VisualQuality';
 import {
-  FIELD_RENDER_COLORS,
   LINK_RENDER_COLORS,
   LISTENER_RENDER_COLOR,
   ROLE_RENDER_COLORS,
@@ -14,6 +13,7 @@ import {
   deriveEnvironmentDynamics,
   environmentParticleLayout,
 } from './EnvironmentModel';
+import { CanvasFieldMaterialLayer } from './CanvasFieldMaterialLayer';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
@@ -35,6 +35,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     height: 1,
     dpr: 1,
   };
+  private readonly fieldLayer: CanvasFieldMaterialLayer;
   private readonly trailLayer: CanvasTrailLayer;
   private readonly orbMaterial: CanvasOrbMaterialLayer;
 
@@ -42,6 +43,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     private readonly canvas: HTMLCanvasElement,
     private readonly context: CanvasRenderingContext2D,
   ) {
+    this.fieldLayer = new CanvasFieldMaterialLayer(context);
     this.trailLayer = new CanvasTrailLayer(context);
     this.orbMaterial = new CanvasOrbMaterialLayer(context);
   }
@@ -97,42 +99,15 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       false,
     );
 
-    for (const field of scene.fields) {
-      const color = FIELD_RENDER_COLORS[field.type];
-
-      if (field.selected) {
-        this.drawEllipse(
-          field.position.x * width,
-          field.position.y * height,
-          field.radius * width * 1.02,
-          field.radius * height * 1.02,
-          [1, 1, 1, 0.1],
-        );
-      }
-
-      if (field.interaction.resizing || field.interaction.dragging) {
-        const tensionScale = 1.025
-          + field.interaction.tension * 0.065;
-        this.drawEllipse(
-          field.position.x * width,
-          field.position.y * height,
-          field.radius * width * tensionScale,
-          field.radius * height * tensionScale,
-          withAlpha(
-            color,
-            0.055 + field.interaction.tension * 0.09,
-          ),
-        );
-      }
-
-      this.drawEllipse(
-        field.position.x * width,
-        field.position.y * height,
-        field.radius * width,
-        field.radius * height,
-        color,
-      );
-    }
+    this.fieldLayer.render(
+      scene.fields,
+      scene.fieldIntersections,
+      preferences,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
 
     for (const link of scene.links) {
       const points = curvedLinkPoints(
