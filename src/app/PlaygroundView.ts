@@ -140,7 +140,7 @@ export class PlaygroundView {
           </div>
 
           <div class="playground-dock">
-            <button class="add-sound-button" type="button" data-add>
+            <button class="add-sound-button" type="button" data-add aria-haspopup="dialog" aria-expanded="false">
               <span aria-hidden="true">＋</span>
               Add
             </button>
@@ -153,11 +153,11 @@ export class PlaygroundView {
             <strong data-selected-name>Sound</strong>
           </div>
           <div class="selection-actions">
-            <button type="button" data-action="pattern">Shape</button>
-            <button type="button" data-action="motion">Motion</button>
-            <button type="button" data-action="link">Link</button>
+            <button type="button" data-action="pattern" aria-haspopup="dialog" aria-expanded="false">Shape</button>
+            <button type="button" data-action="motion" aria-haspopup="dialog" aria-expanded="false">Motion</button>
+            <button type="button" data-action="link" aria-haspopup="dialog" aria-expanded="false">Link</button>
             <button class="magic-action" type="button" data-action="magic">✦ Magic</button>
-            <button type="button" data-action="change">Change</button>
+            <button type="button" data-action="change" aria-haspopup="dialog" aria-expanded="false">Change</button>
             <button type="button" data-action="mute">Mute</button>
             <button type="button" data-action="duplicate">Duplicate</button>
             <button class="danger-action" type="button" data-action="delete">Delete</button>
@@ -174,7 +174,7 @@ export class PlaygroundView {
               <button class="palette-close" type="button" data-close-palette aria-label="Close sound palette">×</button>
             </header>
 
-            <div class="palette-categories" data-palette-categories></div>
+            <div class="palette-categories" data-palette-categories role="group" aria-label="Sound categories"></div>
 
             <button class="surprise-sound" type="button" data-surprise-sound>
               <span aria-hidden="true">✦</span>
@@ -349,6 +349,26 @@ export class PlaygroundView {
 
     this.playButton.setAttribute('aria-pressed', String(state.playing));
     this.playButton.classList.toggle('is-playing', state.playing);
+    this.addButton.setAttribute(
+      'aria-expanded',
+      String(state.palette?.mode === 'add'),
+    );
+    this.patternButton.setAttribute(
+      'aria-expanded',
+      String(state.patternEditorOrbId !== null),
+    );
+    this.motionButton.setAttribute(
+      'aria-expanded',
+      String(state.motionEditorOrbId !== null),
+    );
+    this.root.querySelector<HTMLButtonElement>('[data-action="link"]')?.setAttribute(
+      'aria-expanded',
+      String(state.linkEditorSourceOrbId !== null),
+    );
+    this.root.querySelector<HTMLButtonElement>('[data-action="change"]')?.setAttribute(
+      'aria-expanded',
+      String(state.palette?.mode === 'replace'),
+    );
 
     this.syncOrbs(state);
     this.renderSelection(state);
