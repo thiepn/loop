@@ -173,7 +173,6 @@ export function deriveFieldEnvironment(
   fields: readonly EffectFieldDocument[],
   intersections: readonly RenderFieldIntersection[],
 ): RenderFieldEnvironment {
-  let totalArea = 0;
   const amounts: Record<EffectFieldType, number> = {
     space: 0,
     echo: 0,
@@ -184,21 +183,17 @@ export function deriveFieldEnvironment(
 
   for (const field of fields) {
     const area = field.radius * field.radius;
-    totalArea += area;
     amounts[field.type] += area;
   }
 
-  const normalization = Math.max(
-    0.035,
-    totalArea,
-  );
+  const coverageReference = 0.16;
 
   return {
-    space: clamp01(amounts.space / normalization),
-    echo: clamp01(amounts.echo / normalization),
-    heat: clamp01(amounts.heat / normalization),
-    frost: clamp01(amounts.frost / normalization),
-    filter: clamp01(amounts.filter / normalization),
+    space: clamp01(amounts.space / coverageReference),
+    echo: clamp01(amounts.echo / coverageReference),
+    heat: clamp01(amounts.heat / coverageReference),
+    frost: clamp01(amounts.frost / coverageReference),
+    filter: clamp01(amounts.filter / coverageReference),
     overlap: clamp01(
       intersections.reduce(
         (sum, intersection) => (
