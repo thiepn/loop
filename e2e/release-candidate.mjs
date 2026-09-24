@@ -196,7 +196,6 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
 
   await stopPlayback(page);
 
-  const snapshotOrb = page.locator('.sound-orb').first();
   await snapshotOrb.focus();
   await snapshotOrb.press('Enter');
   await expect(page.locator('.selection-panel')).toBeVisible();
