@@ -149,7 +149,11 @@ export class IndexedDbWorldStorage implements WorldStorage {
         }
       });
 
-      request.addEventListener('success', () => resolve(request.result), { once: true });
+      request.addEventListener('success', () => {
+        const database = request.result;
+        database.addEventListener('versionchange', () => database.close());
+        resolve(database);
+      }, { once: true });
       request.addEventListener('error', () => reject(request.error), { once: true });
       request.addEventListener('blocked', () => {
         reject(new DOMException('Loop storage upgrade is blocked.', 'InvalidStateError'));
