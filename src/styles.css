@@ -413,77 +413,14 @@ a:focus-visible,
 
 .orb-wave {
   position: absolute;
-  inset: 4%;
+  inset: 5%;
+  border: 1px solid color-mix(in srgb, var(--orb-color) 32%, transparent);
   border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    var(--orb-color) 0deg 2.5deg,
-    transparent 2.5deg 8deg
-  );
-  opacity: 0.62;
-  mask: radial-gradient(circle, transparent 0 75%, #000 76% 84%, transparent 85%);
-  animation: waveform-turn 14s linear infinite;
-}
-
-.sound-orb[data-role="beat"] .orb-wave {
-  animation-duration: 9s;
-}
-
-.sound-orb[data-role="percussion"] .orb-wave {
-  opacity: 0.82;
-  background: repeating-conic-gradient(
-    from 0deg,
-    var(--orb-color) 0deg 1.5deg,
-    transparent 1.5deg 5deg
-  );
-}
-
-.sound-orb[data-role="bass"] .orb-core {
-  animation: bass-breathe 2.8s ease-in-out infinite;
-}
-
-.sound-orb[data-role="harmony"] .orb-wave {
-  animation-duration: 20s;
-}
-
-.sound-orb[data-role="texture"] .orb-visual {
-  filter:
-    blur(0.2px)
-    drop-shadow(0 0 28px var(--orb-color-soft));
+  opacity: .38;
 }
 
 .orb-particle {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--orb-color);
-  box-shadow: 0 0 12px var(--orb-color);
-  opacity: 0;
-}
-
-.sound-orb[data-role="percussion"] .orb-particle,
-.sound-orb[data-role="melody"] .orb-particle,
-.sound-orb[data-role="texture"] .orb-particle {
-  opacity: 0.55;
-}
-
-.orb-particle-a {
-  left: 8%;
-  top: 28%;
-  animation: particle-float-a 3.2s ease-in-out infinite;
-}
-
-.orb-particle-b {
-  right: 7%;
-  top: 48%;
-  animation: particle-float-b 4.1s ease-in-out infinite;
-}
-
-.orb-particle-c {
-  left: 47%;
-  bottom: 3%;
-  animation: particle-float-c 3.7s ease-in-out infinite;
+  display: none;
 }
 
 .orb-label {
@@ -694,51 +631,15 @@ a:focus-visible,
   white-space: pre-wrap;
 }
 
-@keyframes waveform-turn {
-  to {
-    rotate: 360deg;
-  }
-}
 
-@keyframes bass-breathe {
-  0%,
-  100% {
-    scale: 0.96;
-  }
-  50% {
-    scale: 1.035;
-  }
-}
 
-@keyframes particle-float-a {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: -8px -6px;
-  }
-}
 
-@keyframes particle-float-b {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 7px -9px;
-  }
-}
 
-@keyframes particle-float-c {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 4px 8px;
-  }
-}
+
+
+
+
+
 
 @media (max-width: 760px) {
   .playground-shell {
@@ -3957,42 +3858,12 @@ a:focus-visible,
 }
 
 @media (max-width: 860px) {
-  .world-library-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .autosave-status {
     display: none;
   }
 }
 
 @media (max-width: 620px) {
-  .home-library-actions {
-    gap: 4px;
-  }
-
-  .home-library-actions button {
-    padding-inline: 7px;
-    font-size: 8px;
-  }
-
-  .world-library-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .world-trash-row {
-    align-items: start;
-    flex-direction: column;
-  }
-
-  .world-trash-actions {
-    width: 100%;
-  }
-
-  .world-trash-actions button {
-    flex: 1;
-  }
-
   .snapshot-backdrop {
     padding: 8px;
   }
@@ -4034,10 +3905,6 @@ a:focus-visible,
 }
 
 @media (max-width: 430px) {
-  .world-library-card-actions {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .persistence-topbar-tools {
     gap: 3px;
   }
@@ -5452,8 +5319,7 @@ a:focus-visible,
   display: none;
 }
 
-.playground-shell[data-reduce-bloom="true"] .world-glow,
-.playground-shell[data-reduce-bloom="true"] .home-aurora {
+.playground-shell[data-reduce-bloom="true"] .world-glow {
   opacity: 0.06;
 }
 
@@ -5506,22 +5372,9 @@ a:focus-visible,
   to { opacity: 1; }
 }
 
-@keyframes home-brand-breathe {
-  0%, 100% {
-    box-shadow:
-      0 0 18px rgba(139,92,246,0.2);
-  }
 
-  50% {
-    box-shadow:
-      0 0 28px rgba(139,92,246,0.34);
-  }
-}
 
-@keyframes library-orb-wake {
-  0% { opacity: 0.66; }
-  100% { opacity: 1; }
-}
+
 
 
 /* Phase 13 — Mobile, PWA & Offline Hardening */
