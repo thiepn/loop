@@ -168,6 +168,7 @@ export class App {
   private autosaveInFlightPromise: Promise<void> | null = null;
   private lastSavedWorld: WorldDocument | null = null;
   private snapshotRecallTimer: ReturnType<typeof setTimeout> | null = null;
+  private surfaceTransitionTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingSnapshotRecallId: string | null = null;
   private snapshotRecallTargetTime: number | null = null;
   private pendingHomeSave: Promise<void> | null = null;
@@ -369,6 +370,13 @@ export class App {
       'keydown',
       this.handleHistoryShortcut,
     );
+    if (this.surfaceTransitionTimer !== null) {
+      clearTimeout(this.surfaceTransitionTimer);
+      this.surfaceTransitionTimer = null;
+    }
+    this.root.classList.remove('surface-transitioning');
+    delete this.root.dataset.surfaceTransition;
+
     this.storage.close();
     void audioEngine.close();
   }
@@ -1266,6 +1274,29 @@ export class App {
     });
   }
 
+  private cueSurfaceTransition(
+    direction: 'world' | 'home',
+  ): void {
+    if (appStore.getState().visualReduceMotion) {
+      return;
+    }
+
+    if (this.surfaceTransitionTimer !== null) {
+      clearTimeout(this.surfaceTransitionTimer);
+    }
+
+    this.root.dataset.surfaceTransition = direction;
+    this.root.classList.remove('surface-transitioning');
+    void this.root.offsetWidth;
+    this.root.classList.add('surface-transitioning');
+
+    this.surfaceTransitionTimer = setTimeout(() => {
+      this.surfaceTransitionTimer = null;
+      this.root.classList.remove('surface-transitioning');
+      delete this.root.dataset.surfaceTransition;
+    }, 420);
+  }
+
   private async enterWorld(
     world: WorldDocument,
     options: {
@@ -1293,6 +1324,8 @@ export class App {
       : hasSounds
         ? 'move'
         : 'add';
+
+    this.cueSurfaceTransition('world');
 
     appStore.patch({
       screen: 'playground',
@@ -1382,6 +1415,8 @@ export class App {
 
       this.pendingHomeSave = trackedSave;
     }
+
+    this.cueSurfaceTransition('home');
 
     appStore.patch({
       screen: 'home',

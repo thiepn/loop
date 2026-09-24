@@ -1,14 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Loop">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="45%" r="72%">
-      <stop offset="0" stop-color="#12132b"/>
-      <stop offset="1" stop-color="#07070b"/>
+    <radialGradient id="bg" cx="50%" cy="44%" r="78%">
+      <stop offset="0" stop-color="#17162d"/>
+      <stop offset=".62" stop-color="#09090f"/>
+      <stop offset="1" stop-color="#050508"/>
+    </radialGradient>
+    <radialGradient id="core" cx="38%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset=".25" stop-color="#ddd6fe"/>
+      <stop offset=".68" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#32215f"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="128" fill="#0f1020" stroke="#8b5cf6" stroke-width="32"/>
-  <circle cx="256" cy="256" r="54" fill="#f8fafc"/>
-  <circle cx="352" cy="184" r="27" fill="#22d3ee"/>
-  <circle cx="170" cy="326" r="18" fill="#f472b6"/>
-  <circle cx="256" cy="256" r="94" fill="none" stroke="#c4b5fd" stroke-opacity=".2" stroke-width="6"/>
+  <ellipse cx="256" cy="256" rx="132" ry="76" fill="none" stroke="#a78bfa" stroke-width="19" transform="rotate(-24 256 256)"/>
+  <ellipse cx="256" cy="256" rx="108" ry="52" fill="none" stroke="#22d3ee" stroke-opacity=".65" stroke-width="10" transform="rotate(38 256 256)"/>
+  <circle cx="256" cy="256" r="56" fill="url(#core)"/>
+  <circle cx="356" cy="170" r="22" fill="#67e8f9"/>
+  <circle cx="356" cy="170" r="37" fill="none" stroke="#67e8f9" stroke-opacity=".12" stroke-width="7"/>
+  <circle cx="162" cy="334" r="13" fill="#f472b6" opacity=".8"/>
 </svg>
