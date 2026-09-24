@@ -248,6 +248,9 @@ export function deriveEnvironmentDynamics(
     if (
       event.kind === 'link-created'
       || event.kind === 'link-deleted'
+      || event.kind === 'choreography-state'
+      || event.kind === 'choreography-bar'
+      || event.kind === 'choreography-hit'
     ) {
       continue;
     }
