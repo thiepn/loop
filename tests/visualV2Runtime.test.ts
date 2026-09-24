@@ -3,9 +3,11 @@ import {
   clampRenderDevicePixelRatio,
   renderPolicyForPreferences,
   motionRenderIntervalMs,
+  rendererDevicePixelRatio,
   selectRendererKind,
 } from '../src/core/visual/v2/RendererPolicy';
 import { VisualEventBridge } from '../src/core/visual/v2/VisualEventBridge';
+import { isLikelySoftwareRendererName } from '../src/core/visual/v2/createWorldRenderer';
 
 describe('Visual V2 renderer policy', () => {
   it('prefers WebGL2 and falls back deterministically', () => {
@@ -23,6 +25,24 @@ describe('Visual V2 renderer policy', () => {
       webgl2: false,
       canvas2d: false,
     })).toBe('none');
+  });
+
+  it('rejects known software WebGL renderer names', () => {
+    expect(isLikelySoftwareRendererName('Google SwiftShader')).toBe(true);
+    expect(isLikelySoftwareRendererName('llvmpipe (LLVM 18)')).toBe(true);
+    expect(isLikelySoftwareRendererName('ANGLE (NVIDIA RTX 4070)')).toBe(false);
+  });
+
+  it('reduces Canvas2D backing resolution without changing WebGL DPR policy', () => {
+    const preferences = {
+      quality: 'balanced' as const,
+      reduceMotion: false,
+      reduceParticles: false,
+      reduceBloom: false,
+    };
+
+    expect(rendererDevicePixelRatio('webgl2', 2, preferences)).toBe(1.5);
+    expect(rendererDevicePixelRatio('canvas2d', 2, preferences)).toBe(0.75);
   });
 
   it('throttles software-canvas Motion while leaving WebGL externally unthrottled', () => {

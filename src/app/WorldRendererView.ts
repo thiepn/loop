@@ -5,8 +5,8 @@ import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { VisualPreferences } from '../core/visual/VisualQuality';
 import { AnimationClock } from '../core/visual/v2/AnimationClock';
 import {
-  clampRenderDevicePixelRatio,
   motionRenderIntervalMs,
+  rendererDevicePixelRatio,
 } from '../core/visual/v2/RendererPolicy';
 import { projectWorldToRenderScene } from '../core/visual/v2/SceneAdapter';
 import type {
@@ -356,7 +356,8 @@ export class WorldRendererView {
     const rect = this.worldCanvas.getBoundingClientRect();
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
-    const dpr = clampRenderDevicePixelRatio(
+    const dpr = rendererDevicePixelRatio(
+      this.renderer.kind,
       window.devicePixelRatio || 1,
       this.preferences,
     );

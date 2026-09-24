@@ -13,20 +13,75 @@ const WEBGL_CONTEXT_OPTIONS: WebGLContextAttributes = {
   powerPreference: 'high-performance',
 };
 
-export function createWorldRenderer(
-  canvas: HTMLCanvasElement,
-): WorldRenderer {
+export function isLikelySoftwareRendererName(
+  rendererName: string,
+): boolean {
+  const normalized = rendererName.toLowerCase();
+
+  return normalized.includes('swiftshader')
+    || normalized.includes('llvmpipe')
+    || normalized.includes('lavapipe')
+    || normalized.includes('software');
+}
+
+function rendererName(
+  gl: WebGL2RenderingContext,
+): string {
+  const debug = gl.getExtension('WEBGL_debug_renderer_info');
+
+  if (debug) {
+    const value = gl.getParameter(debug.UNMASKED_RENDERER_WEBGL);
+
+    if (typeof value === 'string') {
+      return value;
+    }
+  }
+
+  const fallback = gl.getParameter(gl.RENDERER);
+  return typeof fallback === 'string' ? fallback : '';
+}
+
+function canUseAcceleratedWebGL2(): boolean {
+  const probe = document.createElement('canvas');
+
   try {
-    const gl = canvas.getContext(
+    const gl = probe.getContext(
       'webgl2',
       WEBGL_CONTEXT_OPTIONS,
     );
 
-    if (gl) {
-      return new WebGL2WorldRenderer(canvas, gl);
+    if (!gl) {
+      return false;
     }
+
+    const software = isLikelySoftwareRendererName(
+      rendererName(gl),
+    );
+
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+
+    return !software;
   } catch {
-    // Canvas2D remains a supported fallback.
+    return false;
+  }
+}
+
+export function createWorldRenderer(
+  canvas: HTMLCanvasElement,
+): WorldRenderer {
+  if (canUseAcceleratedWebGL2()) {
+    try {
+      const gl = canvas.getContext(
+        'webgl2',
+        WEBGL_CONTEXT_OPTIONS,
+      );
+
+      if (gl) {
+        return new WebGL2WorldRenderer(canvas, gl);
+      }
+    } catch {
+      // Canvas2D remains the bounded software fallback.
+    }
   }
 
   try {

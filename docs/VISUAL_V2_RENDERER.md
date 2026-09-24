@@ -10,9 +10,11 @@ This document defines the runtime boundary introduced by Visual V2 Phase 2.
 
 Loop now uses:
 
-1. **WebGL2** as the preferred World renderer;
-2. **Canvas2D** as the graphics fallback;
+1. **hardware-accelerated WebGL2** as the preferred World renderer;
+2. **Canvas2D** as the bounded software graphics fallback;
 3. semantic DOM presentation as the final no-canvas fallback.
+
+Known software WebGL implementations such as SwiftShader, llvmpipe and lavapipe are rejected instead of being treated as the high-performance path.
 
 No third-party rendering engine is required.
 
@@ -118,13 +120,19 @@ There is therefore no competing permanent renderer RAF while the existing Motion
 
 ## Device pixel ratio
 
-The renderer applies quality-aware DPR caps:
+The hardware WebGL renderer applies quality-aware DPR caps:
 
 - High: up to 2×;
 - Balanced: up to 1.5×;
 - Battery Saver: 1×.
 
-This is a graphics-only policy.
+Canvas2D is explicitly a degraded software fallback and therefore uses a smaller backing surface while CSS geometry stays full-resolution:
+
+- High: up to 1×;
+- Balanced: up to 0.75×;
+- Battery Saver: up to 0.5×.
+
+The browser scales that backing surface to the full World size. Interaction geometry and DOM hit targets remain unchanged. This is a graphics-only policy.
 
 ## Context loss
 

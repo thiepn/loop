@@ -104,3 +104,28 @@ export function motionRenderIntervalMs(
       return 1000 / 30;
   }
 }
+
+
+export function rendererDevicePixelRatio(
+  renderer: RendererKind,
+  devicePixelRatio: number,
+  preferences: VisualPreferences,
+): number {
+  const base = clampRenderDevicePixelRatio(
+    devicePixelRatio,
+    preferences,
+  );
+
+  if (renderer !== 'canvas2d') {
+    return base;
+  }
+
+  switch (preferences.quality) {
+    case 'high':
+      return Math.min(base, 1);
+    case 'balanced':
+      return Math.min(base, 0.75);
+    case 'battery':
+      return Math.min(base, 0.5);
+  }
+}
