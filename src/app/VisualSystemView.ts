@@ -40,7 +40,6 @@ function distance(
 
 export class VisualSystemView {
   private readonly shell: HTMLElement;
-  private readonly canvas: HTMLElement;
   private readonly ambientLayer: HTMLElement;
   private readonly trailLayer: HTMLElement;
   private readonly burstLayer: HTMLElement;
@@ -75,8 +74,6 @@ export class VisualSystemView {
     }
 
     this.shell = shell;
-    this.canvas = canvas;
-
     const effectsLayer = document.createElement('div');
     effectsLayer.className = 'visual-effects-layer';
     effectsLayer.setAttribute('aria-hidden', 'true');
