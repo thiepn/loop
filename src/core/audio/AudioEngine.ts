@@ -10,6 +10,11 @@ export interface AudioRuntime {
   readonly destination: AudioNode;
 }
 
+export interface MasterCaptureTap {
+  readonly stream: MediaStream;
+  dispose(): void;
+}
+
 type BrowserAudioContextConstructor = new (options?: AudioContextOptions) => AudioContext;
 
 function getAudioContextConstructor(): BrowserAudioContextConstructor | null {
@@ -97,6 +102,38 @@ export class AudioEngine {
     }
 
     return this.getSnapshot();
+  }
+
+  public createMasterCaptureTap(): MasterCaptureTap | null {
+    if (!this.context || !this.limiter) {
+      return null;
+    }
+
+    const destination = this.context.createMediaStreamDestination();
+    this.limiter.connect(destination);
+
+    let disposed = false;
+
+    return {
+      stream: destination.stream,
+      dispose: () => {
+        if (disposed) {
+          return;
+        }
+
+        disposed = true;
+
+        try {
+          this.limiter?.disconnect(destination);
+        } catch {
+          // The AudioContext may already be closing.
+        }
+
+        for (const track of destination.stream.getTracks()) {
+          track.stop();
+        }
+      },
+    };
   }
 
   public get input(): AudioNode | null {
