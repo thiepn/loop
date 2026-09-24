@@ -23,10 +23,11 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 14 — Functional & Data-Integrity Audit: complete and CI-verified**
 - **Phase 15 — UX, Accessibility & Regression Audit: complete and CI-verified**
 - **Phase 16 — Performance & Soak Certification: complete and CI-verified**
+- **Phase 17 — Release Candidate: `1.0.0-rc.1` packaged; exact-head tag gate active**
 - **V1 feature development remains frozen**
-- **Next: Phase 17 — Release Candidate**
+- **Next after RC tag verification: Phase 18 — Production Release & GitHub Pages**
 
-Loop's planned V1 product feature set is now implemented: the visual music playground works across responsive pointer/touch layouts, is installable as a scoped `/loop/` PWA, caches its built application shell for offline use, preserves local Worlds in IndexedDB, exposes non-disruptive update/offline/install state, and is now under feature freeze for audit/certification.
+Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
 
 ## Product contract
 
@@ -49,24 +50,12 @@ The authoritative specifications live in `docs/`:
 - [MAGIC.md](docs/MAGIC.md) — seeded mutation, intents, per-object Magic, Remix, preview transactions, and undo safety
 - [PERSISTENCE.md](docs/PERSISTENCE.md) — World library, autosave/restore, IndexedDB, Snapshots, history, migration, Trash, quarantine, and backups
 - [CAPTURE_EXPORT.md](docs/CAPTURE_EXPORT.md) — post-limiter master recording, browser formats, duration safety, listen-back, downloads, and WAV conversion
-- [VISUAL_SYSTEM.md](docs/VISUAL_SYSTEM.md) — implemented role identity, fields/toys/Links, trails, particles, quality profiles, accessibility, and visual-performance rules
 - [PWA_OFFLINE.md](docs/PWA_OFFLINE.md) — mobile layouts, safe areas, touch policy, manifest/installability, service worker, offline/update behavior, and `/loop/` deployment rules
-- [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
-- [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
-- [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
-- [PHASE_4_ACCEPTANCE.md](docs/PHASE_4_ACCEPTANCE.md) — Phase 4 verification gate
-- [PHASE_5_ACCEPTANCE.md](docs/PHASE_5_ACCEPTANCE.md) — Phase 5 verification gate
-- [PHASE_6_ACCEPTANCE.md](docs/PHASE_6_ACCEPTANCE.md) — Phase 6 verification gate
-- [PHASE_7_ACCEPTANCE.md](docs/PHASE_7_ACCEPTANCE.md) — Phase 7 verification gate
-- [PHASE_8_ACCEPTANCE.md](docs/PHASE_8_ACCEPTANCE.md) — Phase 8 verification gate
-- [PHASE_9_ACCEPTANCE.md](docs/PHASE_9_ACCEPTANCE.md) — Phase 9 verification gate
-- [PHASE_10_ACCEPTANCE.md](docs/PHASE_10_ACCEPTANCE.md) — Phase 10 verification gate
-- [PHASE_11_ACCEPTANCE.md](docs/PHASE_11_ACCEPTANCE.md) — Phase 11 verification gate
-- [PHASE_12_ACCEPTANCE.md](docs/PHASE_12_ACCEPTANCE.md) — Phase 12 verification gate
-- [PHASE_13_ACCEPTANCE.md](docs/PHASE_13_ACCEPTANCE.md) — Phase 13 verification / feature-freeze gate
-- [PHASE_14_ACCEPTANCE.md](docs/PHASE_14_ACCEPTANCE.md) — functional/data-integrity audit, confirmed fixes, and regression gate
+- [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) through [PHASE_13_ACCEPTANCE.md](docs/PHASE_13_ACCEPTANCE.md) — implementation and feature-freeze gates
+- [PHASE_14_ACCEPTANCE.md](docs/PHASE_14_ACCEPTANCE.md) — functional/data-integrity audit and regression gate
 - [PHASE_15_ACCEPTANCE.md](docs/PHASE_15_ACCEPTANCE.md) — UX, accessibility, keyboard, reduced-motion, and regression gate
 - [PHASE_16_ACCEPTANCE.md](docs/PHASE_16_ACCEPTANCE.md) — performance, soak, bundle, memory, lifecycle, and browser certification gate
+- [PHASE_17_ACCEPTANCE.md](docs/PHASE_17_ACCEPTANCE.md) — release-candidate matrix, release blockers, and RC tag gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -83,20 +72,29 @@ Verification:
 ```bash
 npm run check
 npm run build
+npm run cert:browser
+npm run test:rc
 ```
 
 ## Current automated verification
 
-The integrated Phase 16 certification suite passed CI with:
+The release-candidate source tree carries:
 
-- **37 test files**
-- **193 tests**
+- **37 unit/soak test files**
+- **193 unit/soak tests**
 - strict TypeScript typecheck
 - production Vite build
 - generated `dist/sw.js`
 - **9 verified precached URLs**
+- Phase 16 browser performance/memory/lifecycle certification
+- five-project release-candidate matrix:
+  - Chromium desktop
+  - Firefox desktop
+  - Android Chromium touch profile
+  - iPhone WebKit touch profile
+  - iPad WebKit touch profile
 
-Phase 16 certifies maximum V1 World complexity, deterministic ten-minute Motion/scheduler soak, repeated Magic/persistence/backup/recording workloads, production bundle budgets, and a real headless-Chrome production probe covering startup, main-thread frame work, memory growth, long tasks, modal churn, AudioContext metadata, and lifecycle recovery. The V1 feature set remains frozen; Phase 17 is the release-candidate gate.
+The final pre-version RC matrix completed with **14 passed, 6 intentionally skipped, 0 flaky, 0 failed**. The six skips are platform-scoped checks: canonical offline/service-worker testing runs in Chromium desktop, and touch geometry runs only on touch projects.
 
 ## Product rule
 
@@ -106,6 +104,6 @@ If it mainly adds technical sophistication, professional production depth, or ar
 
 ## Deployment target
 
-The canonical V1 product will be a static web app / PWA deployed to GitHub Pages from this repository at the `/loop/` project path.
+The canonical V1 product is a static web app / PWA at the `/loop/` GitHub Pages project path.
 
-The app is technically ready for GitHub Pages/PWA deployment, but public deployment remains intentionally deferred until Phase 18 so only the audited/certified release candidate is presented as the product.
+Public production deployment remains Phase 18. Phase 17 produces the audited release candidate; Phase 18 deploys and smoke-tests that candidate before the final `v1.0.0` tag.

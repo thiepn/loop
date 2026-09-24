@@ -63,8 +63,8 @@ Completed beginner-first usability review, modal/focus isolation, keyboard parit
 ## Phase 16 — Performance & Soak Certification — complete
 Certified maximum V1 World complexity, ten-minute Motion/scheduler soak, repeated Magic/persistence/backup/recording workloads, production bundle budgets, and real-browser startup/render/memory/lifecycle behavior. See [PHASE_16_ACCEPTANCE.md](PHASE_16_ACCEPTANCE.md).
 
-## Phase 17 — Release Candidate
-Produce `v1.0.0-rc.1`, run the complete clean-user workflow across supported browsers/devices, and repeat RC fixes until no release blocker remains.
+## Phase 17 — Release Candidate — complete pending exact-head tag gate
+Packaged `1.0.0-rc.1`, added the five-project release-candidate browser matrix, exercised the complete clean-user workflow, fixed release blockers, and added a self-verifying tag gate for `v1.0.0-rc.1`. See [PHASE_17_ACCEPTANCE.md](PHASE_17_ACCEPTANCE.md).
 
 ## Phase 18 — Production Release & GitHub Pages
 Run clean CI, deploy the certified build to GitHub Pages, smoke-test the real production URL and PWA behavior, then tag `v1.0.0`.
