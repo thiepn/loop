@@ -102,6 +102,7 @@ export class LinkView {
     svg.classList.add('link-layer');
     svg.setAttribute('viewBox', '0 0 1000 1000');
     svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('role', 'group');
     svg.setAttribute('aria-label', 'Sound relationships');
     canvas.append(svg);
     this.svg = svg;
