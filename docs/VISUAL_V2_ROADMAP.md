@@ -143,7 +143,7 @@ Implement:
 - local illumination;
 - interaction-safe light spill.
 
-## Phase 10 — Musical Choreography
+## Phase 10 — Musical Choreography — implemented; certification pending
 
 Coordinate:
 - Play;
