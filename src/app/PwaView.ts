@@ -29,7 +29,7 @@ export class PwaView {
         <span>Install Loop: Share → Add to Home Screen</span>
       </div>
 
-      <aside class="pwa-update-banner" data-pwa-update hidden>
+      <aside class="pwa-update-banner" data-pwa-update role="status" aria-live="polite" aria-atomic="true" hidden>
         <div>
           <strong>Loop update ready</strong>
           <small>Apply it when you're ready.</small>
@@ -37,7 +37,7 @@ export class PwaView {
         <button type="button" data-pwa-update-now>Update</button>
       </aside>
 
-      <div class="pwa-offline-badge" data-pwa-offline hidden>
+      <div class="pwa-offline-badge" data-pwa-offline role="status" aria-live="polite" aria-atomic="true" hidden>
         <span aria-hidden="true">●</span>
         Offline
       </div>
