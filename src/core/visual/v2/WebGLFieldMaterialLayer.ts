@@ -46,6 +46,9 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_tension;\n'
   + 'uniform float u_strength;\n'
   + 'uniform float u_simplified;\n'
+  + 'uniform float u_toy_type;\n'
+  + 'uniform float u_toy_amount;\n'
+  + 'uniform float u_orb_energy;\n'
   + 'uniform float u_time_ms;\n'
   + 'uniform float u_motion_scale;\n'
   + 'uniform float u_particle_scale;\n'
@@ -62,7 +65,12 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  float waveA = sin(angle * (3.0 + floor(u_seed * 4.0)) + time * 0.37 + u_seed * 7.0);\n'
   + '  float waveB = sin(angle * (7.0 + floor(u_seed * 5.0)) - time * 0.23 + u_seed * 13.0);\n'
   + '  float rough = (waveA * 0.62 + waveB * 0.38) * u_edge_roughness * u_motion_scale;\n'
-  + '  return 0.985 + rough + u_tension * 0.024;\n'
+  + '  float toyDelta = 0.0;\n'
+  + '  if (u_toy_type > 0.5 && u_toy_type < 1.5) toyDelta = sin(angle * 5.0 + time * 1.5) * u_toy_amount * 0.012;\n'
+  + '  else if (u_toy_type > 1.5 && u_toy_type < 2.5) toyDelta = -u_toy_amount * 0.012;\n'
+  + '  else if (u_toy_type > 2.5 && u_toy_type < 3.5) toyDelta = u_toy_amount * 0.018;\n'
+  + '  else if (u_toy_type > 3.5) toyDelta = sin(angle * 2.0) * u_toy_amount * 0.016;\n'
+  + '  return 0.985 + rough + u_tension * 0.024 + toyDelta;\n'
   + '}\n'
   + '\n'
   + 'void main() {\n'
@@ -129,6 +137,7 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  }\n'
   + '\n'
   + '  color += vec3(0.28, 0.34, 0.46) * rim * (0.09 + u_bloom_scale * 0.08);\n'
+  + '  color += vec3(0.24, 0.28, 0.36) * u_orb_energy * 0.055 * inside;\n'
   + '  float selectedRing = u_selected * smoothstep(0.03, 0.004, abs(d - min(1.07, boundary + 0.045)));\n'
   + '  color = mix(color, vec3(0.94, 0.96, 1.0), selectedRing * 0.78);\n'
   + '  alpha = max(alpha, selectedRing * 0.7);\n'
@@ -229,6 +238,9 @@ export class WebGLFieldMaterialLayer {
   private readonly tension: WebGLUniformLocation;
   private readonly strength: WebGLUniformLocation;
   private readonly simplified: WebGLUniformLocation;
+  private readonly toyType: WebGLUniformLocation;
+  private readonly toyAmount: WebGLUniformLocation;
+  private readonly orbEnergy: WebGLUniformLocation;
   private readonly timeMs: WebGLUniformLocation;
   private readonly motionScale: WebGLUniformLocation;
   private readonly particleScale: WebGLUniformLocation;
@@ -264,6 +276,9 @@ export class WebGLFieldMaterialLayer {
     this.tension = requiredUniform(gl, this.program, 'u_tension');
     this.strength = requiredUniform(gl, this.program, 'u_strength');
     this.simplified = requiredUniform(gl, this.program, 'u_simplified');
+    this.toyType = requiredUniform(gl, this.program, 'u_toy_type');
+    this.toyAmount = requiredUniform(gl, this.program, 'u_toy_amount');
+    this.orbEnergy = requiredUniform(gl, this.program, 'u_orb_energy');
     this.timeMs = requiredUniform(gl, this.program, 'u_time_ms');
     this.motionScale = requiredUniform(gl, this.program, 'u_motion_scale');
     this.particleScale = requiredUniform(gl, this.program, 'u_particle_scale');
@@ -369,6 +384,26 @@ export class WebGLFieldMaterialLayer {
       );
       gl.uniform1f(this.strength, 1);
       gl.uniform1f(this.simplified, 0);
+      gl.uniform1f(
+        this.toyType,
+        (() => {
+          switch (field.cross.toyInfluence?.type ?? null) {
+            case 'spinner': return 1;
+            case 'magnet': return 2;
+            case 'repulsor': return 3;
+            case 'portal': return 4;
+            case null: return 0;
+          }
+        })(),
+      );
+      gl.uniform1f(
+        this.toyAmount,
+        field.cross.toyInfluence?.amount ?? 0,
+      );
+      gl.uniform1f(
+        this.orbEnergy,
+        field.cross.nearbyOrbEnergy,
+      );
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 
@@ -400,6 +435,9 @@ export class WebGLFieldMaterialLayer {
         this.simplified,
         intersection.simplified ? 1 : 0,
       );
+      gl.uniform1f(this.toyType, 0);
+      gl.uniform1f(this.toyAmount, 0);
+      gl.uniform1f(this.orbEnergy, 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
   }

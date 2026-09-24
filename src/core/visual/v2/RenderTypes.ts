@@ -150,6 +150,11 @@ export interface RenderFieldInteraction {
   readonly tension: number;
 }
 
+export interface RenderFieldCrossInteraction {
+  readonly toyInfluence: RenderTrailToyInfluence | null;
+  readonly nearbyOrbEnergy: number;
+}
+
 export interface RenderFieldMaterial {
   readonly seed: number;
   readonly edgeRoughness: number;
@@ -194,6 +199,7 @@ export interface RenderField {
   readonly radius: number;
   readonly selected: boolean;
   readonly interaction: RenderFieldInteraction;
+  readonly cross: RenderFieldCrossInteraction;
   readonly material: RenderFieldMaterial;
 }
 

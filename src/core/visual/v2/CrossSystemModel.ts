@@ -21,6 +21,7 @@ import {
 } from './TrailModel';
 import type {
   RenderCrossEnvironment,
+  RenderFieldCrossInteraction,
   RenderLinkCrossInteraction,
   RenderOrbCoupling,
   RenderOrbCrossInteraction,
@@ -126,6 +127,14 @@ function dominantEffect(
   return (entries[0]?.[1] ?? 0) > 0.04
     ? entries[0]![0]
     : null;
+}
+
+function stableSign(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) | 0;
+  }
+  return (hash & 1) === 0 ? 1 : -1;
 }
 
 function midpoint(
@@ -351,7 +360,6 @@ export function deriveLinkCrossInteraction(
   fields: readonly EffectFieldDocument[],
   toys: readonly PlaygroundToyDocument[],
 ): RenderLinkCrossInteraction {
-  void link;
   const effects = sampleLinkEffects(
     source,
     target,
@@ -362,8 +370,20 @@ export function deriveLinkCrossInteraction(
     fields,
     middle,
   );
-  const refractionDirection = strongestField
+  const radialDirection = strongestField
     ? direction(strongestField.field.position, middle)
+    : { x: 0, y: 0 };
+  const linkDirection = direction(source, target);
+  const refractionDirection = strongestField
+    ? Math.hypot(
+        radialDirection.x,
+        radialDirection.y,
+      ) > 0.001
+      ? radialDirection
+      : {
+          x: -linkDirection.y * stableSign(link.id),
+          y: linkDirection.x * stableSign(link.id),
+        }
     : { x: 0, y: 0 };
   const toy = strongestToyInfluence(
     toys,
@@ -384,6 +404,33 @@ export function deriveLinkCrossInteraction(
       ),
     ),
     toyInfluence: toy,
+  };
+}
+
+export function deriveFieldCrossInteraction(
+  field: EffectFieldDocument,
+  toys: readonly PlaygroundToyDocument[],
+  orbs: readonly SoundOrbDocument[],
+  positions: ReadonlyMap<string, NormalizedPoint>,
+): RenderFieldCrossInteraction {
+  let nearbyOrbEnergy = 0;
+
+  for (const orb of orbs) {
+    const position = positions.get(orb.id) ?? orb.position;
+    const depth = effectAmountsAtPoint(
+      [field],
+      position,
+    )[field.type];
+
+    nearbyOrbEnergy += depth * (orb.muted ? 0.22 : 0.46);
+  }
+
+  return {
+    toyInfluence: strongestToyInfluence(
+      toys,
+      field.position,
+    ),
+    nearbyOrbEnergy: clamp01(nearbyOrbEnergy),
   };
 }
 

@@ -26,6 +26,7 @@ import {
 import { deriveOrbMaterial } from './OrbMaterialModel';
 import {
   deriveCrossEnvironment,
+  deriveFieldCrossInteraction,
   deriveLinkCrossInteraction,
   deriveOrbCouplings,
   deriveOrbCrossInteractions,
@@ -145,6 +146,12 @@ export function projectWorldToRenderScene(
       selected: options.selectedFieldId === field.id,
       interaction: options.fieldInteractions?.get(field.id)
         ?? IDLE_FIELD_INTERACTION,
+      cross: deriveFieldCrossInteraction(
+        field,
+        toyDocuments,
+        world.soundOrbs,
+        positions,
+      ),
       material: deriveFieldMaterial(field),
     }),
   );

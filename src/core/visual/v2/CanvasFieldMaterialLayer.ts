@@ -22,6 +22,24 @@ function boundaryScale(
   const time = timestampMs * 0.001 * motion;
   const seed = field.material.seed;
 
+  const toyAmount = field.cross.toyInfluence?.amount ?? 0;
+  const toyDelta = (() => {
+    switch (field.cross.toyInfluence?.type ?? null) {
+      case 'spinner':
+        return Math.sin(angle * 5 + time * 1.5)
+          * toyAmount
+          * 0.012;
+      case 'magnet':
+        return -toyAmount * 0.012;
+      case 'repulsor':
+        return toyAmount * 0.018;
+      case 'portal':
+        return Math.sin(angle * 2) * toyAmount * 0.016;
+      case null:
+        return 0;
+    }
+  })();
+
   return 0.985
     + (
       Math.sin(
@@ -35,7 +53,8 @@ function boundaryScale(
         + seed * 13,
       ) * 0.38
     ) * field.material.edgeRoughness * motion
-    + field.interaction.tension * 0.024;
+    + field.interaction.tension * 0.024
+    + toyDelta;
 }
 
 function colorForType(
@@ -151,6 +170,31 @@ export class CanvasFieldMaterialLayer {
       radiusX * 2,
       radiusY * 2,
     );
+
+    if (field.cross.nearbyOrbEnergy > 0.01) {
+      const localLight = context.createRadialGradient(
+        centerX,
+        centerY,
+        0,
+        centerX,
+        centerY,
+        Math.max(radiusX, radiusY) * 0.8,
+      );
+      localLight.addColorStop(
+        0,
+        'rgba(170, 184, 255, '
+          + (field.cross.nearbyOrbEnergy * 0.06).toFixed(3)
+          + ')',
+      );
+      localLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      context.fillStyle = localLight;
+      context.fillRect(
+        centerX - radiusX,
+        centerY - radiusY,
+        radiusX * 2,
+        radiusY * 2,
+      );
+    }
 
     this.drawMaterial(
       field,
