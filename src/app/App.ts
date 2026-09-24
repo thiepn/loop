@@ -26,6 +26,12 @@ import {
 } from '../core/music/MotionEngine';
 import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
 import { WorldHistory } from '../core/state/WorldHistory';
+import {
+  loadVisualPreferences,
+  saveVisualPreferences,
+  type VisualPreferences,
+  type VisualQuality,
+} from '../core/visual/VisualQuality';
 import type { MotionMode, MotionRange, MotionSpeed } from '../core/world/Motion';
 import type { LinkType } from '../core/world/Link';
 import {
@@ -112,6 +118,7 @@ import { MotionView } from './MotionView';
 import { PatternEditorView } from './PatternEditorView';
 import { PersistenceView } from './PersistenceView';
 import { PlaygroundView } from './PlaygroundView';
+import { VisualSystemView } from './VisualSystemView';
 import { appStore, type AppScreen, type AppState } from './state';
 
 export class App {
@@ -127,6 +134,7 @@ export class App {
   private motionView: MotionView | null = null;
   private patternEditorView: PatternEditorView | null = null;
   private persistenceView: PersistenceView | null = null;
+  private visualSystemView: VisualSystemView | null = null;
   private playground: PlaygroundEngine | null = null;
   private mountedScreen: AppScreen | null = null;
   private onboardingComplete = false;
@@ -211,6 +219,15 @@ export class App {
   public constructor(private readonly root: HTMLElement) {}
 
   public mount(): void {
+    const visualPreferences = loadVisualPreferences();
+
+    appStore.patch({
+      visualQuality: visualPreferences.quality,
+      visualReduceMotion: visualPreferences.reduceMotion,
+      visualReduceParticles: visualPreferences.reduceParticles,
+      visualReduceBloom: visualPreferences.reduceBloom,
+    });
+
     document.addEventListener(
       'visibilitychange',
       this.handleVisibilityChange,
@@ -249,6 +266,9 @@ export class App {
 
     this.persistenceView?.destroy();
     this.persistenceView = null;
+
+    this.visualSystemView?.destroy();
+    this.visualSystemView = null;
 
     this.captureView?.destroy();
     this.captureView = null;
@@ -292,6 +312,9 @@ export class App {
       this.persistenceView?.destroy();
       this.persistenceView = null;
 
+      this.visualSystemView?.destroy();
+      this.visualSystemView = null;
+
       this.captureView?.destroy();
       this.captureView = null;
 
@@ -325,6 +348,7 @@ export class App {
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
+    this.visualSystemView?.render(state);
     this.captureView?.render(state, this.root);
     this.effectFieldView?.render(state);
     this.linkView?.render(state);
@@ -409,6 +433,11 @@ export class App {
           this.linkView?.previewOrbPosition(
             changedOrbId,
             changedPosition,
+          );
+          this.visualSystemView?.previewOrbPosition(
+            changedOrbId,
+            changedPosition,
+            true,
           );
         }
       },
@@ -501,6 +530,41 @@ export class App {
         });
       },
     });
+
+    this.visualSystemView = new VisualSystemView(
+      this.root,
+      {
+        onOpenSettings: () => {
+          appStore.patch({
+            visualSettingsOpen: true,
+            palette: null,
+            effectPaletteOpen: false,
+            toyPaletteOpen: false,
+            patternEditorOrbId: null,
+            motionEditorOrbId: null,
+            linkEditorSourceOrbId: null,
+            linkEditorTargetOrbId: null,
+            magicIntentOpen: false,
+            snapshotsOpen: false,
+          });
+        },
+        onCloseSettings: () => {
+          appStore.patch({ visualSettingsOpen: false });
+        },
+        onQuality: (quality) => {
+          this.updateVisualPreferences({ quality });
+        },
+        onReduceMotion: (reduceMotion) => {
+          this.updateVisualPreferences({ reduceMotion });
+        },
+        onReduceParticles: (reduceParticles) => {
+          this.updateVisualPreferences({ reduceParticles });
+        },
+        onReduceBloom: (reduceBloom) => {
+          this.updateVisualPreferences({ reduceBloom });
+        },
+      },
+    );
 
     this.captureView = new CaptureView(
       this.root,
@@ -820,6 +884,27 @@ export class App {
           'Here’s another version.',
         );
       },
+    });
+  }
+
+  private updateVisualPreferences(
+    patch: Partial<VisualPreferences>,
+  ): void {
+    const current = appStore.getState();
+    const preferences: VisualPreferences = {
+      quality: patch.quality ?? current.visualQuality,
+      reduceMotion: patch.reduceMotion ?? current.visualReduceMotion,
+      reduceParticles: patch.reduceParticles ?? current.visualReduceParticles,
+      reduceBloom: patch.reduceBloom ?? current.visualReduceBloom,
+    };
+
+    saveVisualPreferences(preferences);
+
+    appStore.patch({
+      visualQuality: preferences.quality,
+      visualReduceMotion: preferences.reduceMotion,
+      visualReduceParticles: preferences.reduceParticles,
+      visualReduceBloom: preferences.reduceBloom,
     });
   }
 
@@ -2841,6 +2926,11 @@ export class App {
         ?? orb.position;
 
       this.playgroundView?.previewOrbPosition(orb.id, position);
+      this.visualSystemView?.previewOrbPosition(
+        orb.id,
+        position,
+        true,
+      );
       this.effectFieldView?.previewOrbEffect(
         orb.id,
         position,
@@ -2964,6 +3054,10 @@ export class App {
     const timer = setTimeout(() => {
       this.activityTimers.delete(timer);
       this.playgroundView?.pulseOrb(activity.orbId, activity.intensity);
+      this.visualSystemView?.pulseOrb(
+        activity.orbId,
+        activity.intensity,
+      );
     }, delayMs);
 
     this.activityTimers.add(timer);
