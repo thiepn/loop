@@ -804,6 +804,44 @@ export class WorldRendererView {
     this.requestRender();
   }
 
+  public linkCreated(linkId: string): void {
+    this.events.emit(
+      {
+        kind: 'link-created',
+        linkId,
+      },
+      performance.now(),
+    );
+    this.requestRender();
+  }
+
+  public linkDeleted(linkId: string): void {
+    const link = this.scene?.links.find(
+      (candidate) => candidate.id === linkId,
+    );
+
+    if (!link) {
+      return;
+    }
+
+    this.events.emit(
+      {
+        kind: 'link-deleted',
+        link: {
+          id: link.id,
+          type: link.type,
+          sourceRole: link.sourceRole,
+          targetRole: link.targetRole,
+          source: link.source,
+          target: link.target,
+          cross: link.cross,
+        },
+      },
+      performance.now(),
+    );
+    this.requestRender();
+  }
+
   public clearRuntimeOverrides(): void {
     this.liveOrbPositions.clear();
     this.orbInteractions.clear();

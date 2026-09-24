@@ -2990,6 +2990,7 @@ export class App {
       linkEditorTargetOrbId: null,
       message: 'Link created. Watch how the sounds react.',
     });
+    this.worldRendererView?.linkCreated(result.createdId);
   }
 
   private deleteLinkRelationship(linkId: string): void {
@@ -2999,6 +3000,8 @@ export class App {
     if (world === current.world) {
       return;
     }
+
+    this.worldRendererView?.linkDeleted(linkId);
 
     appStore.patch({
       world,

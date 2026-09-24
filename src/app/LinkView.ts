@@ -236,6 +236,19 @@ export class LinkView {
   }
 
   public pulseLink(linkId: string): void {
+    const shell = this.root.querySelector<HTMLElement>(
+      '.playground-shell',
+    );
+    const rendererReady = shell?.dataset.rendererState === 'ready'
+      && (
+        shell.dataset.rendererV2 === 'webgl2'
+        || shell.dataset.rendererV2 === 'canvas2d'
+      );
+
+    if (rendererReady) {
+      return;
+    }
+
     const elements = this.elements.get(linkId);
 
     if (!elements) {
