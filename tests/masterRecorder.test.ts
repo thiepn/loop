@@ -6,6 +6,7 @@ import {
 
 class FakeMediaRecorder extends EventTarget {
   public static latest: FakeMediaRecorder | null = null;
+  public static deferStop = false;
 
   public static isTypeSupported(mimeType: string): boolean {
     return mimeType === 'audio/webm;codecs=opus';
@@ -34,6 +35,15 @@ class FakeMediaRecorder extends EventTarget {
       throw new DOMException('Already inactive', 'InvalidStateError');
     }
 
+    if (FakeMediaRecorder.deferStop) {
+      this.state = 'inactive';
+      return;
+    }
+
+    this.finish();
+  }
+
+  public flushStop(): void {
     this.finish();
   }
 
@@ -65,6 +75,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
   FakeMediaRecorder.latest = null;
+  FakeMediaRecorder.deferStop = false;
 });
 
 function fakeEngine(dispose: () => void): AudioEngine {
@@ -107,6 +118,30 @@ describe('MasterRecorder', () => {
 
     expect(recorder.state).toBe('idle');
     expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for an in-flight cancellation before starting a replacement recording', async () => {
+    vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
+    FakeMediaRecorder.deferStop = true;
+
+    const recorder = new MasterRecorder();
+    await recorder.start(fakeEngine(vi.fn()));
+
+    const firstRecorder = FakeMediaRecorder.latest;
+    const cancelPromise = recorder.cancel();
+    const restartPromise = recorder.start(fakeEngine(vi.fn()));
+
+    expect(recorder.state).toBe('stopping');
+
+    firstRecorder?.flushStop();
+    await cancelPromise;
+    await restartPromise;
+
+    expect(recorder.state).toBe('recording');
+    expect(FakeMediaRecorder.latest).not.toBe(firstRecorder);
+
+    FakeMediaRecorder.deferStop = false;
+    await recorder.cancel();
   });
 
   it('preserves chunks when the browser stops recording unexpectedly', async () => {
