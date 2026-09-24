@@ -40,7 +40,7 @@ export interface CreateWorldOptions {
   readonly snapshots?: readonly SnapshotDocument[];
 }
 
-function createWorldId(): string {
+export function createWorldId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
