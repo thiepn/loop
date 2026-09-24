@@ -111,3 +111,24 @@ Phase 4 is complete only when the exact final Phase 4 head passes:
 - complete unit/soak suite;
 - production build;
 - Phase 16 browser certification without relaxing its budgets.
+
+
+## Verification record
+
+The implemented Phase 4 head passed the existing repository verification gates without changing certification budgets:
+
+- strict TypeScript typecheck: passed;
+- unit/soak suite: **41 files, 216 tests passed**;
+- production Vite build: passed;
+- Phase 16 browser certification: passed;
+- JS+CSS gzip: **92,832 bytes** (< 120 KiB budget);
+- navigation load: **377.6 ms** (< 3,000 ms budget);
+- Home → World: **440.3 ms** (< 1,500 ms budget);
+- sampled animation-frame p95: **16.8 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **4.70 ms** (< 8 ms budget);
+- post-GC heap growth: **468,360 bytes** (< 5 MiB budget);
+- DOM node growth: **113** (< 250 budget);
+- longest observed long task: **0 ms**;
+- frozen → active lifecycle recovery: passed.
+
+The dedicated Orb material system therefore remains inside the existing release-performance envelope while leaving headroom for Phase 5 interaction deformation.
