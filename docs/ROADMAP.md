@@ -57,8 +57,8 @@ Only defects and release blockers may change the product.
 ## Phase 14 — Functional & Data-Integrity Audit — complete
 Systematically tested audio lifecycle, scheduler gaps, object manipulation, Motion, Links, Magic transactions, Snapshot recall, undo/redo, IndexedDB/autosave, Trash/import/backup, recording, PWA lifecycle, pointer cancellation, rapid navigation, corrupted data, and cross-feature interactions. Confirmed defects were fixed without reopening feature scope. See [PHASE_14_ACCEPTANCE.md](PHASE_14_ACCEPTANCE.md).
 
-## Phase 15 — UX, Accessibility & Regression Audit
-Run beginner-first usability review, technical-language purge, interaction regression matrix, keyboard/focus checks, contrast, reduced-motion support, touch targets, and cross-feature regressions.
+## Phase 15 — UX, Accessibility & Regression Audit — complete
+Completed beginner-first usability review, modal/focus isolation, keyboard parity, selected-state semantics, contrast/readability corrections, reduced-motion behavior, touch-target checks, technical-language cleanup, and cross-feature regression fixes. See [PHASE_15_ACCEPTANCE.md](PHASE_15_ACCEPTANCE.md).
 
 ## Phase 16 — Performance & Soak Certification
 Measure FPS, long tasks, memory growth, audio underruns, latency, startup, persistence, background/foreground recovery, recording duration, and maximum supported World complexity.
