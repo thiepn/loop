@@ -1,5 +1,6 @@
 import { MAX_SNAPSHOTS } from '../core/world/Snapshot';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface HistoryAvailability {
   readonly canUndo: boolean;
@@ -42,6 +43,7 @@ export class PersistenceView {
   private readonly redoButton: HTMLButtonElement;
   private readonly snapshotButton: HTMLButtonElement;
   private readonly backdrop: HTMLElement;
+  private readonly modalFocus: ModalFocusController;
   private readonly list: HTMLElement;
   private readonly saveButton: HTMLButtonElement;
   private readonly worldName: HTMLElement;
@@ -62,7 +64,7 @@ export class PersistenceView {
     const status = document.createElement('div');
     status.className = 'persistence-topbar-tools';
     status.innerHTML = `
-      <span class="autosave-status" data-autosave-status>Local</span>
+      <span class="autosave-status" data-autosave-status role="status" aria-live="polite" aria-atomic="true">Local</span>
       <button type="button" data-history-undo aria-label="Undo">↶</button>
       <button type="button" data-history-redo aria-label="Redo">↷</button>
     `;
@@ -130,6 +132,10 @@ export class PersistenceView {
     `;
     shell.append(backdrop);
     this.backdrop = backdrop;
+    this.modalFocus = new ModalFocusController(backdrop, {
+      onEscape: callbacks.onCloseSnapshots,
+      initialFocusSelector: '[data-snapshot-close]',
+    });
 
     const list = backdrop.querySelector<HTMLElement>('[data-snapshot-list]');
     const saveButton = backdrop.querySelector<HTMLButtonElement>('[data-snapshot-save]');
@@ -195,6 +201,7 @@ export class PersistenceView {
     this.snapshotButton.disabled = locked;
 
     this.backdrop.hidden = !state.snapshotsOpen;
+    this.modalFocus.sync(state.snapshotsOpen);
     this.worldName.textContent = state.world.name;
 
     const count = this.backdrop.querySelector<HTMLElement>('[data-snapshot-count]');
@@ -225,7 +232,7 @@ export class PersistenceView {
           <span class="snapshot-mini-art" aria-hidden="true"></span>
           <span>
             <strong></strong>
-            <small>Recall on a safe musical boundary</small>
+            <small>Return here at the next clean musical moment</small>
           </span>
         </button>
         <div class="snapshot-row-actions">
@@ -268,6 +275,7 @@ export class PersistenceView {
   }
 
   public destroy(): void {
+    this.modalFocus.destroy();
     this.backdrop.remove();
     this.snapshotButton.remove();
     this.autosaveStatus.parentElement?.remove();
