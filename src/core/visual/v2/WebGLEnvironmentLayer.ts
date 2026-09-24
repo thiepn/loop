@@ -1,5 +1,6 @@
 import type { VisualPreferences } from '../VisualQuality';
 import { renderPolicyForPreferences } from './RendererPolicy';
+import type { ChoreographyFrame } from './ChoreographyModel';
 import type {
   EnvironmentDynamics,
   RenderCrossEnvironment,
@@ -45,6 +46,18 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_force_strength;\n'
   + 'uniform float u_force_mode;\n'
   + 'uniform float u_coupling_energy;\n'
+  + 'uniform float u_choreo_wake;\n'
+  + 'uniform float u_choreo_settle;\n'
+  + 'uniform float u_choreo_pressure;\n'
+  + 'uniform float u_choreo_pressure_phase;\n'
+  + 'uniform float u_choreo_phrase_build;\n'
+  + 'uniform float u_choreo_phrase_release;\n'
+  + 'uniform float u_choreo_silence;\n'
+  + 'uniform float u_choreo_reentry;\n'
+  + 'uniform float u_choreo_bass;\n'
+  + 'uniform float u_choreo_harmony;\n'
+  + 'uniform float u_choreo_record_start;\n'
+  + 'uniform float u_choreo_record_stop;\n'
   + 'uniform vec2 u_drag_position;\n'
   + 'uniform vec2 u_drag_delta;\n'
   + 'uniform float u_drag_strength;\n'
@@ -168,7 +181,19 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  color += vec3(0.02, 0.34, 0.22) * u_field_filter * 0.038;\n'
   + '  color += vec3(0.28, 0.24, 0.48) * u_field_overlap * 0.028;\n'
   + '  color += mix(u_primary, u_secondary, 0.5) * u_coupling_energy * 0.025;\n'
+  + '  float wakeCore = exp(-listenerDistance * 3.2);\n'
+  + '  float pressureRadius = 0.12 + u_choreo_pressure_phase * 0.74;\n'
+  + '  float pressureRing = smoothstep(0.055, 0.009, abs(listenerDistance - pressureRadius));\n'
+  + '  color += mix(u_primary, u_secondary, 0.35) * wakeCore * (u_choreo_wake * 0.075 + u_choreo_reentry * 0.095);\n'
+  + '  color += mix(u_primary, u_secondary, 0.5) * pressureRing * u_choreo_pressure * 0.075;\n'
+  + '  color += u_secondary * u_choreo_harmony * 0.05;\n'
+  + '  color += mix(u_primary, u_secondary, 0.5) * u_choreo_phrase_build * 0.022;\n'
+  + '  color += mix(u_secondary, vec3(0.78, 0.72, 1.0), 0.35) * u_choreo_phrase_release * 0.06;\n'
+  + '  color += vec3(0.32, 0.04, 0.09) * u_choreo_record_start * 0.04;\n'
+  + '  color += vec3(0.12, 0.16, 0.28) * u_choreo_record_stop * 0.028;\n'
   + '  color += vec3(0.22, 0.3, 0.4) * forceLocal * 0.018;\n'
+  + '  color *= 1.0 - u_choreo_settle * 0.07 - u_choreo_silence * 0.10;\n'
+  + '  color *= 1.0 - u_choreo_bass * (1.0 - vignette) * 0.08;\n'
   + '  color *= 0.82 + u_awake * 0.10 + u_energy * 0.12;\n'
   + '\n'
   + '  float vignette = smoothstep(1.02, 0.28, length(listenerP));\n'
@@ -286,6 +311,18 @@ export class WebGLEnvironmentLayer {
   private readonly forceStrength: WebGLUniformLocation;
   private readonly forceMode: WebGLUniformLocation;
   private readonly couplingEnergy: WebGLUniformLocation;
+  private readonly choreoWake: WebGLUniformLocation;
+  private readonly choreoSettle: WebGLUniformLocation;
+  private readonly choreoPressure: WebGLUniformLocation;
+  private readonly choreoPressurePhase: WebGLUniformLocation;
+  private readonly choreoPhraseBuild: WebGLUniformLocation;
+  private readonly choreoPhraseRelease: WebGLUniformLocation;
+  private readonly choreoSilence: WebGLUniformLocation;
+  private readonly choreoReentry: WebGLUniformLocation;
+  private readonly choreoBass: WebGLUniformLocation;
+  private readonly choreoHarmony: WebGLUniformLocation;
+  private readonly choreoRecordStart: WebGLUniformLocation;
+  private readonly choreoRecordStop: WebGLUniformLocation;
   private readonly dragPosition: WebGLUniformLocation;
   private readonly dragDelta: WebGLUniformLocation;
   private readonly dragStrength: WebGLUniformLocation;
@@ -323,6 +360,18 @@ export class WebGLEnvironmentLayer {
     this.forceStrength = uniform(gl, this.program, 'u_force_strength');
     this.forceMode = uniform(gl, this.program, 'u_force_mode');
     this.couplingEnergy = uniform(gl, this.program, 'u_coupling_energy');
+    this.choreoWake = uniform(gl, this.program, 'u_choreo_wake');
+    this.choreoSettle = uniform(gl, this.program, 'u_choreo_settle');
+    this.choreoPressure = uniform(gl, this.program, 'u_choreo_pressure');
+    this.choreoPressurePhase = uniform(gl, this.program, 'u_choreo_pressure_phase');
+    this.choreoPhraseBuild = uniform(gl, this.program, 'u_choreo_phrase_build');
+    this.choreoPhraseRelease = uniform(gl, this.program, 'u_choreo_phrase_release');
+    this.choreoSilence = uniform(gl, this.program, 'u_choreo_silence');
+    this.choreoReentry = uniform(gl, this.program, 'u_choreo_reentry');
+    this.choreoBass = uniform(gl, this.program, 'u_choreo_bass');
+    this.choreoHarmony = uniform(gl, this.program, 'u_choreo_harmony');
+    this.choreoRecordStart = uniform(gl, this.program, 'u_choreo_record_start');
+    this.choreoRecordStop = uniform(gl, this.program, 'u_choreo_record_stop');
     this.dragPosition = uniform(gl, this.program, 'u_drag_position');
     this.dragDelta = uniform(gl, this.program, 'u_drag_delta');
     this.dragStrength = uniform(gl, this.program, 'u_drag_strength');
@@ -334,6 +383,7 @@ export class WebGLEnvironmentLayer {
     environment: Readonly<RenderEnvironment>,
     fields: Readonly<RenderFieldEnvironment>,
     cross: Readonly<RenderCrossEnvironment>,
+    choreography: Readonly<ChoreographyFrame>,
     dynamics: Readonly<EnvironmentDynamics>,
     preferences: Readonly<VisualPreferences>,
     timestampMs: number,
@@ -432,6 +482,18 @@ export class WebGLEnvironmentLayer {
       this.couplingEnergy,
       cross.couplingEnergy,
     );
+    gl.uniform1f(this.choreoWake, choreography.wake);
+    gl.uniform1f(this.choreoSettle, choreography.settle);
+    gl.uniform1f(this.choreoPressure, choreography.pressure);
+    gl.uniform1f(this.choreoPressurePhase, choreography.pressurePhase);
+    gl.uniform1f(this.choreoPhraseBuild, choreography.phraseBuild);
+    gl.uniform1f(this.choreoPhraseRelease, choreography.phraseRelease);
+    gl.uniform1f(this.choreoSilence, choreography.silence);
+    gl.uniform1f(this.choreoReentry, choreography.reentry);
+    gl.uniform1f(this.choreoBass, choreography.bassCompression);
+    gl.uniform1f(this.choreoHarmony, choreography.harmonyBloom);
+    gl.uniform1f(this.choreoRecordStart, choreography.recordStart);
+    gl.uniform1f(this.choreoRecordStop, choreography.recordStop);
     gl.uniform2f(
       this.dragPosition,
       dynamics.dragPosition.x,

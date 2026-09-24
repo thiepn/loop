@@ -500,9 +500,12 @@ export class PlaygroundEngine {
 
     let audibleEventCount = 0;
     const silentBarsBeforeTick = this.choreographySilentBars;
+    const audibleOrbCount = this.world.soundOrbs.filter(
+      (orb) => !orb.muted,
+    ).length;
     const activeCount = Math.max(
       1,
-      this.world.soundOrbs.filter((orb) => !orb.muted).length,
+      audibleOrbCount,
     );
     const harmony = {
       tonic: this.world.music.tonic,
@@ -683,7 +686,7 @@ export class PlaygroundEngine {
         * this.transport.beatsPerBar
         * 1000
       ),
-      activeOrbCount: activeCount,
+      activeOrbCount: audibleOrbCount,
       eventCount: audibleEventCount,
       previousBarEventCount,
       silentBarsBefore: silentBarsBeforeTick,

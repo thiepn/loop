@@ -7,6 +7,7 @@ import {
   type RenderColor,
 } from './RenderPalette';
 import { renderPolicyForPreferences } from './RendererPolicy';
+import { deriveChoreographyFrame } from './ChoreographyModel';
 import type {
   RenderEventSample,
   RenderLink,
@@ -105,6 +106,11 @@ export function deriveLightFrame(
   preferences: Readonly<VisualPreferences>,
 ): RenderLightFrame {
   const policy = renderPolicyForPreferences(preferences);
+  const choreography = deriveChoreographyFrame(
+    scene,
+    events,
+    preferences,
+  );
   const localLights: LocalLightSource[] = [];
   const listenerPackets: ListenerPacket[] = [];
   const listenerColors: Array<{
@@ -247,13 +253,24 @@ export function deriveLightFrame(
     );
 
   const listenerColor = weightedColor(listenerColors);
-  const recordingTint = scene.recording
+  let recordingTint = scene.recording
     ? mixRenderColor(
         listenerColor,
         [1, 0.28, 0.46, 1],
         0.4,
       )
     : listenerColor;
+
+  recordingTint = mixRenderColor(
+    recordingTint,
+    [
+      scene.environment.secondary[0],
+      scene.environment.secondary[1],
+      scene.environment.secondary[2],
+      1,
+    ],
+    choreography.harmonyBloom * 0.16,
+  );
 
   return {
     localLights: cappedLights,
@@ -262,9 +279,24 @@ export function deriveLightFrame(
       energy: clamp01(
         (scene.playing ? 0.16 : 0.04)
         + listenerEventEnergy
-        + listenerArrivalEnergy * 0.55,
+        + listenerArrivalEnergy * 0.55
+        + choreography.wake * 0.22
+        + choreography.downbeat * 0.16
+        + choreography.phraseRelease * 0.24
+        + choreography.reentry * 0.28
+        + choreography.recordStart * 0.12
+        + choreography.recordStop * 0.06
+        - choreography.settle * 0.08
+        - choreography.silence * 0.06,
       ),
-      arrival: clamp01(listenerArrivalEnergy),
+      arrival: clamp01(
+        Math.max(
+          listenerArrivalEnergy,
+          choreography.downbeat * 0.18,
+          choreography.reentry * 0.28,
+          choreography.phraseRelease * 0.22,
+        ),
+      ),
       color: recordingTint,
     },
   };

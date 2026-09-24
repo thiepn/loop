@@ -17,6 +17,10 @@ import { CanvasLightPropagationLayer } from './CanvasLightPropagationLayer';
 import { CanvasLinkLightLayer } from './CanvasLinkLightLayer';
 import { CanvasListenerLayer } from './CanvasListenerLayer';
 import { deriveLightFrame } from './LightModel';
+import {
+  deriveChoreographyFrame,
+  type ChoreographyFrame,
+} from './ChoreographyModel';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
@@ -90,6 +94,11 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       events,
       preferences,
     );
+    const choreography = deriveChoreographyFrame(
+      scene,
+      events,
+      preferences,
+    );
     const particles = environmentParticleLayout(
       scene.environment,
       preferences,
@@ -98,6 +107,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     this.drawEnvironment(
       scene,
       dynamics,
+      choreography,
       preferences,
       timestampMs,
       width,
@@ -264,6 +274,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
   private drawEnvironment(
     scene: Readonly<RenderScene>,
     dynamics: ReturnType<typeof deriveEnvironmentDynamics>,
+    choreography: Readonly<ChoreographyFrame>,
     preferences: Readonly<VisualPreferences>,
     timestampMs: number,
     width: number,
@@ -458,6 +469,101 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     if (scene.crossEnvironment.couplingEnergy > 0.001) {
       context.fillStyle = 'rgba(92, 104, 170, '
         + (scene.crossEnvironment.couplingEnergy * 0.022).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+    }
+
+    const listenerX = scene.listener.x * width;
+    const listenerY = scene.listener.y * height;
+    const minDimension = Math.min(width, height);
+
+    if (
+      choreography.wake > 0.001
+      || choreography.reentry > 0.001
+    ) {
+      const wake = context.createRadialGradient(
+        listenerX,
+        listenerY,
+        0,
+        listenerX,
+        listenerY,
+        minDimension * 0.52,
+      );
+      wake.addColorStop(
+        0,
+        this.rgbCss(
+          primary,
+          choreography.wake * 0.075
+          + choreography.reentry * 0.095,
+        ),
+      );
+      wake.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      context.fillStyle = wake;
+      context.fillRect(0, 0, width, height);
+    }
+
+    if (choreography.pressure > 0.01) {
+      context.save();
+      context.beginPath();
+      context.arc(
+        listenerX,
+        listenerY,
+        minDimension * (
+          0.12 + choreography.pressurePhase * 0.74
+        ),
+        0,
+        Math.PI * 2,
+      );
+      context.strokeStyle = this.rgbCss(
+        secondary,
+        choreography.pressure * 0.09,
+      );
+      context.lineWidth = Math.max(
+        1,
+        minDimension * 0.012 * choreography.pressure,
+      );
+      context.stroke();
+      context.restore();
+    }
+
+    if (
+      choreography.phraseBuild > 0.001
+      || choreography.phraseRelease > 0.001
+      || choreography.harmonyBloom > 0.001
+    ) {
+      context.fillStyle = this.rgbCss(
+        secondary,
+        choreography.phraseBuild * 0.018
+        + choreography.phraseRelease * 0.045
+        + choreography.harmonyBloom * 0.028,
+      );
+      context.fillRect(0, 0, width, height);
+    }
+
+    if (
+      choreography.settle > 0.001
+      || choreography.silence > 0.001
+      || choreography.bassCompression > 0.001
+    ) {
+      context.fillStyle = 'rgba(0, 0, 0, '
+        + (
+          choreography.settle * 0.055
+          + choreography.silence * 0.07
+          + choreography.bassCompression * 0.025
+        ).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+    }
+
+    if (
+      choreography.recordStart > 0.001
+      || choreography.recordStop > 0.001
+    ) {
+      context.fillStyle = 'rgba(128, 26, 62, '
+        + (
+          choreography.recordStart * 0.035
+          + choreography.recordStop * 0.018
+        ).toFixed(3)
         + ')';
       context.fillRect(0, 0, width, height);
     }
