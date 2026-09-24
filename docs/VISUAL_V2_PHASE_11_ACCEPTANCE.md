@@ -126,3 +126,25 @@ Phase 11 is complete only when the exact final Phase 11 head passes:
 - complete unit/soak suite;
 - production build;
 - Phase 16 browser certification without relaxing its budgets.
+
+
+## Verification record
+
+The implemented Phase 11 head passed the existing repository verification gates without changing certification budgets:
+
+- strict TypeScript typecheck: passed;
+- unit/soak suite: **48 files, 299 tests passed**;
+- production Vite build: passed;
+- Phase 16 browser certification: passed;
+- JS+CSS gzip: **118,073 bytes** (< 120 KiB budget);
+- navigation load: **145.6 ms** (< 3,000 ms budget);
+- Home → World: **162.3 ms** (< 1,500 ms budget);
+- first contentful paint: **224 ms**;
+- sampled animation-frame p95: **16.7 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **3.58 ms** (< 8 ms budget);
+- post-GC heap growth: **720,368 bytes** (< 5 MiB budget);
+- DOM node growth: **115** (< 250 budget);
+- longest observed long task: **0 ms**;
+- frozen → active lifecycle recovery: passed.
+
+The cinematic transition system therefore remains inside the existing release-performance envelope. Bundle headroom is now narrower, so subsequent Visual V2 phases should prioritize reuse, code consolidation and removal of obsolete legacy presentation paths instead of adding independent rendering stacks.

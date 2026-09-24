@@ -157,7 +157,7 @@ Coordinate:
 
 No second musical clock.
 
-## Phase 11 — Magic, Portal, Snapshot & State Transitions — implemented; certification pending
+## Phase 11 — Magic, Portal, Snapshot & State Transitions — complete
 
 Implement:
 - Magic transformation;
