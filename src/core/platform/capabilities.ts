@@ -2,6 +2,7 @@ export interface PlatformCapabilities {
   readonly audio: boolean;
   readonly webgl2: boolean;
   readonly indexedDb: boolean;
+  readonly recording: boolean;
   readonly serviceWorker: boolean;
   readonly pointerEvents: boolean;
 }
@@ -12,6 +13,7 @@ export function detectCapabilities(): PlatformCapabilities {
       audio: false,
       webgl2: false,
       indexedDb: false,
+      recording: false,
       serviceWorker: false,
       pointerEvents: false,
     };
@@ -23,6 +25,8 @@ export function detectCapabilities(): PlatformCapabilities {
     audio: Boolean(window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext),
     webgl2: Boolean(canvas.getContext('webgl2')),
     indexedDb: 'indexedDB' in window,
+    recording: 'MediaRecorder' in window
+      && 'MediaStream' in window,
     serviceWorker: 'serviceWorker' in navigator,
     pointerEvents: 'PointerEvent' in window,
   };
