@@ -13,6 +13,8 @@ export interface RenderQualityPolicy {
   readonly trailDetail: number;
   readonly particleScale: number;
   readonly bloomScale: number;
+  readonly lightSourceCap: number;
+  readonly lightScale: number;
 }
 
 export function selectRendererKind(
@@ -39,6 +41,8 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
         trailDetail: 1,
         particleScale: 1,
         bloomScale: 1,
+        lightSourceCap: 8,
+        lightScale: 1,
       };
     case 'balanced':
       return {
@@ -48,6 +52,8 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
         trailDetail: 0.72,
         particleScale: 0.62,
         bloomScale: 0.72,
+        lightSourceCap: 6,
+        lightScale: 0.72,
       };
     case 'battery':
       return {
@@ -57,6 +63,8 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
         trailDetail: 0.34,
         particleScale: 0.24,
         bloomScale: 0.3,
+        lightSourceCap: 4,
+        lightScale: 0.42,
       };
   }
 }
@@ -73,6 +81,9 @@ export function renderPolicyForPreferences(
     bloomScale: preferences.reduceBloom
       ? Math.min(0.2, base.bloomScale)
       : base.bloomScale,
+    lightScale: preferences.reduceBloom
+      ? Math.min(0.32, base.lightScale)
+      : base.lightScale,
   };
 }
 

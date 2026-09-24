@@ -19,7 +19,11 @@ function durationForEvent(event: VisualTransientEvent): number {
     case 'orb-pulse':
       return 520;
     case 'link-pulse':
-      return 320;
+      return 420;
+    case 'link-created':
+      return 620;
+    case 'link-deleted':
+      return 460;
     case 'pointer-disturbance':
       return 720;
     case 'orb-drop':

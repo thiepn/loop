@@ -191,11 +191,24 @@ export function projectWorldToRenderScene(
       continue;
     }
 
+    const sourceOrb = world.soundOrbs.find(
+      (orb) => orb.id === link.sourceOrbId,
+    );
+    const targetOrb = world.soundOrbs.find(
+      (orb) => orb.id === link.targetOrbId,
+    );
+
+    if (!sourceOrb || !targetOrb) {
+      continue;
+    }
+
     links.push({
       id: link.id,
       type: link.type,
       sourceOrbId: link.sourceOrbId,
       targetOrbId: link.targetOrbId,
+      sourceRole: sourceOrb.role,
+      targetRole: targetOrb.role,
       source,
       target,
       selected: options.selectedLinkId === link.id,

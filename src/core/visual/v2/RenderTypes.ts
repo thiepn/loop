@@ -218,9 +218,21 @@ export interface RenderLink {
   readonly type: LinkType;
   readonly sourceOrbId: string;
   readonly targetOrbId: string;
+  readonly sourceRole: SoundRole;
+  readonly targetRole: SoundRole;
   readonly source: NormalizedPoint;
   readonly target: NormalizedPoint;
   readonly selected: boolean;
+  readonly cross: RenderLinkCrossInteraction;
+}
+
+export interface RenderLinkGhost {
+  readonly id: string;
+  readonly type: LinkType;
+  readonly sourceRole: SoundRole;
+  readonly targetRole: SoundRole;
+  readonly source: NormalizedPoint;
+  readonly target: NormalizedPoint;
   readonly cross: RenderLinkCrossInteraction;
 }
 
@@ -258,6 +270,14 @@ export type VisualTransientEvent =
       readonly kind: 'link-pulse';
       readonly linkId: string;
       readonly intensity: number;
+    }
+  | {
+      readonly kind: 'link-created';
+      readonly linkId: string;
+    }
+  | {
+      readonly kind: 'link-deleted';
+      readonly link: RenderLinkGhost;
     }
   | {
       readonly kind: 'pointer-disturbance';
