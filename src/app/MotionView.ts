@@ -14,6 +14,7 @@ import {
 import { soundById } from '../core/sounds/coreCatalog';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface MotionViewCallbacks {
   readonly onCloseMotion: () => void;
@@ -73,6 +74,7 @@ export class MotionView {
   private readonly toyLayer: HTMLElement;
   private readonly toysButton: HTMLButtonElement;
   private readonly motionBackdrop: HTMLElement;
+  private readonly motionFocus: ModalFocusController;
   private readonly motionTitle: HTMLElement;
   private readonly modeGrid: HTMLElement;
   private readonly speedOptions: HTMLElement;
@@ -149,6 +151,10 @@ export class MotionView {
     `;
     shell.append(motionBackdrop);
     this.motionBackdrop = motionBackdrop;
+    this.motionFocus = new ModalFocusController(motionBackdrop, {
+      onEscape: callbacks.onCloseMotion,
+      initialFocusSelector: '[data-motion-close]',
+    });
 
     const motionTitle = motionBackdrop.querySelector<HTMLElement>('[data-motion-title]');
     const modeGrid = motionBackdrop.querySelector<HTMLElement>('[data-motion-modes]');
@@ -233,6 +239,10 @@ export class MotionView {
     `;
     shell.append(toyPalette);
     this.toyPalette = toyPalette;
+    this.toyPaletteFocus = new ModalFocusController(toyPalette, {
+      onEscape: callbacks.onCloseToyPalette,
+      initialFocusSelector: '[data-toys-close]',
+    });
 
     toyPalette.querySelector<HTMLButtonElement>('[data-toys-close]')?.addEventListener(
       'click',
@@ -256,6 +266,8 @@ export class MotionView {
   }
 
   public destroy(): void {
+    this.motionFocus.destroy();
+    this.toyPaletteFocus.destroy();
     this.gesture = null;
     this.toyElements.clear();
     this.portalExitElements.clear();
@@ -272,6 +284,7 @@ export class MotionView {
       : undefined;
 
     this.motionBackdrop.hidden = !orb;
+    this.motionFocus.sync(Boolean(orb));
 
     if (!orb) {
       return;
@@ -289,6 +302,7 @@ export class MotionView {
       button.className = 'motion-mode-choice';
       button.dataset.motionMode = mode.id;
       button.classList.toggle('is-active', motion.mode === mode.id);
+      button.setAttribute('aria-pressed', String(motion.mode === mode.id));
       button.innerHTML = `
         <span class="motion-mode-art" aria-hidden="true"></span>
         <span>
@@ -340,6 +354,7 @@ export class MotionView {
         button.type = 'button';
         button.className = 'follow-target';
         button.classList.toggle('is-active', motion.targetOrbId === candidate.id);
+        button.setAttribute('aria-pressed', String(motion.targetOrbId === candidate.id));
         button.textContent = candidateSound?.name ?? candidate.role;
         button.addEventListener('click', () => {
           this.callbacks.onSetFollowTarget(orb.id, candidate.id);
@@ -364,6 +379,7 @@ export class MotionView {
       button.textContent = label;
       button.disabled = disabled;
       button.classList.toggle('is-active', value === selected);
+      button.setAttribute('aria-pressed', String(value === selected));
       button.addEventListener('click', () => onSelect(value));
       container.append(button);
     }
@@ -422,12 +438,20 @@ export class MotionView {
     const element = document.createElement('div');
     element.className = 'playground-toy';
     element.tabIndex = 0;
+    element.setAttribute('role', 'button');
     element.dataset.toyId = toy.id;
     element.innerHTML = `
       <span class="toy-surface" aria-hidden="true"></span>
       <span class="toy-symbol" aria-hidden="true"></span>
       <span class="toy-label"></span>
     `;
+
+    element.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.callbacks.onSelectToy(toy.id);
+      }
+    });
 
     element.addEventListener('pointerdown', (event) => {
       if (event.button !== 0 && event.pointerType === 'mouse') {
@@ -544,11 +568,19 @@ export class MotionView {
     const element = document.createElement('div');
     element.className = 'portal-exit';
     element.tabIndex = 0;
+    element.setAttribute('role', 'button');
     element.dataset.portalToyId = toy.id;
     element.innerHTML = `
       <span class="portal-exit-surface" aria-hidden="true"></span>
       <span class="portal-exit-label">OUT</span>
     `;
+
+    element.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.callbacks.onSelectToy(toy.id);
+      }
+    });
 
     element.addEventListener('pointerdown', (event) => {
       if (event.button !== 0 && event.pointerType === 'mouse') {
@@ -632,6 +664,7 @@ export class MotionView {
     element.style.width = `${toy.radius * 200}%`;
     element.style.height = `${toy.radius * 200}%`;
     element.classList.toggle('is-selected', selected);
+    element.setAttribute('aria-pressed', String(selected));
     element.setAttribute(
       'aria-label',
       `${playgroundToyLabel(toy.type)}. ${playgroundToyDescription(toy.type)}. Drag to move.`,
@@ -650,7 +683,10 @@ export class MotionView {
     const exit = toy.exitPosition ?? { x: 0.78, y: 0.72 };
     element.style.left = `${exit.x * 100}%`;
     element.style.top = `${exit.y * 100}%`;
-    element.classList.toggle('is-selected', this.latestState?.selectedToyId === toy.id);
+    const selected = this.latestState?.selectedToyId === toy.id;
+    element.classList.toggle('is-selected', selected);
+    element.setAttribute('aria-pressed', String(selected));
+    element.setAttribute('aria-label', 'Portal exit. Drag to move the OUT point.');
   }
 
   private renderToyPanel(state: Readonly<AppState>): void {
@@ -676,6 +712,7 @@ export class MotionView {
 
   private renderToyPalette(state: Readonly<AppState>): void {
     this.toyPalette.hidden = !state.toyPaletteOpen;
+    this.toyPaletteFocus.sync(state.toyPaletteOpen);
     this.toysButton.disabled = state.world.playgroundToys.length >= MAX_PLAYGROUND_TOYS;
 
     if (!state.toyPaletteOpen) {
