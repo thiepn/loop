@@ -95,7 +95,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   await page.locator('[data-motion-close]').click();
 
   const linkCount = await page.locator('.link-connection').count();
-  await page.locator('.sound-orb').first().click();
+  await expect(page.locator('.selection-panel')).toBeVisible();
   await page.locator('[data-action="link"]').click();
   await expect(page.locator('.link-editor-backdrop')).toBeVisible();
 
@@ -321,6 +321,25 @@ test('touch layouts keep primary sheets inside the viewport', async ({
 
   await page.locator('[data-effects-close]').click();
   await page.locator('.sound-orb').first().click();
-  await expect(page.locator('.selection-panel')).toBeVisible();
-  await expect(page.locator('.playground-dock')).toBeVisible();
+
+  const selectionPanel = page.locator('.selection-panel');
+  const dock = page.locator('.playground-dock');
+
+  await expect(selectionPanel).toBeVisible();
+  await expect(dock).toBeVisible();
+
+  const selectionBox = await selectionPanel.boundingBox();
+  const dockBox = await dock.boundingBox();
+
+  expect(selectionBox).not.toBeNull();
+  expect(dockBox).not.toBeNull();
+
+  if (selectionBox && dockBox) {
+    expect(
+      selectionBox.y + selectionBox.height,
+    ).toBeLessThanOrEqual(dockBox.y - 1);
+  }
+
+  await page.locator('[data-add]').click();
+  await expect(page.locator('[data-palette]')).toBeVisible();
 });
