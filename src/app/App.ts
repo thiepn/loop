@@ -1528,15 +1528,21 @@ export class App {
     }
 
     const runtime = audioEngine.getRuntime();
-    const wavBlob = (
+    let wavBlob: Blob | null = null;
+
+    if (
       runtime
       && result.durationMs <= MAX_AUTOMATIC_WAV_CONVERSION_MS
-    )
-      ? await convertRecordingToWav(
+    ) {
+      try {
+        wavBlob = await convertRecordingToWav(
           runtime.context,
           result.blob,
-        )
-      : null;
+        );
+      } catch {
+        // The native MediaRecorder capture remains valid if WAV conversion fails.
+      }
+    }
 
     if (captureEpoch !== this.captureEpoch) {
       return;
