@@ -151,6 +151,7 @@ export class App {
   private captureWavBlob: Blob | null = null;
   private capturePreviewUrl: string | null = null;
   private captureTimer: ReturnType<typeof setInterval> | null = null;
+  private captureEpoch = 0;
   private readonly pwa = new PwaController();
   private unsubscribePwa: (() => void) | null = null;
   private readonly storage = new IndexedDbWorldStorage();
@@ -1315,7 +1316,18 @@ export class App {
       return;
     }
 
-    this.discardCapture(false);
+    const captureEpoch = ++this.captureEpoch;
+    this.clearCaptureTimer();
+
+    if (this.masterRecorder.state !== 'idle') {
+      await this.masterRecorder.cancel();
+    }
+
+    if (captureEpoch !== this.captureEpoch) {
+      return;
+    }
+
+    this.clearCaptureArtifacts();
 
     appStore.patch({
       captureStatus: 'processing',
@@ -1330,6 +1342,10 @@ export class App {
     });
 
     await this.startPlayback();
+
+    if (captureEpoch !== this.captureEpoch) {
+      return;
+    }
 
     if (!appStore.getState().playing) {
       appStore.patch({
@@ -1356,13 +1372,19 @@ export class App {
               result,
               false,
               'The browser stopped recording. The captured audio was preserved.',
+              captureEpoch,
             );
           },
           onError: (error) => {
-            this.handleCaptureError(error);
+            this.handleCaptureError(error, captureEpoch);
           },
         },
       );
+
+      if (captureEpoch !== this.captureEpoch) {
+        await this.masterRecorder.cancel();
+        return;
+      }
 
       const startedAt = Date.now();
 
@@ -1380,17 +1402,7 @@ export class App {
 
       this.startCaptureTimer();
     } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : 'Performance recording could not start.';
-
-      appStore.patch({
-        captureStatus: 'error',
-        captureStartedAt: null,
-        captureDurationMs: 0,
-        captureError: message,
-        message,
-      });
+      this.handleCaptureError(error, captureEpoch);
     }
   }
 
@@ -1415,6 +1427,8 @@ export class App {
       message: 'Finishing recording…',
     });
 
+    const captureEpoch = this.captureEpoch;
+
     try {
       const result = await this.masterRecorder.stop();
 
@@ -1422,6 +1436,7 @@ export class App {
         result,
         autoStopped,
         completionMessage,
+        captureEpoch,
       );
     } catch (error) {
       this.handleCaptureError(error);
@@ -1432,23 +1447,24 @@ export class App {
     result: RecordingResult,
     autoStopped: boolean,
     completionMessage: string,
+    captureEpoch: number,
   ): Promise<void> {
+    if (captureEpoch !== this.captureEpoch) {
+      return;
+    }
+
     this.clearCaptureTimer();
 
     if (result.blob.size === 0) {
       this.handleCaptureError(
         new Error('The browser returned an empty recording.'),
+        captureEpoch,
       );
       return;
     }
 
-    this.clearCaptureArtifacts();
-
-    this.captureResult = result;
-    this.capturePreviewUrl = URL.createObjectURL(result.blob);
-
     const runtime = audioEngine.getRuntime();
-    this.captureWavBlob = (
+    const wavBlob = (
       runtime
       && result.durationMs <= MAX_AUTOMATIC_WAV_CONVERSION_MS
     )
@@ -1457,6 +1473,15 @@ export class App {
           result.blob,
         )
       : null;
+
+    if (captureEpoch !== this.captureEpoch) {
+      return;
+    }
+
+    this.clearCaptureArtifacts();
+    this.captureResult = result;
+    this.captureWavBlob = wavBlob;
+    this.capturePreviewUrl = URL.createObjectURL(result.blob);
 
     appStore.patch({
       captureStatus: 'ready',
@@ -1471,7 +1496,14 @@ export class App {
     });
   }
 
-  private handleCaptureError(error: unknown): void {
+  private handleCaptureError(
+    error: unknown,
+    captureEpoch = this.captureEpoch,
+  ): void {
+    if (captureEpoch !== this.captureEpoch) {
+      return;
+    }
+
     this.clearCaptureTimer();
     this.clearCaptureArtifacts();
 
@@ -1493,11 +1525,16 @@ export class App {
   }
 
   private async cancelCapture(): Promise<void> {
+    const captureEpoch = ++this.captureEpoch;
     this.clearCaptureTimer();
 
     try {
       await this.masterRecorder.cancel();
     } finally {
+      if (captureEpoch !== this.captureEpoch) {
+        return;
+      }
+
       this.clearCaptureArtifacts();
 
       appStore.patch({
@@ -1515,6 +1552,7 @@ export class App {
   }
 
   private discardCapture(updateState = true): void {
+    this.captureEpoch += 1;
     this.clearCaptureTimer();
 
     if (this.masterRecorder.state !== 'idle') {
