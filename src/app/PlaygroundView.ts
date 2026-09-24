@@ -111,10 +111,12 @@ export class PlaygroundView {
             <span data-tempo>108 BPM</span>
           </div>
 
-          <button class="play-toggle" type="button" data-play aria-pressed="false">
-            <span class="play-icon" aria-hidden="true">▶</span>
-            <span data-play-label>Play</span>
-          </button>
+          <div class="playground-topbar-actions" data-topbar-actions>
+            <button class="play-toggle" type="button" data-play aria-pressed="false">
+              <span class="play-icon" aria-hidden="true">▶</span>
+              <span data-play-label>Play</span>
+            </button>
+          </div>
         </header>
 
         <section class="world-canvas" data-canvas aria-label="Musical playground">
