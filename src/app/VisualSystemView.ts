@@ -265,7 +265,7 @@ export class VisualSystemView {
 
     for (const orbId of [...this.positions.keys()]) {
       if (!liveIds.has(orbId)) {
-        this.positions.delete(orbId);
+        this.clearOrb(orbId);
       }
     }
 
@@ -435,16 +435,7 @@ export class VisualSystemView {
   }
 
   public clearOrb(orbId: string): void {
-    const trail = this.trails.get(orbId);
-    if (!trail) {
-      return;
-    }
-
-    for (const node of trail.nodes) {
-      node.remove();
-    }
-
-    this.trails.delete(orbId);
+    this.clearTrail(orbId);
     this.positions.delete(orbId);
   }
 
@@ -516,8 +507,21 @@ export class VisualSystemView {
 
     if (profile.trailPointLimit <= 0) {
       for (const orbId of [...this.trails.keys()]) {
-        this.clearOrb(orbId);
+        this.clearTrail(orbId);
       }
     }
+  }
+
+  private clearTrail(orbId: string): void {
+    const trail = this.trails.get(orbId);
+    if (!trail) {
+      return;
+    }
+
+    for (const node of trail.nodes) {
+      node.remove();
+    }
+
+    this.trails.delete(orbId);
   }
 }
