@@ -3259,34 +3259,29 @@ export class App {
       ? this.playground.tickMotion(timeSeconds)
       : evaluateMotionFrame(motionWorld, timeSeconds);
 
-    for (const orb of state.world.soundOrbs) {
-      const position = this.liveOrbOverrides.get(orb.id)
-        ?? frame.get(orb.id)
-        ?? orb.position;
+    const visiblePositions = new Map<string, NormalizedPoint>();
 
-      this.playgroundView?.previewOrbPosition(orb.id, position);
+    for (const orb of state.world.soundOrbs) {
+      const liveOverride = this.liveOrbOverrides.get(orb.id);
+      const motionPosition = frame.get(orb.id) ?? orb.position;
+      const visiblePosition = liveOverride
+        ?? (state.visualReduceMotion ? orb.position : motionPosition);
+
+      visiblePositions.set(orb.id, visiblePosition);
+      this.playgroundView?.previewOrbPosition(orb.id, visiblePosition);
       this.visualSystemView?.previewOrbPosition(
         orb.id,
-        position,
-        true,
+        visiblePosition,
+        !state.visualReduceMotion,
       );
       this.effectFieldView?.previewOrbEffect(
         orb.id,
-        position,
+        liveOverride ?? motionPosition,
         this.effectFieldsWithPreviews(state.world.effectFields),
       );
     }
 
-    this.linkView?.updateLivePositions(
-      new Map(
-        state.world.soundOrbs.map((orb) => [
-          orb.id,
-          this.liveOrbOverrides.get(orb.id)
-            ?? frame.get(orb.id)
-            ?? orb.position,
-        ]),
-      ),
-    );
+    this.linkView?.updateLivePositions(visiblePositions);
 
     this.motionFrameRequest = requestAnimationFrame((nextTimestamp) => {
       this.runMotionFrame(nextTimestamp);
