@@ -28,7 +28,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Next: Phase 18 — Production Release & GitHub Pages**
 - **Post-V1 Visual V2 Phase 1 — Specification & Art Direction Lock: complete (documentation only; runtime unchanged)**
 - **Post-V1 Visual V2 Phase 2 — Rendering Architecture V2: complete and CI-verified**
-- **Post-V1 Visual V2 Phase 3 — World Environment, Atmosphere & Depth: implemented; certification pending**
+- **Post-V1 Visual V2 Phase 3 — World Environment, Atmosphere & Depth: complete and CI-verified**
 - **Next Visual V2 phase after certification: Phase 4 — Sound Orb Material Engine**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
@@ -91,8 +91,8 @@ npm run test:rc
 
 The release-candidate source tree carries:
 
-- **39 unit/soak test files**
-- **203 unit/soak tests**
+- **40 unit/soak test files**
+- **209 unit/soak tests**
 - strict TypeScript typecheck
 - production Vite build
 - generated `dist/sw.js`
