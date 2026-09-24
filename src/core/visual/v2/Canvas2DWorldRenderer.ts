@@ -8,9 +8,6 @@ import {
   type RenderColor,
 } from './RenderPalette';
 import {
-  curvedLinkPoints,
-} from './LinkGeometry';
-import {
   deriveEnvironmentDynamics,
   environmentParticleLayout,
 } from './EnvironmentModel';
