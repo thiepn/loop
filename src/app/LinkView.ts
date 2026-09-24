@@ -355,6 +355,14 @@ export class LinkView {
       const selected = state.selectedLinkId === link.id;
       elements.group.classList.toggle('is-selected', selected);
       elements.hit.setAttribute('aria-pressed', String(selected));
+      elements.hit.setAttribute(
+        'tabindex',
+        state.magicSession ? '-1' : '0',
+      );
+      elements.hit.setAttribute(
+        'aria-disabled',
+        String(Boolean(state.magicSession)),
+      );
       this.updatePath(link, elements);
     }
   }
@@ -385,6 +393,10 @@ export class LinkView {
     });
 
     hit.addEventListener('keydown', (event) => {
+      if (this.latestState?.magicSession) {
+        return;
+      }
+
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         this.callbacks.onSelectLink(link.id);
