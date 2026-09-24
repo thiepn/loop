@@ -27,6 +27,7 @@ export interface ModalFocusOptions {
 export class ModalFocusController {
   private open = false;
   private previousFocus: HTMLElement | null = null;
+  private readonly inertStates = new Map<HTMLElement, boolean>();
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     if (!this.open) {
@@ -93,6 +94,7 @@ export class ModalFocusController {
       this.previousFocus = active instanceof HTMLElement
         ? active
         : null;
+      this.makeBackgroundInert();
 
       queueMicrotask(() => {
         if (!this.open) {
@@ -127,6 +129,7 @@ export class ModalFocusController {
 
     const previous = this.previousFocus;
     this.previousFocus = null;
+    this.restoreBackground();
 
     queueMicrotask(() => {
       if (
@@ -142,7 +145,38 @@ export class ModalFocusController {
   public destroy(): void {
     this.open = false;
     this.previousFocus = null;
+    this.restoreBackground();
     this.container.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  private makeBackgroundInert(): void {
+    const parent = this.container.parentElement;
+
+    if (!parent) {
+      return;
+    }
+
+    for (const child of parent.children) {
+      if (!(child instanceof HTMLElement) || child === this.container) {
+        continue;
+      }
+
+      if (!this.inertStates.has(child)) {
+        this.inertStates.set(child, child.inert);
+      }
+
+      child.inert = true;
+    }
+  }
+
+  private restoreBackground(): void {
+    for (const [element, inert] of this.inertStates) {
+      if (element.isConnected) {
+        element.inert = inert;
+      }
+    }
+
+    this.inertStates.clear();
   }
 
   private focusContainer(): void {
