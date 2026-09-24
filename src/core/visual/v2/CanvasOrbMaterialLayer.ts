@@ -8,6 +8,7 @@ import {
   type RenderColor,
 } from './RenderPalette';
 import { transientOrbInteraction } from './InteractionModel';
+import { objectChoreographyEmphasis } from './ChoreographyModel';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import { orbDiameterPixels } from './RenderMetrics';
 import type {
@@ -180,6 +181,13 @@ export class CanvasOrbMaterialLayer {
   ): void {
     const detail = renderPolicyForPreferences(preferences).orbDetail;
     const minDimension = Math.min(width, height);
+    const choreography = objectChoreographyEmphasis(events);
+    const choreographyScale = 1
+      + choreography.wake * 0.018
+      + choreography.downbeat * 0.01
+      + choreography.phrase * 0.014
+      + choreography.reentry * 0.022
+      - choreography.settle * 0.012;
     const time = preferences.reduceMotion
       ? 0
       : timestampMs * 0.001;
@@ -192,7 +200,7 @@ export class CanvasOrbMaterialLayer {
         minDimension,
         dpr,
       );
-      const radius = diameter * 0.5;
+      const radius = diameter * 0.5 * choreographyScale;
       const transient = transientOrbInteraction(
         orb.id,
         events,
@@ -252,7 +260,10 @@ export class CanvasOrbMaterialLayer {
         orb.material.energy
           + orb.material.fieldInfluence.space * 0.2
           + orb.cross.auraBlend * 0.12
-          + orb.cross.neighborLight * 0.08,
+          + orb.cross.neighborLight * 0.08
+          + choreography.wake * 0.08
+          + choreography.reentry * 0.1
+          - choreography.settle * 0.06,
       );
       this.drawBody(
         orb,

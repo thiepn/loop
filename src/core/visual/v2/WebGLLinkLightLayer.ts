@@ -12,6 +12,7 @@ import {
   type PixelPoint,
 } from './LinkGeometry';
 import { semanticLinkPacketDirections } from './LightModel';
+import { linkChoreographyBoost } from './ChoreographyModel';
 import type {
   RenderEventSample,
   RenderLink,
@@ -41,18 +42,18 @@ export class WebGLLinkLightLayer{
  private readonly p:WebGLProgram;private readonly b:WebGLBuffer;private readonly pos:number;private readonly color:number;private readonly res:WebGLUniformLocation;
  public constructor(private readonly gl:WebGL2RenderingContext){this.p=prog(gl);const b=gl.createBuffer();if(!b)throw new Error("link buffer");this.b=b;this.pos=gl.getAttribLocation(this.p,'a_position');this.color=gl.getAttribLocation(this.p,'a_color');const r=gl.getUniformLocation(this.p,'u_resolution');if(!r)throw new Error("link res");this.res=r;}
  public render(links:readonly RenderLink[],preferences:Readonly<VisualPreferences>,events:readonly RenderEventSample[],width:number,height:number,dpr:number):void{
-  const v:number[]=[];
-  for(const link of links)this.pushLink(v,link,preferences,events,width,height,dpr,1);
+  const v:number[]=[];const boost=linkChoreographyBoost(events);
+  for(const link of links)this.pushLink(v,link,preferences,events,width,height,dpr,1,boost);
   for(const sample of ghostLinks(events)){const g=sample.event.link;this.pushGhost(v,g,preferences,width,height,dpr,Math.pow(1-sample.progress,1.4));}
   if(v.length===0)return;const gl=this.gl,data=new Float32Array(v),stride=6*4;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.useProgram(this.p);gl.bindBuffer(gl.ARRAY_BUFFER,this.b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);gl.uniform2f(this.res,width,height);gl.enableVertexAttribArray(this.pos);gl.vertexAttribPointer(this.pos,2,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(this.color);gl.vertexAttribPointer(this.color,4,gl.FLOAT,false,stride,8);gl.drawArrays(gl.TRIANGLES,0,data.length/6);
  }
- private pushLink(v:number[],link:RenderLink,preferences:Readonly<VisualPreferences>,events:readonly RenderEventSample[],width:number,height:number,dpr:number,alpha:number){
+ private pushLink(v:number[],link:RenderLink,preferences:Readonly<VisualPreferences>,events:readonly RenderEventSample[],width:number,height:number,dpr:number,alpha:number,boost:number){
   const points=crossAffectedLinkPoints(curvedLinkPoints(link.id,link.source,link.target,width,height,20),link.cross,width,height);
   const created=createdProgress(link.id,events);const reveal=created===null?1:Math.min(1,created*1.35);
   const max=Math.max(1,Math.ceil((points.length-1)*reveal));
   const a=colorFor(link.sourceRole,link.type,link.cross),b=colorFor(link.targetRole,link.type,link.cross);
-  const selected=link.selected?1:0;const baseW=(selected?3.4:2.1)*dpr*(1+link.cross.fieldInfluence.space*.16);const glowW=baseW*(preferences.reduceBloom?1.8:3.3);
-  for(let i=1;i<=max&&i<points.length;i++){if(link.cross.fieldInfluence.frost>.34&&i%2===0)continue;const t0=(i-1)/(points.length-1),t1=i/(points.length-1),c0=mixRenderColor(a,b,t0),c1=mixRenderColor(a,b,t1);ribbon(v,points[i-1]!,points[i]!,glowW,c0,c1,alpha*(preferences.reduceBloom?.08:.13));ribbon(v,points[i-1]!,points[i]!,baseW,c0,c1,alpha*(selected?.9:.62));}
+  const selected=link.selected?1:0;const baseW=(selected?3.4:2.1)*dpr*(1+link.cross.fieldInfluence.space*.16)*(1+boost*.08);const glowW=baseW*(preferences.reduceBloom?1.8:3.3)*(1+boost*.18);
+  for(let i=1;i<=max&&i<points.length;i++){if(link.cross.fieldInfluence.frost>.34&&i%2===0)continue;const t0=(i-1)/(points.length-1),t1=i/(points.length-1),c0=mixRenderColor(a,b,t0),c1=mixRenderColor(a,b,t1);ribbon(v,points[i-1]!,points[i]!,glowW,c0,c1,alpha*(preferences.reduceBloom?.08:.13)*(1+boost*.25));ribbon(v,points[i-1]!,points[i]!,baseW,c0,c1,alpha*(selected?.9:.62)*(1+boost*.12));}
   for(const sample of pulseProgress(link.id,events)){for(const p of semanticLinkPacketDirections(link,sample.progress)){const pt=pathPoint(points,p);if(!pt)continue;const c=mixRenderColor(a,b,p);diamond(v,pt,(3.4+sample.event.intensity*3.6)*dpr,c,(1-sample.progress)*.9);}}
  }
  private pushGhost(v:number[],g:RenderLinkGhost,preferences:Readonly<VisualPreferences>,width:number,height:number,dpr:number,alpha:number){

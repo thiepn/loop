@@ -2,6 +2,7 @@ import type { VisualPreferences } from '../VisualQuality';
 import type { SoundRole } from '../../sounds/SoundDefinition';
 import { ROLE_RENDER_COLORS } from './RenderPalette';
 import { transientOrbInteraction } from './InteractionModel';
+import { objectChoreographyEmphasis } from './ChoreographyModel';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import { orbDiameterPixels } from './RenderMetrics';
 import type {
@@ -90,6 +91,8 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform vec2 u_wake_dir;\n'
   + 'uniform float u_toy_type;\n'
   + 'uniform float u_toy_amount;\n'
+  + 'uniform float u_choreo_energy;\n'
+  + 'uniform float u_choreo_settle;\n'
   + 'uniform float u_time_ms;\n'
   + 'uniform float u_pattern[16];\n'
   + 'out vec4 out_color;\n'
@@ -143,6 +146,8 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  } else if (u_toy_type > 2.5 && u_toy_type < 3.5) {\n'
   + '    boundary += u_toy_amount * 0.026;\n'
   + '  }\n'
+  + '  boundary += u_choreo_energy * 0.012;\n'
+  + '  boundary -= u_choreo_settle * 0.008;\n'
   + '  return boundary;\n'
   + '}\n'
   + '\n'
@@ -184,6 +189,8 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  else if (u_toy_type > 2.5 && u_toy_type < 3.5) color = mix(color, vec3(0.98, 0.44, 0.52), u_toy_amount * 0.12);\n'
   + '  else if (u_toy_type > 3.5) color = mix(color, vec3(0.13, 0.83, 0.93), u_toy_amount * 0.16);\n'
   + '  color *= 1.0 - u_fx_filter * 0.12;\n'
+  + '  color *= 1.0 + u_choreo_energy * 0.055 - u_choreo_settle * 0.04;\n'
+  + '  alpha *= 1.0 + u_choreo_energy * 0.025 - u_choreo_settle * 0.045;\n'
   + '  alpha *= 1.0 - step(3.5, u_toy_type) * u_toy_amount * 0.08;\n'
   + '\n'
   + '  float stepFloat = (angle + 3.14159265 + (u_groove - 0.5) * 0.08) / 6.2831853 * 16.0;\n'
@@ -438,6 +445,8 @@ export class WebGLOrbMaterialLayer {
   private readonly wakeDir: WebGLUniformLocation;
   private readonly toyType: WebGLUniformLocation;
   private readonly toyAmount: WebGLUniformLocation;
+  private readonly choreoEnergy: WebGLUniformLocation;
+  private readonly choreoSettle: WebGLUniformLocation;
   private readonly timeMs: WebGLUniformLocation;
   private readonly pattern: WebGLUniformLocation;
 
@@ -496,6 +505,8 @@ export class WebGLOrbMaterialLayer {
     this.wakeDir = requiredUniform(gl, program, 'u_wake_dir');
     this.toyType = requiredUniform(gl, program, 'u_toy_type');
     this.toyAmount = requiredUniform(gl, program, 'u_toy_amount');
+    this.choreoEnergy = requiredUniform(gl, program, 'u_choreo_energy');
+    this.choreoSettle = requiredUniform(gl, program, 'u_choreo_settle');
     this.timeMs = requiredUniform(gl, program, 'u_time_ms');
     this.pattern = requiredUniform(gl, program, 'u_pattern[0]');
 
@@ -530,6 +541,14 @@ export class WebGLOrbMaterialLayer {
     const gl = this.gl;
     const detail = renderPolicyForPreferences(preferences).orbDetail;
     const minDimension = Math.min(width, height);
+    const choreography = objectChoreographyEmphasis(events);
+    const choreographyEnergy = Math.min(
+      1,
+      choreography.wake * 0.55
+      + choreography.downbeat * 0.28
+      + choreography.phrase * 0.42
+      + choreography.reentry * 0.62,
+    );
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -551,6 +570,8 @@ export class WebGLOrbMaterialLayer {
       preferences.reduceMotion ? 0 : 1,
     );
     gl.uniform1f(this.detail, detail);
+    gl.uniform1f(this.choreoEnergy, choreographyEnergy);
+    gl.uniform1f(this.choreoSettle, choreography.settle);
     gl.uniform1f(
       this.sceneSelected,
       orbs.some((orb) => orb.selected) ? 1 : 0,
