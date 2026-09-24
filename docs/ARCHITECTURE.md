@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 12.
+Updated through Phase 13.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -158,7 +158,13 @@ Resolves static assets through Vite's BASE_URL so production assets work under G
 All future public asset references should go through this boundary rather than hard-coded root paths.
 
 ### core/platform/
-Centralizes capability detection rather than scattering browser checks through feature code.
+Centralizes browser/platform capability and install/runtime behavior rather than scattering checks through feature code.
+
+Current responsibilities:
+- capabilities — feature detection for audio, IndexedDB, recording, service workers, pointer events, and other browser primitives;
+- PwaController — install availability, iOS/iPadOS manual-install policy, standalone detection, service-worker registration, update readiness, explicit update activation, online/offline state, and throttled update checks.
+
+PWA runtime state remains transient application state.
 
 ### core/visual/
 Owns visual-performance/accessibility policy independent of audio and creative World state.
@@ -201,6 +207,8 @@ Examples:
 - recordings never belong to WorldDocument, IndexedDB Worlds, Snapshots, or WorldHistory;
 - visual quality/reduction preferences are global app preferences, not World state;
 - VisualSystemView owns ephemeral ambient/trail/burst DOM nodes;
+- PWA install/manual-install/update/offline state belongs to PwaController + transient AppState;
+- service-worker caches contain built application assets, never creative World truth;
 - rendered DOM is a projection of state, not a second persistent data model.
 
 During a drag, DOM position and spatial audio may preview continuously. The normalized position is committed back to World state when the drag ends.
@@ -277,16 +285,28 @@ Phase 11 adds transient master performance capture and download. Recording taps 
 
 Phase 12 completes the V1 visual identity/game-feel system with layered role identities, audio-timed burst feedback, bounded motion trails, richer field/toy/link treatment, shared transitions, max-density de-cluttering, and High/Balanced/Battery Saver profiles.
 
-## GitHub Pages
-The production URL is expected to use the repository path:
+Phase 13 completes the V1 product-build sequence with safe-area-aware responsive layouts, coarse-pointer hardening, a grouped responsive top-bar action cluster, installability metadata/icons, explicit PWA install/update/offline state, build-generated /loop/ service-worker precaching, offline shell/runtime caching, iOS/iPadOS manual install guidance, and GitHub Pages path validation.
+
+## GitHub Pages / PWA
+The canonical production URL uses the repository path:
+
 https://thiepn.github.io/loop/
 
-Vite therefore uses:
+Vite uses:
+
 base: '/loop/'
 
-Static public assets must be addressed through import.meta.env.BASE_URL or AssetLoader.
+Static assets resolve through Vite BASE_URL / AssetLoader.
 
-Deployment itself remains a release task. The architecture is compatible now, but unfinished builds are not published as the product.
+Phase 13 additionally guarantees:
+- manifest id/start/scope remain inside /loop/;
+- service worker registers at /loop/sw.js;
+- service-worker scope is /loop/, never the site root;
+- generated precache URLs all use /loop/;
+- same-origin requests outside the project scope are ignored by the worker;
+- production build generates and validates the final worker from actual Vite output.
+
+Public deployment itself remains Phase 18 after audit/certification.
 
 ## Testing baseline
 Current automated coverage includes:
@@ -349,7 +369,11 @@ Current automated coverage includes:
 - automatic visual-quality selection;
 - visual profile density ordering;
 - reduced-motion/particles/bloom composition;
-- visual-preference persistence/fallback.
+- visual-preference persistence/fallback;
+- GitHub Pages/PWA path normalization;
+- service-worker URL/scope isolation;
+- install/manual-install platform policy;
+- production service-worker generation and required PWA asset validation.
 
 Future phases add tests at their domain boundaries.
 
@@ -374,6 +398,8 @@ Phase 10 persistence is event/debounce-driven and adds no render or audio loop. 
 Phase 11 recording adds no permanent audio graph. The MediaStreamAudioDestinationNode capture tap exists only while recording. Captures are capped at 10 minutes, arrive in 1-second MediaRecorder chunks, and automatic WAV decoding is capped at 3 minutes to avoid large PCM memory spikes.
 
 Phase 12 adds no new permanent render loop. VisualSystemView creates bounded DOM particles only on profile changes, audio events, or existing live-position updates. High/Balanced/Battery Saver change visual density only. Max-orb Worlds automatically reduce decorative noise.
+
+Phase 13 adds no musical/audio runtime. Mobile layout is CSS/pointer hardening, and the service worker runs independently of World/audio state. Its production precache list is generated from actual Vite output and remains scoped to /loop/.
 
 Future render loops and expensive DSP must be pausable when hidden or unnecessary.
 
@@ -659,3 +685,70 @@ Reduce Motion removes travel-heavy effects while preserving brightness/state cla
 Battery Saver reduces visual extras but never changes timing, DSP, patterns, Motion behavior, Links, Magic, persistence, or recording.
 
 Phase 12 deliberately remains DOM/CSS-first. A WebGL/WebGPU renderer was not introduced because the bounded V1 visual target is satisfied without adding a second rendering architecture immediately before mobile/release hardening.
+
+## Phase 13 mobile/PWA rule
+
+Phase 13 is the final V1 product-build phase.
+
+### Responsive shell
+The playground top bar is structurally:
+- Brand;
+- optional World heading;
+- one grouped right-side action cluster.
+
+History controls, visual settings, and Play no longer become independent grid children.
+
+At phone widths:
+- safe-area insets protect all shell edges;
+- the canvas remains the dominant surface;
+- the dock stays one horizontally scrollable row;
+- selection panels sit above the dock;
+- modal sheets use dynamic viewport-height bounds;
+- Home becomes its own contained vertical scroll surface.
+
+Short-height landscape has a dedicated compact mode that hides nonessential copy while preserving creative controls.
+
+### Touch/input
+Creative manipulation remains one Pointer Events implementation for mouse, touch, and stylus.
+
+The canvas prevents browser pan/zoom/callout interference during manipulation.
+
+Coarse-pointer action targets are enlarged without creating a separate touch-only creative engine.
+
+### Installability
+The manifest is scoped to /loop/ and supplies explicit 192×192, 512×512, and maskable icon entries.
+
+PwaController:
+- captures beforeinstallprompt where supported;
+- shows install CTA only from Home;
+- recognizes standalone mode;
+- provides manual Share → Add to Home Screen guidance on iPhone/iPad where appropriate;
+- observes online/offline state.
+
+### Offline worker
+Production build runs Vite then scripts/generate-service-worker.mjs.
+
+The generator walks actual dist/, validates required PWA assets/icons, excludes sourcemaps/worker, creates /loop/ precache URLs, derives a cache-version hash, and writes dist/sw.js.
+
+Current verified Phase 13 build generated 9 precached URLs.
+
+Worker behavior:
+- static scoped GETs: cache-first + runtime fill;
+- navigations: network-first + cached app-shell fallback;
+- cross-origin/out-of-scope requests: untouched;
+- non-GET requests: untouched.
+
+### Updates
+New service workers do not auto-skip-waiting.
+
+The current session continues until the user explicitly selects Update. Only then is SKIP_WAITING sent and the app reloads on controllerchange.
+
+This prevents a service-worker update from interrupting active music/editing/recording.
+
+### Feature freeze
+After Phase 13:
+- no new creative systems;
+- no new studio systems;
+- no new visual feature expansion.
+
+Phases 14–18 may only audit, fix, certify, and release within the locked product contract.
