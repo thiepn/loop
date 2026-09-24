@@ -186,6 +186,10 @@ export class CaptureView {
 
     this.recordButton.disabled = !this.supported || processing;
     this.recordButton.classList.toggle('is-recording', recording);
+    this.recordButton.setAttribute(
+      'aria-label',
+      recording ? 'Stop recording' : 'Start recording',
+    );
     this.recordButton.innerHTML = recording
       ? `<span aria-hidden="true">■</span> Stop ${durationLabel(state.captureDurationMs)}`
       : '<span aria-hidden="true">●</span> Record';
