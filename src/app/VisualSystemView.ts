@@ -17,11 +17,6 @@ export interface VisualSystemCallbacks {
   readonly onReduceBloom: (value: boolean) => void;
 }
 
-interface TrailState {
-  readonly nodes: HTMLElement[];
-  lastPosition: NormalizedPoint | null;
-}
-
 const ROLE_COLORS: Record<SoundRole, string> = {
   beat: '#fb7185',
   percussion: '#fbbf24',
@@ -32,17 +27,9 @@ const ROLE_COLORS: Record<SoundRole, string> = {
   voice: '#f472b6',
 };
 
-function distance(
-  a: NormalizedPoint,
-  b: NormalizedPoint,
-): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
 export class VisualSystemView {
   private readonly shell: HTMLElement;
   private readonly ambientLayer: HTMLElement;
-  private readonly trailLayer: HTMLElement;
   private readonly burstLayer: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
   private readonly settingsBackdrop: HTMLElement;
@@ -51,7 +38,6 @@ export class VisualSystemView {
   private readonly reduceMotionInput: HTMLInputElement;
   private readonly reduceParticlesInput: HTMLInputElement;
   private readonly reduceBloomInput: HTMLInputElement;
-  private readonly trails = new Map<string, TrailState>();
   private readonly positions = new Map<string, NormalizedPoint>();
   private readonly cleanupTimers = new Set<ReturnType<typeof setTimeout>>();
   private roles = new Map<string, SoundRole>();
@@ -83,21 +69,16 @@ export class VisualSystemView {
     const ambientLayer = document.createElement('div');
     ambientLayer.className = 'ambient-particle-layer';
 
-    const trailLayer = document.createElement('div');
-    trailLayer.className = 'motion-trail-layer';
-
     const burstLayer = document.createElement('div');
     burstLayer.className = 'orb-burst-layer';
 
     effectsLayer.append(
       ambientLayer,
-      trailLayer,
       burstLayer,
     );
     canvas.prepend(effectsLayer);
 
     this.ambientLayer = ambientLayer;
-    this.trailLayer = trailLayer;
     this.burstLayer = burstLayer;
 
     const settingsButton = document.createElement('button');
@@ -297,84 +278,6 @@ export class VisualSystemView {
     this.reduceBloomInput.checked = state.visualReduceBloom;
 
     this.syncAmbientParticles();
-    this.pruneTrails(state);
-  }
-
-  public previewOrbPosition(
-    orbId: string,
-    position: NormalizedPoint,
-    motionActive: boolean,
-  ): void {
-    this.positions.set(orbId, position);
-
-    if (!motionActive) {
-      return;
-    }
-
-    const profile = profileForVisualPreferences(this.preferences);
-
-    if (!profile.animateTrails || profile.trailPointLimit <= 0) {
-      return;
-    }
-
-    const role = this.roles.get(orbId);
-    if (!role) {
-      return;
-    }
-
-    let trail = this.trails.get(orbId);
-
-    if (!trail) {
-      trail = {
-        nodes: [],
-        lastPosition: null,
-      };
-      this.trails.set(orbId, trail);
-    }
-
-    if (
-      trail.lastPosition
-      && distance(trail.lastPosition, position) < 0.012
-    ) {
-      return;
-    }
-
-    trail.lastPosition = position;
-
-    const point = document.createElement('span');
-    point.className = 'motion-trail-point';
-    point.dataset.role = role;
-    point.style.left = `${position.x * 100}%`;
-    point.style.top = `${position.y * 100}%`;
-    point.style.setProperty('--trail-color', ROLE_COLORS[role]);
-    point.style.setProperty(
-      '--trail-lifetime',
-      `${profile.trailLifetimeMs}ms`,
-    );
-    this.trailLayer.append(point);
-    trail.nodes.push(point);
-
-    while (trail.nodes.length > profile.trailPointLimit) {
-      trail.nodes.shift()?.remove();
-    }
-
-    const timer = setTimeout(() => {
-      this.cleanupTimers.delete(timer);
-      point.remove();
-
-      const current = this.trails.get(orbId);
-      if (!current) {
-        return;
-      }
-
-      const nodeIndex = current.nodes.indexOf(point);
-
-      if (nodeIndex >= 0) {
-        current.nodes.splice(nodeIndex, 1);
-      }
-    }, profile.trailLifetimeMs + 80);
-
-    this.cleanupTimers.add(timer);
   }
 
   public pulseOrb(
@@ -446,7 +349,6 @@ export class VisualSystemView {
   }
 
   public clearOrb(orbId: string): void {
-    this.clearTrail(orbId);
     this.positions.delete(orbId);
   }
 
@@ -459,13 +361,6 @@ export class VisualSystemView {
 
     this.cleanupTimers.clear();
 
-    for (const trail of this.trails.values()) {
-      for (const node of trail.nodes) {
-        node.remove();
-      }
-    }
-
-    this.trails.clear();
     this.positions.clear();
     this.ambientLayer.parentElement?.remove();
     this.settingsButton.remove();
@@ -509,36 +404,4 @@ export class VisualSystemView {
     }
   }
 
-  private pruneTrails(state: Readonly<AppState>): void {
-    const liveIds = new Set(
-      state.world.soundOrbs.map((orb) => orb.id),
-    );
-
-    for (const orbId of [...this.trails.keys()]) {
-      if (!liveIds.has(orbId)) {
-        this.clearOrb(orbId);
-      }
-    }
-
-    const profile = profileForVisualPreferences(this.preferences);
-
-    if (profile.trailPointLimit <= 0) {
-      for (const orbId of [...this.trails.keys()]) {
-        this.clearTrail(orbId);
-      }
-    }
-  }
-
-  private clearTrail(orbId: string): void {
-    const trail = this.trails.get(orbId);
-    if (!trail) {
-      return;
-    }
-
-    for (const node of trail.nodes) {
-      node.remove();
-    }
-
-    this.trails.delete(orbId);
-  }
 }

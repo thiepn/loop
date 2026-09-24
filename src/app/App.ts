@@ -527,11 +527,6 @@ export class App {
             changedOrbId,
             changedPosition,
           );
-          this.visualSystemView?.previewOrbPosition(
-            changedOrbId,
-            changedPosition,
-            true,
-          );
         }
       },
       onMoveCommit: (orbId, position) => {
@@ -3327,11 +3322,6 @@ export class App {
 
       visiblePositions.set(orb.id, visiblePosition);
       this.playgroundView?.previewOrbPosition(orb.id, visiblePosition);
-      this.visualSystemView?.previewOrbPosition(
-        orb.id,
-        visiblePosition,
-        !state.visualReduceMotion,
-      );
       this.effectFieldView?.previewOrbEffect(
         orb.id,
         liveOverride ?? motionPosition,

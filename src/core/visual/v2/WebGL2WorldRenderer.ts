@@ -12,6 +12,7 @@ import { curvedLinkPoints } from './LinkGeometry';
 import { deriveEnvironmentDynamics } from './EnvironmentModel';
 import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
+import { WebGLTrailLayer } from './WebGLTrailLayer';
 import {
   listenerDiameterPixels,
   orbDiameterPixels,
@@ -225,6 +226,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private disc: DiscProgramResources | null = null;
   private line: ProgramResources | null = null;
   private environment: WebGLEnvironmentLayer | null = null;
+  private trailLayer: WebGLTrailLayer | null = null;
   private orbMaterial: WebGLOrbMaterialLayer | null = null;
   private viewport: RenderViewport = {
     width: 1,
@@ -438,6 +440,15 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       this.drawLines(line, lineVertices, width, height);
     }
 
+    this.trailLayer?.render(
+      scene.trails,
+      preferences,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
+
     if (discVertices.length > 0) {
       this.drawDiscs(disc, discVertices, width, height);
     }
@@ -494,12 +505,15 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     };
 
     this.environment = new WebGLEnvironmentLayer(gl);
+    this.trailLayer = new WebGLTrailLayer(gl);
     this.orbMaterial = new WebGLOrbMaterialLayer(gl);
   }
 
   private releaseResources(): void {
     this.environment?.destroy();
     this.environment = null;
+    this.trailLayer?.destroy();
+    this.trailLayer = null;
     this.orbMaterial?.destroy();
     this.orbMaterial = null;
 

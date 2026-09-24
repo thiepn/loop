@@ -15,6 +15,7 @@ import {
   environmentParticleLayout,
 } from './EnvironmentModel';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
+import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
   listenerDiameterPixels,
   orbDiameterPixels,
@@ -34,12 +35,14 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     height: 1,
     dpr: 1,
   };
+  private readonly trailLayer: CanvasTrailLayer;
   private readonly orbMaterial: CanvasOrbMaterialLayer;
 
   public constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly context: CanvasRenderingContext2D,
   ) {
+    this.trailLayer = new CanvasTrailLayer(context);
     this.orbMaterial = new CanvasOrbMaterialLayer(context);
   }
 
@@ -192,6 +195,15 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
         );
       }
     }
+
+    this.trailLayer.render(
+      scene.trails,
+      preferences,
+      timestampMs,
+      width,
+      height,
+      dpr,
+    );
 
     this.orbMaterial.render(
       scene.orbs,
