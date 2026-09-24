@@ -439,9 +439,11 @@ export class App {
   private mountHome(): void {
     this.homeView = new HomeView(this.root, {
       onChooseStarter: (starterId) => {
+        this.primeAudioFromUserGesture();
         this.queueHomeOperation(() => this.chooseStarter(starterId));
       },
       onSurprise: () => {
+        this.primeAudioFromUserGesture();
         this.queueHomeOperation(() => this.chooseSurprise());
       },
       onOpenWorld: (worldId) => {
@@ -1209,6 +1211,22 @@ export class App {
       autosave: 'error',
       message: `${prefix}: ${failure.message}`,
     });
+  }
+
+  private primeAudioFromUserGesture(): void {
+    if (!this.capabilities.audio) {
+      return;
+    }
+
+    void audioEngine.initialize()
+      .then((audio) => {
+        if (audio.state !== 'unsupported') {
+          appStore.patch({ audio: audio.state });
+        }
+      })
+      .catch((error) => {
+        console.warn('[Loop] Audio unlock gesture failed.', error);
+      });
   }
 
   private async chooseStarter(starterId: StarterWorldId): Promise<void> {
