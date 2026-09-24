@@ -361,6 +361,23 @@ export class PlaygroundView {
     element.dataset.y = String(point.y);
   }
 
+  public getOrbPosition(orbId: string): NormalizedPoint | null {
+    const element = this.orbElements.get(orbId);
+
+    if (!element) {
+      return null;
+    }
+
+    const x = Number.parseFloat(element.dataset.x ?? '');
+    const y = Number.parseFloat(element.dataset.y ?? '');
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return null;
+    }
+
+    return clampPoint({ x, y });
+  }
+
   public pulseOrb(orbId: string, intensity: number): void {
     const element = this.orbElements.get(orbId);
     const visual = element?.querySelector<HTMLElement>('.orb-visual');
@@ -371,6 +388,9 @@ export class PlaygroundView {
 
     const amount = Math.min(1, Math.max(0.2, intensity));
     const role = element?.dataset.role ?? 'melody';
+    const reducedMotion = this.root
+      .querySelector<HTMLElement>('.playground-shell')
+      ?.dataset.reduceMotion === 'true';
 
     const profile = (() => {
       switch (role) {
@@ -440,7 +460,9 @@ export class PlaygroundView {
           filter: 'brightness(1)',
         },
         {
-          transform: `scale(${profile.scale})`,
+          transform: reducedMotion
+            ? 'scale(1)'
+            : `scale(${profile.scale})`,
           filter: `brightness(${profile.brightness})`,
           offset: role === 'bass' || role === 'texture'
             ? 0.42
