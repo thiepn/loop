@@ -4,15 +4,20 @@ import {
   LISTENER_RENDER_COLOR,
   ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
+  fieldInfluencedColor,
   renderColorCss,
   withAlpha,
   type RenderColor,
 } from './RenderPalette';
-import { curvedLinkPoints } from './LinkGeometry';
+import {
+  crossAffectedLinkPoints,
+  curvedLinkPoints,
+} from './LinkGeometry';
 import {
   deriveEnvironmentDynamics,
   environmentParticleLayout,
 } from './EnvironmentModel';
+import { CanvasCrossSystemLayer } from './CanvasCrossSystemLayer';
 import { CanvasFieldMaterialLayer } from './CanvasFieldMaterialLayer';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
@@ -35,6 +40,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     height: 1,
     dpr: 1,
   };
+  private readonly crossLayer: CanvasCrossSystemLayer;
   private readonly fieldLayer: CanvasFieldMaterialLayer;
   private readonly trailLayer: CanvasTrailLayer;
   private readonly orbMaterial: CanvasOrbMaterialLayer;
@@ -43,6 +49,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
     private readonly canvas: HTMLCanvasElement,
     private readonly context: CanvasRenderingContext2D,
   ) {
+    this.crossLayer = new CanvasCrossSystemLayer(context);
     this.fieldLayer = new CanvasFieldMaterialLayer(context);
     this.trailLayer = new CanvasTrailLayer(context);
     this.orbMaterial = new CanvasOrbMaterialLayer(context);
@@ -109,29 +116,89 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       dpr,
     );
 
+    this.crossLayer.render(
+      scene.orbCouplings,
+      preferences,
+      events,
+      width,
+      height,
+      dpr,
+    );
+
     for (const link of scene.links) {
-      const points = curvedLinkPoints(
-        link.id,
-        link.source,
-        link.target,
+      const points = crossAffectedLinkPoints(
+        curvedLinkPoints(
+          link.id,
+          link.source,
+          link.target,
+          width,
+          height,
+        ),
+        link.cross,
         width,
         height,
       );
-      const color = LINK_RENDER_COLORS[link.type];
+      const base = fieldInfluencedColor(
+        LINK_RENDER_COLORS[link.type],
+        link.cross.fieldInfluence,
+      );
+      const color = withAlpha(
+        base,
+        link.selected ? 0.92 : base[3],
+      );
+      const frost = link.cross.fieldInfluence.frost;
+      const echo = link.cross.fieldInfluence.echo;
 
       this.context.beginPath();
       points.forEach((point, index) => {
+        if (frost > 0.34 && index > 0 && index % 2 === 0) {
+          return;
+        }
         if (index === 0) {
           this.context.moveTo(point.x, point.y);
         } else {
           this.context.lineTo(point.x, point.y);
         }
       });
-      this.context.strokeStyle = renderColorCss(
-        withAlpha(color, link.selected ? 0.92 : color[3]),
+      this.context.strokeStyle = renderColorCss(color);
+      this.context.lineWidth = (
+        link.selected ? 3 : 1.5
+      ) * dpr * (
+        1 + link.cross.fieldInfluence.space * 0.14
       );
-      this.context.lineWidth = (link.selected ? 3 : 1.5) * dpr;
       this.context.stroke();
+
+      if (echo > 0.08) {
+        const dx = link.target.x - link.source.x;
+        const dy = link.target.y - link.source.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const normalX = -dy / len;
+        const normalY = dx / len;
+        const offset = echo * 6 * dpr;
+
+        this.context.beginPath();
+        points.forEach((point, index) => {
+          if (index === 0) {
+            this.context.moveTo(
+              point.x + normalX * offset,
+              point.y + normalY * offset,
+            );
+          } else {
+            this.context.lineTo(
+              point.x + normalX * offset,
+              point.y + normalY * offset,
+            );
+          }
+        });
+        this.context.strokeStyle = renderColorCss(
+          withAlpha(
+            color,
+            color[3] * echo * 0.3,
+          ),
+        );
+        this.context.lineWidth = 1.2 * dpr;
+        this.context.stroke();
+      }
     }
 
     for (const toy of scene.toys) {
@@ -140,23 +207,41 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
         width,
         height,
       );
-      const color = TOY_RENDER_COLORS[toy.type];
+      const color = fieldInfluencedColor(
+        TOY_RENDER_COLORS[toy.type],
+        toy.cross.fieldInfluence,
+      );
+      const responseScale = 1
+        + toy.cross.nearbyOrbStrength * 0.08;
 
       if (toy.selected) {
         this.drawEllipse(
           toy.position.x * width,
           toy.position.y * height,
-          radiusX * 0.62,
-          radiusY * 0.62,
+          radiusX * 0.62 * responseScale,
+          radiusY * 0.62 * responseScale,
           [1, 1, 1, 0.14],
+        );
+      }
+
+      if (toy.cross.nearbyOrbStrength > 0.04) {
+        this.drawEllipse(
+          toy.position.x * width,
+          toy.position.y * height,
+          radiusX * 0.58 * responseScale,
+          radiusY * 0.58 * responseScale,
+          withAlpha(
+            color,
+            0.05 + toy.cross.nearbyOrbStrength * 0.08,
+          ),
         );
       }
 
       this.drawEllipse(
         toy.position.x * width,
         toy.position.y * height,
-        radiusX * 0.5,
-        radiusY * 0.5,
+        radiusX * 0.5 * responseScale,
+        radiusY * 0.5 * responseScale,
         color,
       );
 
@@ -166,7 +251,10 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
           toy.exitPosition.y * height,
           radiusX * 0.42,
           radiusY * 0.42,
-          [0.957, 0.447, 0.714, 0.72],
+          fieldInfluencedColor(
+            [0.957, 0.447, 0.714, 0.72],
+            toy.cross.fieldInfluence,
+          ),
         );
       }
     }

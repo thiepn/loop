@@ -1,7 +1,6 @@
 import type { VisualPreferences } from '../VisualQuality';
 import {
   ROLE_RENDER_COLORS,
-  mixRenderColor,
 } from './RenderPalette';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import type {

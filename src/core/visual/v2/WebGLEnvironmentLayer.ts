@@ -2,6 +2,7 @@ import type { VisualPreferences } from '../VisualQuality';
 import { renderPolicyForPreferences } from './RendererPolicy';
 import type {
   EnvironmentDynamics,
+  RenderCrossEnvironment,
   RenderEnvironment,
   RenderFieldEnvironment,
 } from './RenderTypes';
@@ -40,6 +41,10 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform vec4 u_field_mix;\n'
   + 'uniform float u_field_filter;\n'
   + 'uniform float u_field_overlap;\n'
+  + 'uniform vec2 u_force_position;\n'
+  + 'uniform float u_force_strength;\n'
+  + 'uniform float u_force_mode;\n'
+  + 'uniform float u_coupling_energy;\n'
   + 'uniform vec2 u_drag_position;\n'
   + 'uniform vec2 u_drag_delta;\n'
   + 'uniform float u_drag_strength;\n'
@@ -99,9 +104,20 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  vec2 parallax = (u_pointer - 0.5) * u_pointer_strength * u_motion_scale;\n'
   + '  float pointerLocal = exp(-dot(uv - u_pointer, uv - u_pointer) * 22.0);\n'
   + '  float dragLocal = exp(-dot(uv - u_drag_position, uv - u_drag_position) * 30.0);\n'
+  + '  vec2 forceDelta = uv - u_force_position;\n'
+  + '  float forceDistance = max(0.001, length(forceDelta));\n'
+  + '  vec2 forceDir = forceDelta / forceDistance;\n'
+  + '  vec2 forceTangent = vec2(-forceDir.y, forceDir.x);\n'
+  + '  float forceLocal = exp(-forceDistance * forceDistance * 24.0) * u_force_strength * u_motion_scale;\n'
+  + '  vec2 forceWarp = vec2(0.0);\n'
+  + '  if (u_force_mode < 1.5 && u_force_mode > 0.5) forceWarp = forceTangent * forceLocal * 0.02;\n'
+  + '  else if (u_force_mode < 2.5 && u_force_mode > 1.5) forceWarp = -forceDir * forceLocal * 0.018;\n'
+  + '  else if (u_force_mode < 3.5 && u_force_mode > 2.5) forceWarp = forceDir * forceLocal * 0.022;\n'
+  + '  else if (u_force_mode > 3.5) forceWarp = -forceDir * forceLocal * 0.028;\n'
   + '  vec2 warpedUv = uv\n'
   + '    + u_pointer_delta * pointerLocal * u_pointer_strength * u_motion_scale * 0.11\n'
-  + '    + u_drag_delta * dragLocal * u_drag_strength * u_motion_scale * 0.065;\n'
+  + '    + u_drag_delta * dragLocal * u_drag_strength * u_motion_scale * 0.065\n'
+  + '    + forceWarp;\n'
   + '  vec2 p = vec2((warpedUv.x - 0.5) * aspect, warpedUv.y - 0.5);\n'
   + '\n'
   + '  vec2 hazeCenterA = vec2(\n'
@@ -151,6 +167,8 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  color += vec3(0.16, 0.34, 0.46) * u_field_mix.w * 0.042;\n'
   + '  color += vec3(0.02, 0.34, 0.22) * u_field_filter * 0.038;\n'
   + '  color += vec3(0.28, 0.24, 0.48) * u_field_overlap * 0.028;\n'
+  + '  color += mix(u_primary, u_secondary, 0.5) * u_coupling_energy * 0.025;\n'
+  + '  color += vec3(0.22, 0.3, 0.4) * forceLocal * 0.018;\n'
   + '  color *= 0.82 + u_awake * 0.10 + u_energy * 0.12;\n'
   + '\n'
   + '  float vignette = smoothstep(1.02, 0.28, length(listenerP));\n'
@@ -264,6 +282,10 @@ export class WebGLEnvironmentLayer {
   private readonly fieldMix: WebGLUniformLocation;
   private readonly fieldFilter: WebGLUniformLocation;
   private readonly fieldOverlap: WebGLUniformLocation;
+  private readonly forcePosition: WebGLUniformLocation;
+  private readonly forceStrength: WebGLUniformLocation;
+  private readonly forceMode: WebGLUniformLocation;
+  private readonly couplingEnergy: WebGLUniformLocation;
   private readonly dragPosition: WebGLUniformLocation;
   private readonly dragDelta: WebGLUniformLocation;
   private readonly dragStrength: WebGLUniformLocation;
@@ -297,6 +319,10 @@ export class WebGLEnvironmentLayer {
     this.fieldMix = uniform(gl, this.program, 'u_field_mix');
     this.fieldFilter = uniform(gl, this.program, 'u_field_filter');
     this.fieldOverlap = uniform(gl, this.program, 'u_field_overlap');
+    this.forcePosition = uniform(gl, this.program, 'u_force_position');
+    this.forceStrength = uniform(gl, this.program, 'u_force_strength');
+    this.forceMode = uniform(gl, this.program, 'u_force_mode');
+    this.couplingEnergy = uniform(gl, this.program, 'u_coupling_energy');
     this.dragPosition = uniform(gl, this.program, 'u_drag_position');
     this.dragDelta = uniform(gl, this.program, 'u_drag_delta');
     this.dragStrength = uniform(gl, this.program, 'u_drag_strength');
@@ -307,6 +333,7 @@ export class WebGLEnvironmentLayer {
   public render(
     environment: Readonly<RenderEnvironment>,
     fields: Readonly<RenderFieldEnvironment>,
+    cross: Readonly<RenderCrossEnvironment>,
     dynamics: Readonly<EnvironmentDynamics>,
     preferences: Readonly<VisualPreferences>,
     timestampMs: number,
@@ -383,6 +410,28 @@ export class WebGLEnvironmentLayer {
     );
     gl.uniform1f(this.fieldFilter, fields.filter);
     gl.uniform1f(this.fieldOverlap, fields.overlap);
+    gl.uniform2f(
+      this.forcePosition,
+      cross.forcePosition.x,
+      cross.forcePosition.y,
+    );
+    gl.uniform1f(this.forceStrength, cross.forceStrength);
+    gl.uniform1f(
+      this.forceMode,
+      (() => {
+        switch (cross.forceType) {
+          case 'spinner': return 1;
+          case 'magnet': return 2;
+          case 'repulsor': return 3;
+          case 'portal': return 4;
+          case null: return 0;
+        }
+      })(),
+    );
+    gl.uniform1f(
+      this.couplingEnergy,
+      cross.couplingEnergy,
+    );
     gl.uniform2f(
       this.dragPosition,
       dynamics.dragPosition.x,

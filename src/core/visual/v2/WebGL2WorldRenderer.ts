@@ -4,11 +4,16 @@ import {
   LISTENER_RENDER_COLOR,
   ROLE_RENDER_COLORS,
   TOY_RENDER_COLORS,
+  fieldInfluencedColor,
   withAlpha,
   type RenderColor,
 } from './RenderPalette';
-import { curvedLinkPoints } from './LinkGeometry';
+import {
+  crossAffectedLinkPoints,
+  curvedLinkPoints,
+} from './LinkGeometry';
 import { deriveEnvironmentDynamics } from './EnvironmentModel';
+import { WebGLCrossSystemLayer } from './WebGLCrossSystemLayer';
 import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
 import { WebGLFieldMaterialLayer } from './WebGLFieldMaterialLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
@@ -226,6 +231,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private disc: DiscProgramResources | null = null;
   private line: ProgramResources | null = null;
   private environment: WebGLEnvironmentLayer | null = null;
+  private crossLayer: WebGLCrossSystemLayer | null = null;
   private fieldLayer: WebGLFieldMaterialLayer | null = null;
   private trailLayer: WebGLTrailLayer | null = null;
   private orbMaterial: WebGLOrbMaterialLayer | null = null;
@@ -275,31 +281,67 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     const lineVertices: number[] = [];
 
     for (const linkItem of scene.links) {
-      const points = curvedLinkPoints(
-        linkItem.id,
-        linkItem.source,
-        linkItem.target,
+      const points = crossAffectedLinkPoints(
+        curvedLinkPoints(
+          linkItem.id,
+          linkItem.source,
+          linkItem.target,
+          width,
+          height,
+        ),
+        linkItem.cross,
         width,
         height,
       );
-      const base = LINK_RENDER_COLORS[linkItem.type];
+      const base = fieldInfluencedColor(
+        LINK_RENDER_COLORS[linkItem.type],
+        linkItem.cross.fieldInfluence,
+      );
       const color = withAlpha(
         base,
         linkItem.selected ? 0.95 : base[3],
       );
+      const frost = linkItem.cross.fieldInfluence.frost;
+      const echo = linkItem.cross.fieldInfluence.echo;
+      const directionX = linkItem.target.x - linkItem.source.x;
+      const directionY = linkItem.target.y - linkItem.source.y;
+      const directionLength = Math.hypot(directionX, directionY) || 1;
+      const normalX = -directionY / directionLength;
+      const normalY = directionX / directionLength;
+      const ghostOffset = echo * 6 * dpr;
 
       for (let index = 1; index < points.length; index += 1) {
         const from = points[index - 1];
         const to = points[index];
 
-        if (from && to) {
+        if (!from || !to) {
+          continue;
+        }
+
+        if (frost > 0.34 && index % 2 === 0) {
+          continue;
+        }
+
+        pushLineSegment(
+          lineVertices,
+          from.x,
+          from.y,
+          to.x,
+          to.y,
+          color,
+        );
+
+        if (echo > 0.08) {
           pushLineSegment(
             lineVertices,
-            from.x,
-            from.y,
-            to.x,
-            to.y,
-            color,
+            from.x + normalX * ghostOffset,
+            from.y + normalY * ghostOffset,
+            to.x + normalX * ghostOffset,
+            to.y + normalY * ghostOffset,
+            withAlpha(
+              color,
+              color[3] * echo * 0.34,
+            ),
           );
         }
       }
@@ -311,16 +353,35 @@ export class WebGL2WorldRenderer implements WorldRenderer {
         width,
         height,
       );
-      const color = TOY_RENDER_COLORS[toy.type];
+      const color = fieldInfluencedColor(
+        TOY_RENDER_COLORS[toy.type],
+        toy.cross.fieldInfluence,
+      );
+      const responseScale = 1
+        + toy.cross.nearbyOrbStrength * 0.08;
 
       if (toy.selected) {
         pushDisc(
           discVertices,
           toy.position.x * width,
           toy.position.y * height,
-          diameterX * 0.62,
-          diameterY * 0.62,
+          diameterX * 0.62 * responseScale,
+          diameterY * 0.62 * responseScale,
           [1, 1, 1, 0.14],
+        );
+      }
+
+      if (toy.cross.nearbyOrbStrength > 0.04) {
+        pushDisc(
+          discVertices,
+          toy.position.x * width,
+          toy.position.y * height,
+          diameterX * 0.58 * responseScale,
+          diameterY * 0.58 * responseScale,
+          withAlpha(
+            color,
+            0.05 + toy.cross.nearbyOrbStrength * 0.08,
+          ),
         );
       }
 
@@ -328,8 +389,8 @@ export class WebGL2WorldRenderer implements WorldRenderer {
         discVertices,
         toy.position.x * width,
         toy.position.y * height,
-        diameterX * 0.5,
-        diameterY * 0.5,
+        diameterX * 0.5 * responseScale,
+        diameterY * 0.5 * responseScale,
         color,
       );
 
@@ -340,7 +401,10 @@ export class WebGL2WorldRenderer implements WorldRenderer {
           toy.exitPosition.y * height,
           diameterX * 0.42,
           diameterY * 0.42,
-          [0.957, 0.447, 0.714, 0.72],
+          fieldInfluencedColor(
+            [0.957, 0.447, 0.714, 0.72],
+            toy.cross.fieldInfluence,
+          ),
         );
       }
     }
@@ -386,6 +450,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     this.environment?.render(
       scene.environment,
       scene.fieldEnvironment,
+      scene.crossEnvironment,
       dynamics,
       preferences,
       timestampMs,
@@ -402,6 +467,15 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       timestampMs,
       width,
       height,
+    );
+
+    this.crossLayer?.render(
+      scene.orbCouplings,
+      preferences,
+      events,
+      width,
+      height,
+      dpr,
     );
 
     gl.enable(gl.BLEND);
@@ -476,6 +550,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     };
 
     this.environment = new WebGLEnvironmentLayer(gl);
+    this.crossLayer = new WebGLCrossSystemLayer(gl);
     this.fieldLayer = new WebGLFieldMaterialLayer(gl);
     this.trailLayer = new WebGLTrailLayer(gl);
     this.orbMaterial = new WebGLOrbMaterialLayer(gl);
@@ -484,6 +559,8 @@ export class WebGL2WorldRenderer implements WorldRenderer {
   private releaseResources(): void {
     this.environment?.destroy();
     this.environment = null;
+    this.crossLayer?.destroy();
+    this.crossLayer = null;
     this.fieldLayer?.destroy();
     this.fieldLayer = null;
     this.trailLayer?.destroy();
