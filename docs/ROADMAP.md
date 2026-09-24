@@ -54,8 +54,8 @@ After Phase 13:
 
 Only defects and release blockers may change the product.
 
-## Phase 14 — Functional & Data-Integrity Audit
-Systematically test audio lifecycle, scheduling, effects, motion, Links, Magic, save/restore, corruption handling, undo/redo, input cancellation, and long-session behavior. Fix every confirmed defect.
+## Phase 14 — Functional & Data-Integrity Audit — complete
+Systematically tested audio lifecycle, scheduler gaps, object manipulation, Motion, Links, Magic transactions, Snapshot recall, undo/redo, IndexedDB/autosave, Trash/import/backup, recording, PWA lifecycle, pointer cancellation, rapid navigation, corrupted data, and cross-feature interactions. Confirmed defects were fixed without reopening feature scope. See [PHASE_14_ACCEPTANCE.md](PHASE_14_ACCEPTANCE.md).
 
 ## Phase 15 — UX, Accessibility & Regression Audit
 Run beginner-first usability review, technical-language purge, interaction regression matrix, keyboard/focus checks, contrast, reduced-motion support, touch targets, and cross-feature regressions.
