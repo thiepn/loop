@@ -1,0 +1,198 @@
+name: Production Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: loop-production-release
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      should_release: ${{ steps.release_state.outputs.should_release }}
+      version: ${{ steps.release_state.outputs.version }}
+      tag: ${{ steps.release_state.outputs.tag }}
+
+    steps:
+      - name: Checkout exact production tree
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Resolve production release state
+        id: release_state
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+
+          if [[ "$VERSION" != "1.0.0" ]]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "Loop is not at production version 1.0.0; production workflow is a no-op."
+            exit 0
+          fi
+
+          TAG="v$VERSION"
+          git fetch --tags --force
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            EXISTING="$(git rev-list -n 1 "$TAG")"
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "$TAG already exists at $EXISTING; production will not be retagged."
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.release_state.outputs.should_release == 'true'
+        run: npm install
+
+      - name: Install release browsers
+        if: steps.release_state.outputs.should_release == 'true'
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Unit, soak, type and build verification
+        if: steps.release_state.outputs.should_release == 'true'
+        run: |
+          npm run check
+          npm run build
+
+      - name: Release-candidate browser matrix
+        if: steps.release_state.outputs.should_release == 'true'
+        run: npm run test:rc
+
+      - name: Browser performance certification
+        if: steps.release_state.outputs.should_release == 'true'
+        run: npm run cert:browser
+
+      - name: Write exact production release metadata
+        if: steps.release_state.outputs.should_release == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.release_state.outputs.version }}
+          RELEASE_TAG: ${{ steps.release_state.outputs.tag }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFile } from 'node:fs/promises';
+
+          const metadata = {
+            format: 'loop-production-release',
+            version: process.env.RELEASE_VERSION,
+            tag: process.env.RELEASE_TAG,
+            commit: process.env.RELEASE_COMMIT,
+            promotedFrom: 'v1.0.0-rc.1',
+            builtAt: new Date().toISOString(),
+          };
+
+          await writeFile(
+            'dist/release.json',
+            JSON.stringify(metadata, null, 2) + '\n',
+            'utf8',
+          );
+          NODE
+
+      - name: Configure GitHub Pages
+        if: steps.release_state.outputs.should_release == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload production Pages artifact
+        if: steps.release_state.outputs.should_release == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy:
+    needs: certify
+    if: needs.certify.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy exact certified artifact to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  smoke-and-tag:
+    needs:
+      - certify
+      - deploy
+    if: needs.certify.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout exact production tree
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium for live smoke
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke-test live GitHub Pages production
+        env:
+          LOOP_PRODUCTION_URL: ${{ needs.deploy.outputs.page_url }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+          EXPECTED_VERSION: ${{ needs.certify.outputs.version }}
+        run: npm run smoke:production
+
+      - name: Create final annotated production tag
+        env:
+          TAG: ${{ needs.certify.outputs.tag }}
+        shell: bash
+        run: |
+          git fetch --tags --force
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            EXISTING="$(git rev-list -n 1 "$TAG")"
+
+            if [[ "$EXISTING" != "$GITHUB_SHA" ]]; then
+              echo "$TAG already points to $EXISTING, not $GITHUB_SHA" >&2
+              exit 1
+            fi
+
+            echo "$TAG already exists on the live-certified production commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$GITHUB_SHA" -m "Loop $TAG production release"
+          git push origin "$TAG"
