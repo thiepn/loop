@@ -133,7 +133,7 @@ Unify:
 - light ↔ nearby objects;
 - atmosphere ↔ interaction.
 
-## Phase 9 — Links, Listener & Light Propagation
+## Phase 9 — Links, Listener & Light Propagation — implemented; certification pending
 
 Implement:
 - Link light paths;
