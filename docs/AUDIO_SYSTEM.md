@@ -170,12 +170,78 @@ Safe behavior:
 Built-in content remains the primary guaranteed musical experience.
 
 ## Recording
-Record the master experience rather than exposing studio routing.
 
-V1 goals:
+Phase 11 records the master experience rather than exposing studio routing.
+
+### Capture point
+The existing safety limiter feeds both:
+- the normal speaker destination;
+- a temporary MediaStreamAudioDestinationNode while recording.
+
+The capture branch therefore receives the same limited master signal the user hears.
+
+### Browser recorder
+Loop uses MediaRecorder when available.
+
+Preferred formats are negotiated at runtime rather than assumed:
+- WebM/Opus;
+- Ogg/Opus;
+- MPEG-4 audio;
+- browser default fallback.
+
+The original browser recording is always the primary successful export.
+
+Requested encoder rate is approximately 160 kbit/s and the recorder requests 1-second chunks.
+
+### Duration
+One performance capture is hard-capped at 10 minutes.
+
+The document becoming hidden also finalizes the current recording to avoid unreliable cross-browser background capture.
+
+### WAV
+For captures up to 3 minutes, Loop attempts to decode the recorded Blob and emit an interleaved 16-bit PCM RIFF/WAVE file.
+
+If decoding fails, the original browser recording remains available.
+
+Long captures skip automatic WAV conversion to avoid large in-memory decoded PCM buffers.
+
+### Lifecycle
+Only one MasterRecorder can be active.
+
+Stop:
+- finalizes chunks;
+- disconnects capture tap;
+- leaves World playback independent.
+
+Cancel:
+- discards capture;
+- disconnects capture tap.
+
+Unexpected browser Stop preserves emitted chunks where possible.
+
+Recorder errors clean up and return to a recoverable UI state.
+
+### Permissions
+Loop records its own Web Audio graph.
+
+Phase 11 does not request microphone/camera permission and does not use getUserMedia().
+
+### Persistence
+Finished recordings are transient runtime artifacts.
+
+They are not stored in:
+- WorldDocument;
+- IndexedDB;
+- Snapshots;
+- undo/redo history;
+- JSON World backups.
+
+V1 goals remain:
 - obvious start/stop;
 - stable capture;
-- export a useful audio file;
+- immediate listen-back;
+- useful browser-native audio download;
+- WAV where safely practical;
 - no advanced stem matrix.
 
 ## Phase 6 field runtime
