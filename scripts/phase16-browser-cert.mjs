@@ -26,8 +26,9 @@ const budgets = {
   jsCssGzipBytes: 120 * 1024,
   navigationLoadMs: 3_000,
   homeToWorldMs: 1_500,
-  frameP95Ms: 35,
-  frameMaxMs: 150,
+  headlessFrameP95Ms: 80,
+  headlessFrameMaxMs: 200,
+  frameMainThreadAverageMs: 8,
   heapGrowthBytes: 5 * 1024 * 1024,
   nodeGrowth: 250,
   longTaskMaxMs: 200,
@@ -457,6 +458,9 @@ async function main() {
       await client.send('Performance.getMetrics'),
     );
     const beforeDom = await client.send('Memory.getDOMCounters');
+    const frameMetricsBefore = metricMap(
+      await client.send('Performance.getMetrics'),
+    );
 
     const frames = await client.evaluate(`
       (async () => {
@@ -482,6 +486,10 @@ async function main() {
         };
       })()
     `);
+
+    const frameMetricsAfter = metricMap(
+      await client.send('Performance.getMetrics'),
+    );
 
     const churn = await client.evaluate(`
       (async () => {
@@ -594,6 +602,25 @@ async function main() {
 
     const heapBefore = beforeMetrics.get('JSHeapUsedSize') ?? 0;
     const heapAfter = afterMetrics.get('JSHeapUsedSize') ?? 0;
+    const frameTaskDurationMs = (
+      (frameMetricsAfter.get('TaskDuration') ?? 0)
+      - (frameMetricsBefore.get('TaskDuration') ?? 0)
+    ) * 1000;
+    const frameScriptDurationMs = (
+      (frameMetricsAfter.get('ScriptDuration') ?? 0)
+      - (frameMetricsBefore.get('ScriptDuration') ?? 0)
+    ) * 1000;
+    const frameLayoutDurationMs = (
+      (frameMetricsAfter.get('LayoutDuration') ?? 0)
+      - (frameMetricsBefore.get('LayoutDuration') ?? 0)
+    ) * 1000;
+    const frameRecalcStyleDurationMs = (
+      (frameMetricsAfter.get('RecalcStyleDuration') ?? 0)
+      - (frameMetricsBefore.get('RecalcStyleDuration') ?? 0)
+    ) * 1000;
+    const frameMainThreadAverageMs = frames.count > 0
+      ? frameTaskDurationMs / frames.count
+      : 0;
     const metrics = {
       browserPath,
       build,
@@ -601,6 +628,11 @@ async function main() {
       homeToWorldMs,
       audio,
       frames,
+      frameMainThreadAverageMs,
+      frameTaskDurationMs,
+      frameScriptDurationMs,
+      frameLayoutDurationMs,
+      frameRecalcStyleDurationMs,
       modalChurnMs: churn,
       heapBeforeBytes: heapBefore,
       heapAfterBytes: heapAfter,
@@ -654,16 +686,23 @@ async function main() {
     );
     assertBudget(
       failures,
-      'Animation-frame p95',
+      'Headless animation-frame p95',
       frames.p95Ms,
-      budgets.frameP95Ms,
+      budgets.headlessFrameP95Ms,
       ' ms',
     );
     assertBudget(
       failures,
-      'Animation-frame max',
+      'Headless animation-frame max',
       frames.maxMs,
-      budgets.frameMaxMs,
+      budgets.headlessFrameMaxMs,
+      ' ms',
+    );
+    assertBudget(
+      failures,
+      'Average main-thread work per sampled frame',
+      frameMainThreadAverageMs,
+      budgets.frameMainThreadAverageMs,
       ' ms',
     );
     assertBudget(
