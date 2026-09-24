@@ -675,22 +675,28 @@ export class PlaygroundEngine {
       this.choreographySilentBars = 0;
     }
 
-    this.emitChoreography({
-      time: tick.time,
-      absoluteStep: tick.absoluteStep,
-      stepInBar: tick.stepInBar,
-      bar: tick.bar,
-      phrasePosition: ((tick.bar % 4) + 4) % 4,
-      barDurationMs: (
-        this.transport.secondsPerBeat
-        * this.transport.beatsPerBar
-        * 1000
-      ),
-      activeOrbCount: audibleOrbCount,
-      eventCount: audibleEventCount,
-      previousBarEventCount,
-      silentBarsBefore: silentBarsBeforeTick,
-      reentry,
-    });
+    if (
+      tick.stepInBar === 0
+      || audibleEventCount >= 2
+      || reentry
+    ) {
+      this.emitChoreography({
+        time: tick.time,
+        absoluteStep: tick.absoluteStep,
+        stepInBar: tick.stepInBar,
+        bar: tick.bar,
+        phrasePosition: ((tick.bar % 4) + 4) % 4,
+        barDurationMs: (
+          this.transport.secondsPerBeat
+          * this.transport.beatsPerBar
+          * 1000
+        ),
+        activeOrbCount: audibleOrbCount,
+        eventCount: audibleEventCount,
+        previousBarEventCount,
+        silentBarsBefore: silentBarsBeforeTick,
+        reentry,
+      });
+    }
   }
 }
