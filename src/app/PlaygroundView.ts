@@ -680,7 +680,7 @@ export class PlaygroundView {
     element.classList.toggle('is-muted', orb.muted);
     element.setAttribute(
       'aria-label',
-      `${sound?.name ?? roleLabel(orb)}. ${orb.muted ? 'Muted. ' : ''}Drag to move sound.`,
+      `${sound?.name ?? roleLabel(orb)}. ${orb.muted ? 'Muted. ' : ''}Drag or use arrow keys to move sound.`,
     );
     element.setAttribute('aria-pressed', String(selected));
 
@@ -727,7 +727,9 @@ export class PlaygroundView {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'palette-category';
-      button.classList.toggle('is-active', category.id === paletteState.category);
+      const selected = category.id === paletteState.category;
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', String(selected));
       button.textContent = category.name;
       button.title = category.description;
       button.addEventListener('click', () => this.callbacks.onSelectPaletteCategory(category.id));
@@ -743,7 +745,11 @@ export class PlaygroundView {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'sound-choice';
-      button.classList.toggle('is-current', sound.id === currentSoundId);
+      const current = sound.id === currentSoundId;
+      button.classList.toggle('is-current', current);
+      if (current) {
+        button.setAttribute('aria-current', 'true');
+      }
       button.innerHTML = `
         <span class="sound-choice-orb" data-role="${sound.role}" aria-hidden="true"></span>
         <span class="sound-choice-copy">
