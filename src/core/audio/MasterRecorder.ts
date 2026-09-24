@@ -56,6 +56,14 @@ export class MasterRecorder {
     engine: AudioEngine,
     options: StartRecordingOptions = {},
   ): Promise<void> {
+    if (this.stateValue === 'stopping' && this.stopPromise) {
+      try {
+        await this.stopPromise;
+      } catch {
+        // A failed previous stop still cleans up before a new attempt.
+      }
+    }
+
     if (this.stateValue !== 'idle') {
       throw new Error('A Loop recording is already active.');
     }
