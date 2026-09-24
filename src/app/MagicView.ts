@@ -107,6 +107,8 @@ export class MagicView {
     remixButton.type = 'button';
     remixButton.className = 'remix-button';
     remixButton.innerHTML = '<span aria-hidden="true">✦</span> Remix';
+    remixButton.setAttribute('aria-haspopup', 'dialog');
+    remixButton.setAttribute('aria-expanded', 'false');
     remixButton.addEventListener('click', callbacks.onOpenRemix);
     dock.append(remixButton);
     this.remixButton = remixButton;
@@ -174,7 +176,7 @@ export class MagicView {
         <strong data-magic-preview-title>Magic</strong>
         <small data-magic-preview-summary>Variation ready</small>
       </div>
-      <div class="magic-strength-options" data-magic-strengths></div>
+      <div class="magic-strength-options" data-magic-strengths role="group" aria-label="Magic strength"></div>
       <div class="magic-preview-actions">
         <button type="button" data-magic-revert>Revert</button>
         <button type="button" data-magic-retry><span aria-hidden="true">↻</span> Retry</button>
@@ -221,6 +223,7 @@ export class MagicView {
 
   public render(state: Readonly<AppState>): void {
     this.intentBackdrop.hidden = !state.magicIntentOpen;
+    this.remixButton.setAttribute('aria-expanded', String(state.magicIntentOpen));
     this.intentFocus.sync(state.magicIntentOpen);
     this.shell.classList.toggle(
       'magic-preview-active',
