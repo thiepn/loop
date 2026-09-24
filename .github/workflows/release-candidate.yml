@@ -1,0 +1,49 @@
+name: Release Candidate Matrix
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v1.0.0-rc.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-candidate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install release browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Production build
+        run: npm run build
+
+      - name: Run release-candidate matrix
+        run: npm run test:rc
+
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-traces
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
