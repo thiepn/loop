@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run test",
     "cert:browser": "node scripts/phase16-browser-cert.mjs",
-    "test:rc": "playwright test --config=playwright.config.mjs"
+    "test:rc": "playwright test --config=playwright.config.mjs",
+    "smoke:production": "node scripts/phase18-live-smoke.mjs"
   },
   "devDependencies": {
     "typescript": "7.0.2",
