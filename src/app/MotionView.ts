@@ -15,6 +15,7 @@ import { soundById } from '../core/sounds/coreCatalog';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
+import { loopIcon } from './LoopIcons';
 
 export interface MotionViewCallbacks {
   readonly onCloseMotion: () => void;
@@ -114,7 +115,7 @@ export class MotionView {
     const toysButton = document.createElement('button');
     toysButton.type = 'button';
     toysButton.className = 'toys-button';
-    toysButton.innerHTML = '<span aria-hidden="true">✣</span> Toys';
+    toysButton.innerHTML = loopIcon('toys') + '<span>Toys</span>';
     toysButton.setAttribute('aria-haspopup', 'dialog');
     toysButton.setAttribute('aria-expanded', 'false');
     toysButton.addEventListener('click', callbacks.onOpenToyPalette);
@@ -132,7 +133,7 @@ export class MotionView {
             <h2 id="motion-title" data-motion-title>Motion</h2>
             <p>Pick a behavior. Loop handles the path.</p>
           </div>
-          <button class="motion-close" type="button" data-motion-close aria-label="Close Motion">×</button>
+          <button class="motion-close" type="button" data-motion-close aria-label="Close Motion">${loopIcon('close')}</button>
         </header>
 
         <div class="motion-mode-grid" data-motion-modes role="group" aria-label="Motion behavior"></div>
@@ -199,8 +200,8 @@ export class MotionView {
       </div>
       <div class="toy-selection-actions">
         <span data-toy-help>Drag to move</span>
-        <button class="magic-action" type="button" data-toy-magic>✦ Magic</button>
-        <button class="danger-action" type="button" data-toy-delete>Delete</button>
+        <button class="magic-action" type="button" data-toy-magic>${loopIcon('magic')}<span>Magic</span></button>
+        <button class="danger-action" type="button" data-toy-delete>${loopIcon('trash')}<span>Delete</span></button>
       </div>
     `;
     shell.append(toyPanel);
@@ -237,7 +238,7 @@ export class MotionView {
             <h2 id="toys-title">Add a toy</h2>
             <p>Toys push, pull and redirect moving sounds.</p>
           </div>
-          <button class="toy-palette-close" type="button" data-toys-close aria-label="Close toys">×</button>
+          <button class="toy-palette-close" type="button" data-toys-close aria-label="Close toys">${loopIcon('close')}</button>
         </header>
         <div class="toy-palette-grid" data-toy-choices></div>
       </section>
@@ -761,6 +762,7 @@ export class MotionView {
       return;
     }
 
+    this.toyPanel.dataset.toyType = selected.type;
     this.toyPanelName.textContent = playgroundToyLabel(selected.type);
 
     const help = this.toyPanel.querySelector<HTMLElement>('[data-toy-help]');
