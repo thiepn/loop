@@ -509,10 +509,9 @@ export class LinkView {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'link-target-choice';
-      button.classList.toggle(
-        'is-active',
-        state.linkEditorTargetOrbId === target.id,
-      );
+      const selected = state.linkEditorTargetOrbId === target.id;
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', String(selected));
       button.innerHTML = `
         <span class="link-target-dot" data-role="${target.role}" aria-hidden="true"></span>
         <span>${orbName(state, target.id)}</span>
