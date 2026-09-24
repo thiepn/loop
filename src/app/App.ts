@@ -139,6 +139,48 @@ export class App {
       void this.flushAutosave();
     }
   };
+  private readonly handleHistoryShortcut = (event: KeyboardEvent) => {
+    const target = event.target;
+
+    if (
+      target instanceof HTMLInputElement
+      || target instanceof HTMLTextAreaElement
+      || target instanceof HTMLSelectElement
+      || (
+        target instanceof HTMLElement
+        && target.isContentEditable
+      )
+    ) {
+      return;
+    }
+
+    if (
+      appStore.getState().screen !== 'playground'
+      || appStore.getState().magicSession
+      || (!event.ctrlKey && !event.metaKey)
+    ) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+
+    if (key === 'z' && event.shiftKey) {
+      event.preventDefault();
+      this.redoWorld();
+      return;
+    }
+
+    if (key === 'z') {
+      event.preventDefault();
+      this.undoWorld();
+      return;
+    }
+
+    if (key === 'y') {
+      event.preventDefault();
+      this.redoWorld();
+    }
+  };
   private readonly capabilities = detectCapabilities();
 
   public constructor(private readonly root: HTMLElement) {}
@@ -147,6 +189,10 @@ export class App {
     document.addEventListener(
       'visibilitychange',
       this.handleVisibilityChange,
+    );
+    window.addEventListener(
+      'keydown',
+      this.handleHistoryShortcut,
     );
 
     this.unsubscribeStore = appStore.subscribe((state) => {
@@ -197,6 +243,10 @@ export class App {
     document.removeEventListener(
       'visibilitychange',
       this.handleVisibilityChange,
+    );
+    window.removeEventListener(
+      'keydown',
+      this.handleHistoryShortcut,
     );
     this.storage.close();
     void audioEngine.close();
@@ -722,7 +772,7 @@ export class App {
 
       this.persistenceReady = true;
 
-      if (active) {
+      if (active && appStore.getState().screen === 'home') {
         this.history.reset(active.world);
         this.lastSavedWorld = active.world;
 
@@ -757,14 +807,20 @@ export class App {
         return;
       }
 
+      const current = appStore.getState();
+
       appStore.patch({
         boot: 'ready',
         persistence: 'ready',
-        autosave: 'idle',
+        autosave: current.screen === 'playground'
+          ? current.autosave
+          : 'idle',
         library,
-        message: this.capabilities.audio
-          ? 'Pick a starting point.'
-          : 'Your browser cannot play Loop audio.',
+        message: current.screen === 'playground'
+          ? current.message
+          : this.capabilities.audio
+            ? 'Pick a starting point.'
+            : 'Your browser cannot play Loop audio.',
       });
     } catch (error) {
       const failure = classifyPersistenceError(error);
