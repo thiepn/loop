@@ -18,10 +18,12 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 9 — Magic, Mutation & Controlled Randomness: complete and CI-verified**
 - **Phase 10 — Worlds, Snapshots & Persistence: complete and CI-verified**
 - **Phase 11 — Play, Capture & Export: complete and CI-verified**
-- **Phase 12 — Visual Identity, Game Feel & Delight: complete; final CI verification pending**
-- **Next: Phase 13 — Mobile, PWA & Offline Hardening**
+- **Phase 12 — Visual Identity, Game Feel & Delight: complete and CI-verified**
+- **Phase 13 — Mobile, PWA & Offline Hardening: complete; final CI verification pending**
+- **V1 feature development is now frozen**
+- **Next: Phase 14 — Functional & Data-Integrity Audit**
 
-Loop now has its complete V1 visual language: living role-specific Sound Orbs, audio-synchronized bursts, bounded Motion trails, richer Effect Fields/toys/Links, consistent transitions, max-density de-cluttering, and user-selectable High/Balanced/Battery Saver visuals with reduced-motion/particles/glow controls.
+Loop's planned V1 product feature set is now implemented: the visual music playground works across responsive pointer/touch layouts, is installable as a scoped `/loop/` PWA, caches its built application shell for offline use, preserves local Worlds in IndexedDB, exposes non-disruptive update/offline/install state, and is now under feature freeze for audit/certification.
 
 ## Product contract
 
@@ -45,6 +47,7 @@ The authoritative specifications live in `docs/`:
 - [PERSISTENCE.md](docs/PERSISTENCE.md) — World library, autosave/restore, IndexedDB, Snapshots, history, migration, Trash, quarantine, and backups
 - [CAPTURE_EXPORT.md](docs/CAPTURE_EXPORT.md) — post-limiter master recording, browser formats, duration safety, listen-back, downloads, and WAV conversion
 - [VISUAL_SYSTEM.md](docs/VISUAL_SYSTEM.md) — implemented role identity, fields/toys/Links, trails, particles, quality profiles, accessibility, and visual-performance rules
+- [PWA_OFFLINE.md](docs/PWA_OFFLINE.md) — mobile layouts, safe areas, touch policy, manifest/installability, service worker, offline/update behavior, and `/loop/` deployment rules
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
@@ -57,6 +60,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_10_ACCEPTANCE.md](docs/PHASE_10_ACCEPTANCE.md) — Phase 10 verification gate
 - [PHASE_11_ACCEPTANCE.md](docs/PHASE_11_ACCEPTANCE.md) — Phase 11 verification gate
 - [PHASE_12_ACCEPTANCE.md](docs/PHASE_12_ACCEPTANCE.md) — Phase 12 verification gate
+- [PHASE_13_ACCEPTANCE.md](docs/PHASE_13_ACCEPTANCE.md) — Phase 13 verification / feature-freeze gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -77,14 +81,16 @@ npm run build
 
 ## Current automated verification
 
-The integrated Phase 12 feature head passed CI with:
+The integrated Phase 13 acceptance head passed CI with:
 
-- **34 test files**
-- **171 tests**
+- **35 test files**
+- **177 tests**
 - strict TypeScript typecheck
 - production Vite build
+- generated `dist/sw.js`
+- **9 verified precached URLs**
 
-The suite now covers recording/export plus automatic visual-quality selection, reduced-motion/particles/glow policy, quality-density ordering, persisted visual preferences, safe preference fallback, and every prior Phase 1–11 regression test. The exact final shared-documentation/status head is verified before Phase 12 is marked CI-complete.
+Phase 13 coverage includes `/loop/` path normalization, service-worker URL/scope isolation, iOS/iPad manual-install policy, production PWA asset validation, plus every prior Phase 1–12 regression test. The exact final shared-documentation/status head is verified before Phase 13 is marked CI-complete.
 
 ## Product rule
 
@@ -96,4 +102,4 @@ If it mainly adds technical sophistication, professional production depth, or ar
 
 The canonical V1 product will be a static web app / PWA deployed to GitHub Pages from this repository at the `/loop/` project path.
 
-Public deployment remains intentionally deferred until the release phase so unfinished development builds are not presented as the product.
+The app is technically ready for GitHub Pages/PWA deployment, but public deployment remains intentionally deferred until Phase 18 so only the audited/certified release candidate is presented as the product.
