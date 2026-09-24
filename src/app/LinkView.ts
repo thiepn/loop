@@ -12,6 +12,7 @@ import {
 import { soundById } from '../core/sounds/coreCatalog';
 import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface LinkViewCallbacks {
   readonly onCloseEditor: () => void;
@@ -131,6 +132,10 @@ export class LinkView {
     `;
     shell.append(editor);
     this.editor = editor;
+    this.editorFocus = new ModalFocusController(editor, {
+      onEscape: callbacks.onCloseEditor,
+      initialFocusSelector: '[data-link-close]',
+    });
 
     const editorTitle = editor.querySelector<HTMLElement>('[data-link-editor-title]');
     const targetList = editor.querySelector<HTMLElement>('[data-link-targets]');
@@ -318,6 +323,7 @@ export class LinkView {
   }
 
   public destroy(): void {
+    this.editorFocus.destroy();
     this.elements.clear();
     this.positions.clear();
     this.svg.remove();
@@ -345,10 +351,9 @@ export class LinkView {
       }
 
       elements.group.dataset.linkType = link.type;
-      elements.group.classList.toggle(
-        'is-selected',
-        state.selectedLinkId === link.id,
-      );
+      const selected = state.selectedLinkId === link.id;
+      elements.group.classList.toggle('is-selected', selected);
+      elements.hit.setAttribute('aria-pressed', String(selected));
       this.updatePath(link, elements);
     }
   }
@@ -473,6 +478,7 @@ export class LinkView {
       : undefined;
 
     this.editor.hidden = !source;
+    this.editorFocus.sync(Boolean(source));
 
     if (!source) {
       return;
