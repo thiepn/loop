@@ -106,6 +106,8 @@ export class MotionView {
 
     const toyLayer = document.createElement('div');
     toyLayer.className = 'playground-toy-layer';
+    toyLayer.setAttribute('role', 'group');
+    toyLayer.setAttribute('aria-label', 'Playground toys');
     canvas.append(toyLayer);
     this.toyLayer = toyLayer;
 
