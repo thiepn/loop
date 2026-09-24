@@ -82,6 +82,7 @@ export class MotionView {
   private readonly followGroup: HTMLElement;
   private readonly followOptions: HTMLElement;
   private readonly toyPalette: HTMLElement;
+  private readonly toyPaletteFocus: ModalFocusController;
   private readonly toyPanel: HTMLElement;
   private readonly toyPanelName: HTMLElement;
   private readonly toyElements = new Map<string, HTMLElement>();
