@@ -7,6 +7,25 @@ async function expectNoFatalShell(page) {
   await expect(page.locator('.fatal-shell')).toHaveCount(0);
 }
 
+async function waitForSurface(locator) {
+  await expect(locator).toBeVisible();
+
+  await locator.evaluate(async (element) => {
+    const animations = element.getAnimations().filter(
+      (animation) => (
+        animation.playState === 'running'
+        || animation.playState === 'pending'
+      ),
+    );
+
+    await Promise.all(
+      animations.map(
+        (animation) => animation.finished.catch(() => undefined),
+      ),
+    );
+  });
+}
+
 async function stopPlayback(page) {
   const play = page.locator('[data-play]');
 
@@ -56,7 +75,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   )).toBeGreaterThan(initialX);
 
   await page.locator('[data-action="pattern"]').click();
-  await expect(page.locator('.pattern-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.pattern-sheet'));
 
   const firstStep = page.locator('.rhythm-step').first();
   const stepBefore = await firstStep.getAttribute('aria-pressed');
@@ -69,25 +88,25 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   await expect(page.locator('.pattern-backdrop')).toBeHidden();
 
   await page.locator('[data-add]').click();
-  await expect(page.locator('[data-palette]')).toBeVisible();
+  await waitForSurface(page.locator('.palette-sheet'));
   await page.locator('.sound-choice').first().click();
   await expect(page.locator('.sound-orb')).toHaveCount(initialSoundCount + 1);
 
   const fieldCount = await page.locator('.effect-field').count();
   await page.locator('.effects-button').click();
-  await expect(page.locator('.effect-palette-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.effect-palette-sheet'));
   await page.locator('.effect-choice:not([disabled])').first().click();
   await expect(page.locator('.effect-field')).toHaveCount(fieldCount + 1);
 
   const toyCount = await page.locator('.playground-toy').count();
   await page.locator('.toys-button').click();
-  await expect(page.locator('.toy-palette-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.toy-palette-sheet'));
   await page.locator('.toy-choice:not([disabled])').first().click();
   await expect(page.locator('.playground-toy')).toHaveCount(toyCount + 1);
 
   await page.locator('.sound-orb').first().click();
   await page.locator('[data-action="motion"]').click();
-  await expect(page.locator('.motion-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.motion-sheet'));
   await page.locator('[data-motion-mode="orbit"]').click();
   await expect(
     page.locator('[data-motion-mode="orbit"]'),
@@ -97,7 +116,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   const linkCount = await page.locator('.link-connection').count();
   await expect(page.locator('.selection-panel')).toBeVisible();
   await page.locator('[data-action="link"]').click();
-  await expect(page.locator('.link-editor-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.link-editor-sheet'));
 
   const target = page.locator('.link-target-choice').first();
   await target.click();
@@ -112,7 +131,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   await expect(page.locator('.link-connection')).toHaveCount(linkCount + 1);
 
   await page.locator('.remix-button').click();
-  await expect(page.locator('.magic-intent-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.magic-intent-sheet'));
   await page.locator(
     '[data-magic-intent="surprise"]',
   ).click();
@@ -123,7 +142,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   await stopPlayback(page);
 
   await page.locator('.snapshots-button').click();
-  await expect(page.locator('.snapshot-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.snapshot-sheet'));
 
   page.once('dialog', async (dialog) => {
     await dialog.accept('RC Snapshot');
@@ -147,6 +166,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   )).not.toBe(snapshotX);
 
   await page.locator('.snapshots-button').click();
+  await waitForSurface(page.locator('.snapshot-sheet'));
   await page.locator('.snapshot-recall').first().click();
   await expect(page.locator('.snapshot-backdrop')).toBeHidden();
 
@@ -190,6 +210,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   );
 
   await page.locator('.snapshots-button').click();
+  await waitForSurface(page.locator('.snapshot-sheet'));
   await expect(page.locator('.snapshot-row')).toHaveCount(1);
 
   const downloadPromise = page.waitForEvent('download');
@@ -239,7 +260,7 @@ test('recording either completes or degrades with an explicit unsupported state'
     'ready',
     { timeout: 15_000 },
   );
-  await expect(page.locator('.capture-result-backdrop')).toBeVisible();
+  await waitForSurface(page.locator('.capture-result-sheet'));
 
   const downloadPromise = page.waitForEvent('download');
   await page.locator('[data-capture-download]').click();
@@ -300,7 +321,7 @@ test('touch layouts keep primary sheets inside the viewport', async ({
 
   await page.locator('.effects-button').click();
   const sheet = page.locator('.effect-palette-sheet');
-  await expect(sheet).toBeVisible();
+  await waitForSurface(sheet);
 
   const box = await sheet.boundingBox();
   const viewport = page.viewportSize();
@@ -341,5 +362,5 @@ test('touch layouts keep primary sheets inside the viewport', async ({
   }
 
   await page.locator('[data-add]').click();
-  await expect(page.locator('[data-palette]')).toBeVisible();
+  await waitForSurface(page.locator('.palette-sheet'));
 });
