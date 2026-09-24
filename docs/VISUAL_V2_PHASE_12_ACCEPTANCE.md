@@ -105,3 +105,25 @@ Phase 12 is complete only when the exact final Phase 12 head passes:
 - production build;
 - existing raw and gzip build budgets;
 - Phase 16 browser certification without relaxing any threshold.
+
+
+## Verification record
+
+The implemented Phase 12 head passed the existing repository verification gates without changing certification budgets:
+
+- strict TypeScript typecheck: passed;
+- unit/soak suite: **49 files, 306 tests passed**;
+- production Vite build: passed;
+- Phase 16 browser certification: passed;
+- JS+CSS raw: **511,383 bytes** (< 512,000-byte budget);
+- JS+CSS gzip: **121,081 bytes** (< 120 KiB / 122,880-byte budget);
+- navigation load: **1,632.9 ms** (< 3,000 ms budget);
+- Home → World: **914 ms** (< 1,500 ms budget);
+- sampled animation-frame p95: **16.7 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **3.60 ms** (< 8 ms budget);
+- post-GC heap growth: **496,452 bytes** (< 5 MiB budget);
+- DOM node growth: **125** (< 250 budget);
+- longest observed long task: **0 ms**;
+- frozen → active lifecycle recovery: passed.
+
+Phase 12 therefore restores Home/Library/branding quality while remaining inside the original release envelope. The cleanup pass also retires hidden legacy Orb animation CSS so the new application surfaces fit under the unchanged raw-size budget.
