@@ -81,11 +81,11 @@ export class PatternEditorView {
         <div class="pattern-macros">
           <div class="macro-group">
             <span>Amount</span>
-            <div class="macro-options" data-density></div>
+            <div class="macro-options" data-density role="group" aria-label="Pattern amount"></div>
           </div>
           <div class="macro-group">
             <span>Feel</span>
-            <div class="macro-options" data-groove></div>
+            <div class="macro-options" data-groove role="group" aria-label="Pattern feel"></div>
           </div>
         </div>
 
