@@ -134,11 +134,21 @@ export class App {
   private autosaveInFlightWorld: WorldDocument | null = null;
   private lastSavedWorld: WorldDocument | null = null;
   private snapshotRecallTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      void this.flushAutosave();
+    }
+  };
   private readonly capabilities = detectCapabilities();
 
   public constructor(private readonly root: HTMLElement) {}
 
   public mount(): void {
+    document.addEventListener(
+      'visibilitychange',
+      this.handleVisibilityChange,
+    );
+
     this.unsubscribeStore = appStore.subscribe((state) => {
       this.trackHistory(state);
       this.renderState(state);
@@ -184,6 +194,10 @@ export class App {
     this.playgroundView = null;
     this.mountedScreen = null;
 
+    document.removeEventListener(
+      'visibilitychange',
+      this.handleVisibilityChange,
+    );
     this.storage.close();
     void audioEngine.close();
   }
@@ -772,6 +786,10 @@ export class App {
     }
 
     if (state.world !== this.history.present) {
+      if (this.snapshotRecallTimer !== null) {
+        this.cancelSnapshotRecall();
+      }
+
       this.history.record(state.world);
     }
   }
@@ -908,17 +926,8 @@ export class App {
     this.history.reset(world);
 
     if (this.persistenceReady) {
-      try {
-        if (saveBeforeEnter) {
-          await this.repository.saveWorld(world);
-        }
-
-        await this.repository.setActiveWorld(world.id);
-        this.lastSavedWorld = world;
-        await this.refreshLibrary();
-      } catch (error) {
-        this.handlePersistenceFailure(error, 'Could not save World');
-      }
+      this.lastSavedWorld = world;
+      this.cancelAutosave();
     }
 
     const hasSounds = world.soundOrbs.length > 0;
@@ -956,24 +965,54 @@ export class App {
           : 'Add something to begin.',
     });
 
-    if (hasSounds && autoPlay) {
-      await this.startPlayback();
+    const playbackPromise = hasSounds && autoPlay
+      ? this.startPlayback()
+      : Promise.resolve();
+
+    if (this.persistenceReady) {
+      try {
+        if (saveBeforeEnter) {
+          await this.repository.saveWorld(world);
+        }
+
+        await this.repository.setActiveWorld(world.id);
+        await this.refreshLibrary();
+      } catch (error) {
+        this.handlePersistenceFailure(error, 'Could not save World');
+      }
     }
+
+    await playbackPromise;
   }
 
   private openHome(): void {
+    const current = appStore.getState();
+    const leavingWorld = current.magicSession?.baseWorld ?? current.world;
+
     this.clearActivityTimers();
+    this.cancelAutosave();
     this.cancelSnapshotRecall();
     this.clearPlaygroundRuntime();
 
     if (this.persistenceReady) {
-      void this.repository.setActiveWorld(null).catch((error) => {
-        this.handlePersistenceFailure(error, 'Could not update active World');
-      });
+      void (async () => {
+        try {
+          await this.repository.saveWorld(leavingWorld);
+          this.lastSavedWorld = leavingWorld;
+          await this.repository.setActiveWorld(null);
+          await this.refreshLibrary();
+        } catch (error) {
+          this.handlePersistenceFailure(
+            error,
+            'Could not finish saving World',
+          );
+        }
+      })();
     }
 
     appStore.patch({
       screen: 'home',
+      world: leavingWorld,
       selectedOrbId: null,
       selectedFieldId: null,
       selectedToyId: null,
@@ -992,8 +1031,6 @@ export class App {
       playing: false,
       message: 'Pick a starting point.',
     });
-
-    void this.refreshLibrary();
   }
 
   private async togglePlayback(): Promise<void> {
@@ -1555,7 +1592,7 @@ export class App {
       }
 
       await this.enterWorld(loaded.world, {
-        autoPlay: true,
+        autoPlay: false,
         saveBeforeEnter: false,
       });
 
