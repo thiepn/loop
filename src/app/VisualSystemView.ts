@@ -359,10 +359,11 @@ export class VisualSystemView {
         return;
       }
 
-      current.nodes.splice(
-        current.nodes.indexOf(point),
-        1,
-      );
+      const nodeIndex = current.nodes.indexOf(point);
+
+      if (nodeIndex >= 0) {
+        current.nodes.splice(nodeIndex, 1);
+      }
     }, profile.trailLifetimeMs + 80);
 
     this.cleanupTimers.add(timer);
@@ -371,9 +372,14 @@ export class VisualSystemView {
   public pulseOrb(
     orbId: string,
     intensity: number,
+    livePosition?: NormalizedPoint,
   ): void {
     const role = this.roles.get(orbId);
-    const position = this.positions.get(orbId);
+    const position = livePosition ?? this.positions.get(orbId);
+
+    if (livePosition) {
+      this.positions.set(orbId, livePosition);
+    }
 
     if (!role || !position) {
       return;
