@@ -508,6 +508,13 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       context.fillRect(0, 0, width, height);
     }
 
+    if (scene.crossEnvironment.couplingEnergy > 0.001) {
+      context.fillStyle = 'rgba(92, 104, 170, '
+        + (scene.crossEnvironment.couplingEnergy * 0.022).toFixed(3)
+        + ')';
+      context.fillRect(0, 0, width, height);
+    }
+
     if (scene.recording) {
       context.fillStyle = 'rgba(92, 10, 32, 0.035)';
       context.fillRect(0, 0, width, height);
@@ -543,14 +550,52 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       const wake = Math.exp(
         -dragDistance * dragDistance * 34,
       ) * dynamics.dragStrength * particle.depth * motion;
+      const force = scene.crossEnvironment;
+      const forceDx = particle.x - force.forcePosition.x;
+      const forceDy = particle.y - force.forcePosition.y;
+      const forceDistance = Math.max(
+        0.001,
+        Math.hypot(forceDx, forceDy),
+      );
+      const forceLocal = Math.exp(
+        -forceDistance * forceDistance * 24,
+      ) * force.forceStrength * particle.depth * motion;
+      const forceDirX = forceDx / forceDistance;
+      const forceDirY = forceDy / forceDistance;
+      let forceX = 0;
+      let forceY = 0;
+
+      switch (force.forceType) {
+        case 'spinner':
+          forceX = -forceDirY * forceLocal * 0.025;
+          forceY = forceDirX * forceLocal * 0.025;
+          break;
+        case 'magnet':
+          forceX = -forceDirX * forceLocal * 0.022;
+          forceY = -forceDirY * forceLocal * 0.022;
+          break;
+        case 'repulsor':
+          forceX = forceDirX * forceLocal * 0.027;
+          forceY = forceDirY * forceLocal * 0.027;
+          break;
+        case 'portal':
+          forceX = -forceDirX * forceLocal * 0.032;
+          forceY = -forceDirY * forceLocal * 0.032;
+          break;
+        case null:
+          break;
+      }
+
       let x = particle.x
         + drift * 0.006 * particle.depth
         + pointerX * parallax * 0.045
-        + dynamics.dragDelta.x * wake * 0.07;
+        + dynamics.dragDelta.x * wake * 0.07
+        + forceX;
       let y = particle.y
         + Math.cos(time * 0.83 + particle.phase) * 0.004 * particle.depth
         + pointerY * parallax * 0.04
-        + dynamics.dragDelta.y * wake * 0.07;
+        + dynamics.dragDelta.y * wake * 0.07
+        + forceY;
 
       x = x - Math.floor(x);
       y = y - Math.floor(y);

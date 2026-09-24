@@ -80,6 +80,46 @@ function mix(
   return a + (b - a) * Math.max(0, Math.min(1, amount));
 }
 
+function adjustedCrossColor(
+  color: RenderColor,
+  orb: RenderOrb,
+): RenderColor {
+  let result = color;
+  const amount = orb.cross.toyInfluence?.amount ?? 0;
+
+  switch (orb.cross.toyInfluence?.type ?? null) {
+    case 'spinner':
+      result = mixColor(result, [0.66, 0.55, 0.98, 1], amount * 0.1);
+      break;
+    case 'magnet':
+      result = mixColor(result, [0.2, 0.83, 0.6, 1], amount * 0.12);
+      break;
+    case 'repulsor':
+      result = mixColor(result, [0.98, 0.44, 0.52, 1], amount * 0.12);
+      break;
+    case 'portal':
+      result = mixColor(result, [0.13, 0.83, 0.93, 1], amount * 0.16);
+      break;
+    case null:
+      break;
+  }
+
+  return result;
+}
+
+function mixColor(
+  a: RenderColor,
+  b: RenderColor,
+  amount: number,
+): RenderColor {
+  return [
+    mix(a[0], b[0], amount),
+    mix(a[1], b[1], amount),
+    mix(a[2], b[2], amount),
+    a[3],
+  ];
+}
+
 function adjustedFieldColor(
   color: RenderColor,
   effects: EffectAmounts,
@@ -182,9 +222,12 @@ export class CanvasOrbMaterialLayer {
         + hoverShift.y
         + settleShift.y;
       const pulse = pulseForOrb(orb.id, events);
-      const color = adjustedFieldColor(
-        ROLE_RENDER_COLORS[orb.role],
-        orb.material.fieldInfluence,
+      const color = adjustedCrossColor(
+        adjustedFieldColor(
+          ROLE_RENDER_COLORS[orb.role],
+          orb.material.fieldInfluence,
+        ),
+        orb,
       );
 
       this.context.save();
@@ -207,7 +250,9 @@ export class CanvasOrbMaterialLayer {
         color,
         orb.muted,
         orb.material.energy
-          + orb.material.fieldInfluence.space * 0.2,
+          + orb.material.fieldInfluence.space * 0.2
+          + orb.cross.auraBlend * 0.12
+          + orb.cross.neighborLight * 0.08,
       );
       this.drawBody(
         orb,
@@ -412,10 +457,26 @@ export class CanvasOrbMaterialLayer {
       orb.interaction.dragSpeed,
       this.context,
     );
-    const interactionScale = 1
+    const toyAmount = orb.cross.toyInfluence?.amount ?? 0;
+    const toyScale = (() => {
+      switch (orb.cross.toyInfluence?.type ?? null) {
+        case 'magnet':
+          return 1 - toyAmount * 0.018;
+        case 'repulsor':
+          return 1 + toyAmount * 0.026;
+        case 'portal':
+          return 1 - toyAmount * 0.008;
+        default:
+          return 1;
+      }
+    })();
+    const interactionScale = (
+      1
       + orb.interaction.hoverStrength * 0.025
       + (orb.interaction.grabbed ? 0.055 : 0)
-      + Math.abs(settle) * 0.045;
+      + Math.abs(settle) * 0.045
+      + orb.cross.auraBlend * 0.018
+    ) * toyScale;
 
     this.context.translate(x, y);
     this.context.rotate(angle);
@@ -444,13 +505,25 @@ export class CanvasOrbMaterialLayer {
 
     for (let index = 0; index <= points; index += 1) {
       const angle = index / points * Math.PI * 2;
+      const wakeAngle = Math.atan2(
+        orb.cross.wakeDirection.y,
+        orb.cross.wakeDirection.x,
+      );
+      const toyWave = orb.cross.toyInfluence?.type === 'spinner'
+        ? (orb.cross.toyInfluence?.amount ?? 0)
+          * 0.016
+          * Math.sin(angle * 4 + time * 1.7)
+        : 0;
+      const wakeDelta = orb.cross.wakeStrength
+        * 0.022
+        * Math.cos(angle - wakeAngle);
       const boundary = roleBoundary(
         orb.role,
         angle,
         time,
         orb.material.seed,
         pulse,
-      ) + fieldBoundaryDelta(
+      ) + wakeDelta + toyWave + fieldBoundaryDelta(
         orb.material.fieldInfluence,
         angle,
         time,

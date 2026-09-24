@@ -83,6 +83,13 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_fx_heat;\n'
   + 'uniform float u_fx_frost;\n'
   + 'uniform float u_fx_filter;\n'
+  + 'uniform float u_aura_blend;\n'
+  + 'uniform float u_neighbor_light;\n'
+  + 'uniform vec2 u_neighbor_dir;\n'
+  + 'uniform float u_wake_strength;\n'
+  + 'uniform vec2 u_wake_dir;\n'
+  + 'uniform float u_toy_type;\n'
+  + 'uniform float u_toy_amount;\n'
   + 'uniform float u_time_ms;\n'
   + 'uniform float u_pattern[16];\n'
   + 'out vec4 out_color;\n'
@@ -127,6 +134,15 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  boundary += u_fx_heat * 0.028 * sin(angle * 5.0 + time * 2.1);\n'
   + '  boundary -= u_fx_frost * 0.012 * (0.5 + 0.5 * cos(angle * 8.0));\n'
   + '  boundary -= u_fx_filter * 0.008;\n'
+  + '  float wakeAngle = atan(u_wake_dir.y, u_wake_dir.x);\n'
+  + '  boundary += u_wake_strength * 0.022 * cos(angle - wakeAngle);\n'
+  + '  if (u_toy_type > 0.5 && u_toy_type < 1.5) {\n'
+  + '    boundary += u_toy_amount * 0.016 * sin(angle * 4.0 + time * 1.7);\n'
+  + '  } else if (u_toy_type > 1.5 && u_toy_type < 2.5) {\n'
+  + '    boundary -= u_toy_amount * 0.018;\n'
+  + '  } else if (u_toy_type > 2.5 && u_toy_type < 3.5) {\n'
+  + '    boundary += u_toy_amount * 0.026;\n'
+  + '  }\n'
   + '  return boundary;\n'
   + '}\n'
   + '\n'
@@ -147,19 +163,28 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '  float body = 1.0 - smoothstep(boundary - 0.055, boundary + 0.018, d);\n'
   + '  float outside = max(0.0, d - boundary);\n'
   + '  float aura = exp(-outside * (6.0 + u_muted * 4.0))\n'
-  + '    * (1.0 - smoothstep(1.0, 1.43, d));\n'
-  + '  float alpha = aura * (0.08 + u_energy * 0.08 + u_fx_space * 0.035) + body * 0.94;\n'
+  + '    * (1.0 - smoothstep(1.0, 1.43 + u_aura_blend * 0.08, d));\n'
+  + '  float alpha = aura * (0.08 + u_energy * 0.08 + u_fx_space * 0.035 + u_aura_blend * 0.045) + body * 0.94;\n'
   + '\n'
   + '  vec3 color = u_color.rgb;\n'
   + '  float radialLight = clamp(1.18 - d * 0.5, 0.55, 1.15);\n'
   + '  color *= radialLight * (0.82 + u_brightness * 0.28);\n'
   + '  color += vec3(0.24, 0.28, 0.34) * max(0.0, 0.34 - d) * 0.6;\n'
+  + '  vec2 directionQ = length(q) > 0.001 ? normalize(q) : vec2(0.0);\n'
+  + '  float neighborFacing = max(0.0, dot(directionQ, normalize(u_neighbor_dir + vec2(0.0001))));\n'
+  + '  color += vec3(0.18, 0.22, 0.3) * u_neighbor_light * (0.05 + neighborFacing * 0.12);\n'
+  + '  color += vec3(0.22, 0.24, 0.34) * u_aura_blend * 0.035;\n'
   + '  color = mix(color, vec3(0.48, 0.4, 1.0), u_fx_space * 0.16);\n'
   + '  color = mix(color, vec3(0.38, 0.9, 1.0), u_fx_echo * 0.12);\n'
   + '  color = mix(color, vec3(1.0, 0.28, 0.08), u_fx_heat * 0.34);\n'
   + '  color = mix(color, vec3(0.78, 0.94, 1.0), u_fx_frost * 0.42);\n'
   + '  color = mix(color, vec3(0.18, 0.78, 0.58), u_fx_filter * 0.24);\n'
+  + '  if (u_toy_type > 0.5 && u_toy_type < 1.5) color = mix(color, vec3(0.66, 0.55, 0.98), u_toy_amount * 0.10);\n'
+  + '  else if (u_toy_type > 1.5 && u_toy_type < 2.5) color = mix(color, vec3(0.20, 0.83, 0.60), u_toy_amount * 0.12);\n'
+  + '  else if (u_toy_type > 2.5 && u_toy_type < 3.5) color = mix(color, vec3(0.98, 0.44, 0.52), u_toy_amount * 0.12);\n'
+  + '  else if (u_toy_type > 3.5) color = mix(color, vec3(0.13, 0.83, 0.93), u_toy_amount * 0.16);\n'
   + '  color *= 1.0 - u_fx_filter * 0.12;\n'
+  + '  alpha *= 1.0 - step(3.5, u_toy_type) * u_toy_amount * 0.08;\n'
   + '\n'
   + '  float stepFloat = (angle + 3.14159265 + (u_groove - 0.5) * 0.08) / 6.2831853 * 16.0;\n'
   + '  int stepIndex = int(clamp(floor(stepFloat), 0.0, 15.0));\n'
@@ -406,6 +431,13 @@ export class WebGLOrbMaterialLayer {
   private readonly fxHeat: WebGLUniformLocation;
   private readonly fxFrost: WebGLUniformLocation;
   private readonly fxFilter: WebGLUniformLocation;
+  private readonly auraBlend: WebGLUniformLocation;
+  private readonly neighborLight: WebGLUniformLocation;
+  private readonly neighborDir: WebGLUniformLocation;
+  private readonly wakeStrength: WebGLUniformLocation;
+  private readonly wakeDir: WebGLUniformLocation;
+  private readonly toyType: WebGLUniformLocation;
+  private readonly toyAmount: WebGLUniformLocation;
   private readonly timeMs: WebGLUniformLocation;
   private readonly pattern: WebGLUniformLocation;
 
@@ -457,6 +489,13 @@ export class WebGLOrbMaterialLayer {
     this.fxHeat = requiredUniform(gl, program, 'u_fx_heat');
     this.fxFrost = requiredUniform(gl, program, 'u_fx_frost');
     this.fxFilter = requiredUniform(gl, program, 'u_fx_filter');
+    this.auraBlend = requiredUniform(gl, program, 'u_aura_blend');
+    this.neighborLight = requiredUniform(gl, program, 'u_neighbor_light');
+    this.neighborDir = requiredUniform(gl, program, 'u_neighbor_dir');
+    this.wakeStrength = requiredUniform(gl, program, 'u_wake_strength');
+    this.wakeDir = requiredUniform(gl, program, 'u_wake_dir');
+    this.toyType = requiredUniform(gl, program, 'u_toy_type');
+    this.toyAmount = requiredUniform(gl, program, 'u_toy_amount');
     this.timeMs = requiredUniform(gl, program, 'u_time_ms');
     this.pattern = requiredUniform(gl, program, 'u_pattern[0]');
 
@@ -599,6 +638,35 @@ export class WebGLOrbMaterialLayer {
       gl.uniform1f(
         this.fxFilter,
         orb.material.fieldInfluence.filter,
+      );
+      gl.uniform1f(this.auraBlend, orb.cross.auraBlend);
+      gl.uniform1f(this.neighborLight, orb.cross.neighborLight);
+      gl.uniform2f(
+        this.neighborDir,
+        orb.cross.neighborDirection.x,
+        orb.cross.neighborDirection.y,
+      );
+      gl.uniform1f(this.wakeStrength, orb.cross.wakeStrength);
+      gl.uniform2f(
+        this.wakeDir,
+        orb.cross.wakeDirection.x,
+        orb.cross.wakeDirection.y,
+      );
+      gl.uniform1f(
+        this.toyType,
+        (() => {
+          switch (orb.cross.toyInfluence?.type ?? null) {
+            case 'spinner': return 1;
+            case 'magnet': return 2;
+            case 'repulsor': return 3;
+            case 'portal': return 4;
+            case null: return 0;
+          }
+        })(),
+      );
+      gl.uniform1f(
+        this.toyAmount,
+        orb.cross.toyInfluence?.amount ?? 0,
       );
       gl.uniform1f(this.selected, orb.selected ? 1 : 0);
       gl.uniform1f(this.focused, orb.focused ? 1 : 0);
