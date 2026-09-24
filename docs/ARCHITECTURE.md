@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 11.
+Updated through Phase 12.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -160,6 +160,17 @@ All future public asset references should go through this boundary rather than h
 ### core/platform/
 Centralizes capability detection rather than scattering browser checks through feature code.
 
+### core/visual/
+Owns visual-performance/accessibility policy independent of audio and creative World state.
+
+Current responsibilities:
+- VisualQuality — High/Balanced/Battery Saver profiles;
+- automatic initial quality from hardware/data-saver hints;
+- reduced-motion/particles/bloom composition;
+- global localStorage visual-preference persistence.
+
+Visual policy never imports or changes the audio engine.
+
 ## Dependency direction
 
 UI/app → domain/core modules
@@ -188,6 +199,8 @@ Examples:
 - recording Blob/WAV data and preview object URLs are transient App runtime state;
 - capture status/duration/format metadata is transient AppState;
 - recordings never belong to WorldDocument, IndexedDB Worlds, Snapshots, or WorldHistory;
+- visual quality/reduction preferences are global app preferences, not World state;
+- VisualSystemView owns ephemeral ambient/trail/burst DOM nodes;
 - rendered DOM is a projection of state, not a second persistent data model.
 
 During a drag, DOM position and spatial audio may preview continuously. The normalized position is committed back to World state when the drag ends.
@@ -262,6 +275,8 @@ Phase 10 adds the local World library, autosave/restore, typed Snapshots, bounde
 
 Phase 11 adds transient master performance capture and download. Recording taps the post-limiter master without changing the creative World model or persistence schema.
 
+Phase 12 completes the V1 visual identity/game-feel system with layered role identities, audio-timed burst feedback, bounded motion trails, richer field/toy/link treatment, shared transitions, max-density de-cluttering, and High/Balanced/Battery Saver profiles.
+
 ## GitHub Pages
 The production URL is expected to use the repository path:
 https://thiepn.github.io/loop/
@@ -330,7 +345,11 @@ Current automated coverage includes:
 - PCM16 WAV encoding/interleaving/clamping;
 - MasterRecorder Stop/Cancel/tap cleanup;
 - bounded duration callback;
-- unexpected browser-stop recovery.
+- unexpected browser-stop recovery;
+- automatic visual-quality selection;
+- visual profile density ordering;
+- reduced-motion/particles/bloom composition;
+- visual-preference persistence/fallback.
 
 Future phases add tests at their domain boundaries.
 
@@ -353,6 +372,8 @@ Phase 7 adds one demand-driven requestAnimationFrame loop. It runs only while at
 Phase 10 persistence is event/debounce-driven and adds no render or audio loop. Live Motion positions are never serialized.
 
 Phase 11 recording adds no permanent audio graph. The MediaStreamAudioDestinationNode capture tap exists only while recording. Captures are capped at 10 minutes, arrive in 1-second MediaRecorder chunks, and automatic WAV decoding is capped at 3 minutes to avoid large PCM memory spikes.
+
+Phase 12 adds no new permanent render loop. VisualSystemView creates bounded DOM particles only on profile changes, audio events, or existing live-position updates. High/Balanced/Battery Saver change visual density only. Max-orb Worlds automatically reduce decorative noise.
 
 Future render loops and expensive DSP must be pausable when hidden or unnecessary.
 
@@ -605,3 +626,36 @@ When Record is pressed while musical playback is stopped, the existing browser g
 Capture data is never persisted. Object URLs are revoked on discard, replacement, navigation, and teardown.
 
 Backgrounding the document finalizes an active recording rather than promising cross-browser background audio capture.
+
+
+## Phase 12 visual-system rule
+
+Visual quality is independent from creative/audio state.
+
+Visual settings:
+- High;
+- Balanced;
+- Battery Saver;
+- Reduce Motion;
+- Reduce Particles;
+- Reduce Glow.
+
+Initial quality may use browser hardware/data-saver hints, but an explicit user preference is stored globally in localStorage and wins afterward.
+
+No visual preference is serialized in WorldDocument, Snapshots, backups, or WorldHistory.
+
+VisualSystemView owns one presentation-only effects layer:
+- deterministic ambient particles;
+- bounded role-colored motion trail points;
+- audio-event burst particles.
+
+It does not own requestAnimationFrame. The existing Phase 7 Motion loop forwards live positions only while Motion/toys require them.
+
+Scheduled audio activity remains the timing source for transient game feel:
+AudioContext event time → PlaygroundView role pulse + VisualSystemView burst.
+
+Reduce Motion removes travel-heavy effects while preserving brightness/state clarity. Reduce Particles removes ambient/burst/built-in decorative particles. Reduce Glow lowers luminous depth. These reductions compose.
+
+Battery Saver reduces visual extras but never changes timing, DSP, patterns, Motion behavior, Links, Magic, persistence, or recording.
+
+Phase 12 deliberately remains DOM/CSS-first. A WebGL/WebGPU renderer was not introduced because the bounded V1 visual target is satisfied without adding a second rendering architecture immediately before mobile/release hardening.
