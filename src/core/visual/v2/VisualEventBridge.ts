@@ -24,6 +24,22 @@ function durationForEvent(event: VisualTransientEvent): number {
       return 620;
     case 'link-deleted':
       return 460;
+    case 'state-transition':
+      switch (event.transition.kind) {
+        case 'magic':
+          return 980;
+        case 'magic-revert':
+          return 760;
+        case 'snapshot':
+          return 900;
+        case 'undo':
+        case 'redo':
+          return 720;
+        case 'delete':
+          return 620;
+        case 'portal':
+          return 520;
+      }
     case 'choreography-state':
       return event.cue === 'play' || event.cue === 'stop'
         ? 900
@@ -51,6 +67,28 @@ export class VisualEventBridge {
     if (event.kind === 'pointer-disturbance') {
       for (let index = this.events.length - 1; index >= 0; index -= 1) {
         if (this.events[index]?.event.kind === 'pointer-disturbance') {
+          this.events.splice(index, 1);
+        }
+      }
+    }
+
+    if (event.kind === 'state-transition') {
+      const transition = event.transition;
+
+      for (let index = this.events.length - 1; index >= 0; index -= 1) {
+        const queued = this.events[index]?.event;
+
+        if (queued?.kind !== 'state-transition') {
+          continue;
+        }
+
+        if (
+          queued.transition.key === transition.key
+          || (
+            transition.key === 'world'
+            && queued.transition.priority <= transition.priority
+          )
+        ) {
           this.events.splice(index, 1);
         }
       }

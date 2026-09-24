@@ -265,6 +265,39 @@ export type ChoreographyStateCue =
   | 'record-start'
   | 'record-stop';
 
+export type StateTransitionKind =
+  | 'magic'
+  | 'magic-revert'
+  | 'snapshot'
+  | 'undo'
+  | 'redo'
+  | 'delete'
+  | 'portal';
+
+export type StateTransitionObjectKind =
+  | 'orb'
+  | 'field'
+  | 'toy';
+
+export interface StateTransitionNode {
+  readonly id: string;
+  readonly kind: StateTransitionObjectKind;
+  readonly from: NormalizedPoint | null;
+  readonly to: NormalizedPoint | null;
+  readonly color: RenderRgb;
+  readonly radius: number;
+}
+
+export interface StateTransitionPayload {
+  readonly kind: StateTransitionKind;
+  readonly key: string;
+  readonly priority: number;
+  readonly seed: number;
+  readonly intensity: number;
+  readonly origin: NormalizedPoint;
+  readonly nodes: readonly StateTransitionNode[];
+}
+
 export type VisualTransientEvent =
   | {
       readonly kind: 'orb-pulse';
@@ -284,6 +317,10 @@ export type VisualTransientEvent =
   | {
       readonly kind: 'link-deleted';
       readonly link: RenderLinkGhost;
+    }
+  | {
+      readonly kind: 'state-transition';
+      readonly transition: StateTransitionPayload;
     }
   | {
       readonly kind: 'choreography-state';
