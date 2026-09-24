@@ -47,7 +47,7 @@ export class PersistenceView {
   private readonly worldName: HTMLElement;
 
   public constructor(
-    private readonly root: HTMLElement,
+    root: HTMLElement,
     private readonly callbacks: PersistenceViewCallbacks,
   ) {
     const topbar = root.querySelector<HTMLElement>('.playground-topbar');
