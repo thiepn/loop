@@ -166,6 +166,7 @@ export class App {
   private pendingSnapshotRecallId: string | null = null;
   private snapshotRecallTargetTime: number | null = null;
   private pendingHomeSave: Promise<void> | null = null;
+  private homeOperationTail: Promise<void> = Promise.resolve();
   private bootstrapInteractionOccurred = false;
   private readonly handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
@@ -399,37 +400,37 @@ export class App {
   private mountHome(): void {
     this.homeView = new HomeView(this.root, {
       onChooseStarter: (starterId) => {
-        void this.chooseStarter(starterId);
+        this.queueHomeOperation(() => this.chooseStarter(starterId));
       },
       onSurprise: () => {
-        void this.chooseSurprise();
+        this.queueHomeOperation(() => this.chooseSurprise());
       },
       onOpenWorld: (worldId) => {
-        void this.openLibraryWorld(worldId);
+        this.queueHomeOperation(() => this.openLibraryWorld(worldId));
       },
       onRenameWorld: (worldId, name) => {
-        void this.renameLibraryWorld(worldId, name);
+        this.queueHomeOperation(() => this.renameLibraryWorld(worldId, name));
       },
       onDuplicateWorld: (worldId) => {
-        void this.duplicateLibraryWorld(worldId);
+        this.queueHomeOperation(() => this.duplicateLibraryWorld(worldId));
       },
       onTrashWorld: (worldId) => {
-        void this.trashLibraryWorld(worldId);
+        this.queueHomeOperation(() => this.trashLibraryWorld(worldId));
       },
       onRestoreWorld: (worldId) => {
-        void this.restoreLibraryWorld(worldId);
+        this.queueHomeOperation(() => this.restoreLibraryWorld(worldId));
       },
       onPurgeWorld: (worldId) => {
-        void this.purgeLibraryWorld(worldId);
+        this.queueHomeOperation(() => this.purgeLibraryWorld(worldId));
       },
       onExportWorld: (worldId) => {
-        void this.exportLibraryWorld(worldId);
+        this.queueHomeOperation(() => this.exportLibraryWorld(worldId));
       },
       onExportAll: () => {
-        void this.exportAllWorlds();
+        this.queueHomeOperation(() => this.exportAllWorlds());
       },
       onImportBackup: (text) => {
-        void this.importBackup(text);
+        this.queueHomeOperation(() => this.importBackup(text));
       },
     });
   }
@@ -2216,6 +2217,15 @@ export class App {
     });
   }
 
+  private queueHomeOperation(operation: () => Promise<void>): void {
+    const run = this.homeOperationTail.then(operation, operation);
+    this.homeOperationTail = run.catch(() => undefined);
+  }
+
+  private async waitForHomeOperations(): Promise<void> {
+    await this.homeOperationTail;
+  }
+
   private async applyPwaUpdate(): Promise<void> {
     const current = appStore.getState();
 
@@ -2237,6 +2247,7 @@ export class App {
       return;
     }
 
+    await this.waitForHomeOperations();
     await this.waitForPendingHomeSave();
 
     const latest = appStore.getState();
