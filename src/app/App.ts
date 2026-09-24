@@ -161,6 +161,7 @@ export class App {
   private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
   private autosavePendingWorld: WorldDocument | null = null;
   private autosaveInFlightWorld: WorldDocument | null = null;
+  private autosaveInFlightPromise: Promise<void> | null = null;
   private lastSavedWorld: WorldDocument | null = null;
   private snapshotRecallTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingSnapshotRecallId: string | null = null;
@@ -1084,10 +1085,26 @@ export class App {
   }
 
   private async flushAutosave(): Promise<void> {
+    const activeSave = this.autosaveInFlightPromise;
+
+    if (activeSave) {
+      await activeSave;
+
+      if (this.autosavePendingWorld && this.persistenceReady) {
+        await this.flushAutosave();
+      }
+      return;
+    }
+
     const world = this.autosavePendingWorld;
 
     if (!world || !this.persistenceReady) {
       return;
+    }
+
+    if (this.autosaveTimer !== null) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
     }
 
     this.autosavePendingWorld = null;
@@ -1097,20 +1114,34 @@ export class App {
       appStore.patch({ autosave: 'saving' });
     }
 
-    try {
-      await this.repository.saveWorld(world);
-      await this.repository.setActiveWorld(world.id);
-      this.lastSavedWorld = world;
+    const operation = (async () => {
+      try {
+        await this.repository.saveWorld(world);
+        await this.repository.setActiveWorld(world.id);
+        this.lastSavedWorld = world;
 
-      if (appStore.getState().world === world) {
-        appStore.patch({ autosave: 'saved' });
+        if (appStore.getState().world === world) {
+          appStore.patch({ autosave: 'saved' });
+        }
+
+        await this.refreshLibrary();
+      } catch (error) {
+        this.handlePersistenceFailure(error, 'Autosave failed');
+      }
+    })();
+
+    this.autosaveInFlightPromise = operation;
+
+    try {
+      await operation;
+    } finally {
+      if (this.autosaveInFlightPromise === operation) {
+        this.autosaveInFlightPromise = null;
       }
 
-      await this.refreshLibrary();
-    } catch (error) {
-      this.handlePersistenceFailure(error, 'Autosave failed');
-    } finally {
-      this.autosaveInFlightWorld = null;
+      if (this.autosaveInFlightWorld === world) {
+        this.autosaveInFlightWorld = null;
+      }
 
       const current = appStore.getState();
       if (
@@ -1121,6 +1152,12 @@ export class App {
       ) {
         this.scheduleAutosave(current);
       }
+    }
+  }
+
+  private async waitForAutosaveInFlight(): Promise<void> {
+    while (this.autosaveInFlightPromise) {
+      await this.autosaveInFlightPromise;
     }
   }
 
@@ -1272,6 +1309,7 @@ export class App {
     if (this.persistenceReady) {
       const save = (async () => {
         try {
+          await this.waitForAutosaveInFlight();
           await this.repository.saveWorld(leavingWorld);
           this.lastSavedWorld = leavingWorld;
           await this.repository.setActiveWorld(null);
@@ -2315,6 +2353,7 @@ export class App {
 
     await this.waitForHomeOperations();
     await this.waitForPendingHomeSave();
+    await this.waitForAutosaveInFlight();
 
     const latest = appStore.getState();
 
