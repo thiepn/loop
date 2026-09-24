@@ -4,6 +4,7 @@ const baseURL = 'http://127.0.0.1:4173/loop/';
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: 'release-candidate.mjs',
   timeout: 90_000,
   expect: {
     timeout: 8_000,
