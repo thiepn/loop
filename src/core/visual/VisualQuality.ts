@@ -154,10 +154,13 @@ export function readBrowserVisualHints(): VisualEnvironmentHints {
     };
   };
 
+  const deviceMemoryGb = nav.deviceMemory;
+  const saveData = nav.connection?.saveData;
+
   return {
     hardwareConcurrency: navigator.hardwareConcurrency,
-    deviceMemoryGb: nav.deviceMemory,
-    saveData: nav.connection?.saveData,
+    ...(deviceMemoryGb !== undefined ? { deviceMemoryGb } : {}),
+    ...(saveData !== undefined ? { saveData } : {}),
     prefersReducedMotion: window.matchMedia?.(
       '(prefers-reduced-motion: reduce)',
     ).matches ?? false,
