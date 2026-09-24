@@ -6213,7 +6213,12 @@ a:focus-visible,
   .link-selection-actions button,
   .snapshot-row-actions button,
   .capture-result-actions button,
-  .magic-preview-actions button {
+  .magic-preview-actions button,
+  .home-library-actions button,
+  .world-library-card-actions button,
+  .world-trash-actions button,
+  .pwa-install-button,
+  .pwa-update-banner button {
     min-height: 44px;
   }
 
