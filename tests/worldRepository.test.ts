@@ -86,6 +86,27 @@ describe('WorldRepository', () => {
     expect(await storage.getWorldRecord('broken')).toBeNull();
   });
 
+  it('quarantines a record whose storage key disagrees with its World id', async () => {
+    const storage = new MemoryWorldStorage();
+    const repository = new WorldRepository(storage);
+    const world = createStarterWorld('beat', 100);
+
+    await storage.putWorldRecord({
+      id: 'wrong-storage-key',
+      world,
+      lastOpenedAt: 200,
+      deletedAt: null,
+    });
+    await storage.setActiveWorldId('wrong-storage-key');
+
+    const library = await repository.listLibrary();
+
+    expect(library).toEqual([]);
+    expect(storage.getQuarantineRecords()).toHaveLength(1);
+    expect(await storage.getWorldRecord('wrong-storage-key')).toBeNull();
+    expect(await storage.getActiveWorldId()).toBeNull();
+  });
+
   it('can read without changing last-opened metadata', async () => {
     const storage = new MemoryWorldStorage();
     const repository = new WorldRepository(storage);
