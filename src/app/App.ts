@@ -219,9 +219,24 @@ export class App {
       return;
     }
 
+    const state = appStore.getState();
+    const modalOpen = Boolean(
+      state.palette
+      || state.effectPaletteOpen
+      || state.toyPaletteOpen
+      || state.patternEditorOrbId
+      || state.motionEditorOrbId
+      || state.linkEditorSourceOrbId
+      || state.magicIntentOpen
+      || state.snapshotsOpen
+      || state.visualSettingsOpen
+      || state.captureStatus === 'ready'
+    );
+
     if (
-      appStore.getState().screen !== 'playground'
-      || appStore.getState().magicSession
+      state.screen !== 'playground'
+      || state.magicSession
+      || modalOpen
       || (!event.ctrlKey && !event.metaKey)
     ) {
       return;
