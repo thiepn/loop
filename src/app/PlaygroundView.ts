@@ -7,6 +7,7 @@ import { soundById } from '../core/sounds/coreCatalog';
 import { patternKindForRole } from '../core/music/Pattern';
 import { clampPoint, type NormalizedPoint, type SoundOrbDocument } from '../core/world/SoundOrb';
 import type { AppState } from './state';
+import { ModalFocusController } from './ModalFocusController';
 
 export interface PlaygroundCallbacks {
   readonly onTogglePlayback: () => void;
@@ -87,6 +88,7 @@ export class PlaygroundView {
   private readonly paletteTitle: HTMLElement;
   private readonly paletteCategories: HTMLElement;
   private readonly paletteSounds: HTMLElement;
+  private readonly paletteFocus: ModalFocusController;
   private readonly onboarding: HTMLElement;
   private readonly onboardingText: HTMLElement;
   private drag: DragSession | null = null;
@@ -124,13 +126,13 @@ export class PlaygroundView {
           <div class="listener-rings" aria-hidden="true">
             <span></span><span></span><span></span>
           </div>
-          <div class="listener-core" data-listener aria-label="You are here">
+          <div class="listener-core" data-listener role="img" aria-label="You are here">
             <span class="listener-dot"></span>
             <small>YOU</small>
           </div>
           <div class="orb-layer" data-orb-layer></div>
 
-          <p class="world-hint" data-status aria-live="polite"></p>
+          <p class="world-hint" data-status aria-live="polite" aria-atomic="true"></p>
 
           <div class="onboarding-tip" data-onboarding hidden>
             <span data-onboarding-text></span>
@@ -244,6 +246,10 @@ export class PlaygroundView {
     this.paletteTitle = paletteTitle;
     this.paletteCategories = paletteCategories;
     this.paletteSounds = paletteSounds;
+    this.paletteFocus = new ModalFocusController(this.palette, {
+      onEscape: callbacks.onClosePalette,
+      initialFocusSelector: '[data-close-palette]',
+    });
     this.onboarding = onboarding;
     this.onboardingText = onboardingText;
 
@@ -347,6 +353,7 @@ export class PlaygroundView {
     this.syncOrbs(state);
     this.renderSelection(state);
     this.renderPalette(state);
+    this.paletteFocus.sync(state.palette !== null);
     this.renderOnboarding(state);
   }
 
@@ -499,6 +506,7 @@ export class PlaygroundView {
   }
 
   public destroy(): void {
+    this.paletteFocus.destroy();
     this.drag = null;
     this.orbElements.clear();
     this.root.replaceChildren();
@@ -549,6 +557,10 @@ export class PlaygroundView {
       </span>
       <span class="orb-label"></span>
     `;
+
+    element.addEventListener('click', () => {
+      this.callbacks.onSelectOrb(orb.id);
+    });
 
     element.addEventListener('pointerdown', (event) => {
       if (event.button !== 0 && event.pointerType === 'mouse') {
