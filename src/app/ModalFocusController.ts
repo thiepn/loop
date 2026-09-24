@@ -150,22 +150,28 @@ export class ModalFocusController {
   }
 
   private makeBackgroundInert(): void {
-    const parent = this.container.parentElement;
+    let activeBranch: HTMLElement | null = this.container;
 
-    if (!parent) {
-      return;
-    }
+    while (activeBranch?.parentElement) {
+      const parent = activeBranch.parentElement;
 
-    for (const child of parent.children) {
-      if (!(child instanceof HTMLElement) || child === this.container) {
-        continue;
+      for (const child of parent.children) {
+        if (!(child instanceof HTMLElement) || child === activeBranch) {
+          continue;
+        }
+
+        if (!this.inertStates.has(child)) {
+          this.inertStates.set(child, child.inert);
+        }
+
+        child.inert = true;
       }
 
-      if (!this.inertStates.has(child)) {
-        this.inertStates.set(child, child.inert);
-      }
+      activeBranch = parent;
 
-      child.inert = true;
+      if (activeBranch === document.body) {
+        break;
+      }
     }
   }
 
