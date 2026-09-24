@@ -76,6 +76,7 @@ function orbName(state: Readonly<AppState>, orbId: string): string {
 export class LinkView {
   private readonly svg: SVGSVGElement;
   private readonly editor: HTMLElement;
+  private readonly editorFocus: ModalFocusController;
   private readonly editorTitle: HTMLElement;
   private readonly targetList: HTMLElement;
   private readonly relationGrid: HTMLElement;
