@@ -244,6 +244,7 @@ export class App {
     this.unsubscribePwa = this.pwa.subscribe((pwa) => {
       appStore.patch({
         pwaInstallAvailable: pwa.installAvailable,
+        pwaManualInstallAvailable: pwa.manualInstallAvailable,
         pwaInstalled: pwa.installed,
         pwaUpdateReady: pwa.updateReady,
         pwaOffline: pwa.offline,
