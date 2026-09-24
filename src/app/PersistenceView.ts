@@ -64,7 +64,7 @@ export class PersistenceView {
     const status = document.createElement('div');
     status.className = 'persistence-topbar-tools';
     status.innerHTML = `
-      <span class="autosave-status" data-autosave-status role="status" aria-live="polite" aria-atomic="true">Local</span>
+      <span class="autosave-status" data-autosave-status aria-live="off" aria-atomic="true">Local</span>
       <button type="button" data-history-undo aria-label="Undo">↶</button>
       <button type="button" data-history-redo aria-label="Redo">↷</button>
     `;
@@ -193,6 +193,12 @@ export class PersistenceView {
     state: Readonly<AppState>,
     history: HistoryAvailability,
   ): void {
+    this.autosaveStatus.setAttribute(
+      'aria-live',
+      state.persistence === 'error' || state.autosave === 'error'
+        ? 'assertive'
+        : 'off',
+    );
     this.autosaveStatus.textContent = autosaveLabel(state);
     this.autosaveStatus.dataset.status = state.autosave;
 
