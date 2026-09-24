@@ -419,6 +419,8 @@ export class MotionView {
         toy,
         state.selectedToyId === toy.id,
       );
+      element.tabIndex = state.magicSession ? -1 : 0;
+      element.setAttribute('aria-disabled', String(Boolean(state.magicSession)));
 
       if (toy.type === 'portal') {
         let exit = this.portalExitElements.get(toy.id);
@@ -430,6 +432,8 @@ export class MotionView {
         }
 
         this.updatePortalExitElement(exit, toy);
+        exit.tabIndex = state.magicSession ? -1 : 0;
+        exit.setAttribute('aria-disabled', String(Boolean(state.magicSession)));
       } else {
         this.portalExitElements.get(toy.id)?.remove();
         this.portalExitElements.delete(toy.id);
@@ -450,6 +454,10 @@ export class MotionView {
     `;
 
     element.addEventListener('keydown', (event) => {
+      if (this.latestState?.magicSession) {
+        return;
+      }
+
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         this.callbacks.onSelectToy(toy.id);
@@ -525,6 +533,10 @@ export class MotionView {
     element.addEventListener('pointercancel', finish);
 
     element.addEventListener('keydown', (event) => {
+      if (this.latestState?.magicSession) {
+        return;
+      }
+
       const current = this.toyFromState(toy.id);
       if (!current) {
         return;
@@ -579,6 +591,10 @@ export class MotionView {
     `;
 
     element.addEventListener('keydown', (event) => {
+      if (this.latestState?.magicSession) {
+        return;
+      }
+
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         this.callbacks.onSelectToy(toy.id);
@@ -654,6 +670,10 @@ export class MotionView {
     element.addEventListener('pointercancel', finish);
 
     element.addEventListener('keydown', (event) => {
+      if (this.latestState?.magicSession) {
+        return;
+      }
+
       const current = this.toyFromState(toy.id);
       const exit = current?.exitPosition;
 
@@ -753,7 +773,8 @@ export class MotionView {
     this.toyPalette.hidden = !state.toyPaletteOpen;
     this.toysButton.setAttribute('aria-expanded', String(state.toyPaletteOpen));
     this.toyPaletteFocus.sync(state.toyPaletteOpen);
-    this.toysButton.disabled = state.world.playgroundToys.length >= MAX_PLAYGROUND_TOYS;
+    this.toysButton.disabled = Boolean(state.magicSession)
+      || state.world.playgroundToys.length >= MAX_PLAYGROUND_TOYS;
 
     if (!state.toyPaletteOpen) {
       return;
