@@ -17,9 +17,10 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 8 — Links & Reactive Music: complete and CI-verified**
 - **Phase 9 — Magic, Mutation & Controlled Randomness: complete and CI-verified**
 - **Phase 10 — Worlds, Snapshots & Persistence: complete and CI-verified**
-- **Next: Phase 11 — Play, Capture & Export**
+- **Phase 11 — Play, Capture & Export: complete; final CI verification pending**
+- **Next: Phase 12 — Visual Identity, Game Feel & Delight**
 
-Loop is now a durable local music playground: Worlds autosave to IndexedDB, restore after refresh, live in a recoverable local library, support eight playable Snapshots, bounded undo/redo, Trash/recovery, schema migration/quarantine, and versioned JSON backup/import—without accounts or a backend.
+Loop can now capture the performance itself: one-tap master recording follows the same post-limiter output the user hears while they move Sound Orbs, use Magic, trigger Links, and recall Snapshots, then provides immediate listen-back plus browser-native download and bounded optional WAV conversion.
 
 ## Product contract
 
@@ -41,6 +42,7 @@ The authoritative specifications live in `docs/`:
 - [LINKS_REACTIVE_MUSIC.md](docs/LINKS_REACTIVE_MUSIC.md) — Link vocabulary, reactive timing, relationship safety, visual connections, and lifecycle rules
 - [MAGIC.md](docs/MAGIC.md) — seeded mutation, intents, per-object Magic, Remix, preview transactions, and undo safety
 - [PERSISTENCE.md](docs/PERSISTENCE.md) — World library, autosave/restore, IndexedDB, Snapshots, history, migration, Trash, quarantine, and backups
+- [CAPTURE_EXPORT.md](docs/CAPTURE_EXPORT.md) — post-limiter master recording, browser formats, duration safety, listen-back, downloads, and WAV conversion
 - [PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) — Phase 1 verification gate
 - [PHASE_2_ACCEPTANCE.md](docs/PHASE_2_ACCEPTANCE.md) — Phase 2 verification gate
 - [PHASE_3_ACCEPTANCE.md](docs/PHASE_3_ACCEPTANCE.md) — Phase 3 verification gate
@@ -51,6 +53,7 @@ The authoritative specifications live in `docs/`:
 - [PHASE_8_ACCEPTANCE.md](docs/PHASE_8_ACCEPTANCE.md) — Phase 8 verification gate
 - [PHASE_9_ACCEPTANCE.md](docs/PHASE_9_ACCEPTANCE.md) — Phase 9 verification gate
 - [PHASE_10_ACCEPTANCE.md](docs/PHASE_10_ACCEPTANCE.md) — Phase 10 verification gate
+- [PHASE_11_ACCEPTANCE.md](docs/PHASE_11_ACCEPTANCE.md) — Phase 11 verification gate
 - [ROADMAP.md](docs/ROADMAP.md) — closed development sequence through release
 
 ## Development
@@ -71,14 +74,9 @@ npm run build
 
 ## Current automated verification
 
-The final Phase 10 implementation passed CI with:
+Phase 10 remains fully verified.
 
-- **30 test files**
-- **150 tests**
-- strict TypeScript typecheck
-- production Vite build
-
-The persistence suite covers typed Snapshots, bounded undo/redo, schema v1–v8 migration, backup/import recovery, World library operations, Trash/restore/purge, corruption quarantine, quota classification, and every prior Phase 1–9 regression test.
+The integrated Phase 11 recording/export implementation is under its final exact-head CI gate. Dedicated coverage now includes browser format negotiation, PCM16 WAV encoding, MasterRecorder lifecycle cleanup, bounded duration behavior, and unexpected browser-stop recovery in addition to every prior Phase 1–10 regression test.
 
 ## Product rule
 
