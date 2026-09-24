@@ -34,6 +34,18 @@ class FakeMediaRecorder extends EventTarget {
       throw new DOMException('Already inactive', 'InvalidStateError');
     }
 
+    this.finish();
+  }
+
+  public unexpectedStop(): void {
+    if (this.state === 'inactive') {
+      return;
+    }
+
+    this.finish();
+  }
+
+  private finish(): void {
     const dataEvent = new Event('dataavailable') as Event & {
       data: Blob;
     };
@@ -95,6 +107,26 @@ describe('MasterRecorder', () => {
 
     expect(recorder.state).toBe('idle');
     expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves chunks when the browser stops recording unexpectedly', async () => {
+    vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
+
+    const onUnexpectedStop = vi.fn();
+    const recorder = new MasterRecorder();
+
+    await recorder.start(
+      fakeEngine(vi.fn()),
+      { onUnexpectedStop },
+    );
+
+    FakeMediaRecorder.latest?.unexpectedStop();
+
+    expect(recorder.state).toBe('idle');
+    expect(onUnexpectedStop).toHaveBeenCalledTimes(1);
+    expect(
+      onUnexpectedStop.mock.calls[0]?.[0].blob.size,
+    ).toBeGreaterThan(0);
   });
 
   it('fires the bounded-duration callback while recording', async () => {
