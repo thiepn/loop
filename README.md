@@ -16,7 +16,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Phase 7 — Motion Playground: complete and CI-verified**
 - **Phase 8 — Links & Reactive Music: complete and CI-verified**
 - **Phase 9 — Magic, Mutation & Controlled Randomness: complete and CI-verified**
-- **Phase 10 — Worlds, Snapshots & Persistence: complete; final CI verification pending**
+- **Phase 10 — Worlds, Snapshots & Persistence: complete and CI-verified**
 - **Next: Phase 11 — Play, Capture & Export**
 
 Loop is now a durable local music playground: Worlds autosave to IndexedDB, restore after refresh, live in a recoverable local library, support eight playable Snapshots, bounded undo/redo, Trash/recovery, schema migration/quarantine, and versioned JSON backup/import—without accounts or a backend.
@@ -71,9 +71,14 @@ npm run build
 
 ## Current automated verification
 
-Phase 9 remains fully verified.
+The final Phase 10 implementation passed CI with:
 
-The integrated Phase 10 implementation passed its acceptance/documentation gate with **30 test files / 150 tests**, strict TypeScript, and a production build. The exact final shared-documentation/status head is verified before Phase 10 is marked CI-complete.
+- **30 test files**
+- **150 tests**
+- strict TypeScript typecheck
+- production Vite build
+
+The persistence suite covers typed Snapshots, bounded undo/redo, schema v1–v8 migration, backup/import recovery, World library operations, Trash/restore/purge, corruption quarantine, quota classification, and every prior Phase 1–9 regression test.
 
 ## Product rule
 
