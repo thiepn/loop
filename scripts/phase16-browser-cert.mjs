@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const DIST = join(ROOT, 'dist');
 const APP_URL = 'http://127.0.0.1:4173/loop/';
-const USER_DATA_DIR = `/tmp/loop-phase16-${process.pid}`;
+const USER_DATA_DIR_PREFIX = `/tmp/loop-phase16-${process.pid}`;
 
 const budgets = {
   jsCssRawBytes: 500 * 1024,
@@ -108,6 +108,89 @@ function findBrowser() {
 
   throw new Error(
     'Phase 16 browser certification requires Chrome/Chromium on the CI runner.',
+  );
+}
+
+async function launchChrome(browserPath, attempts = 3) {
+  const failures = [];
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const userDataDir = `${USER_DATA_DIR_PREFIX}-${attempt}`;
+    await rm(userDataDir, {
+      recursive: true,
+      force: true,
+    });
+
+    let stderr = '';
+    const chrome = spawn(
+      browserPath,
+      [
+        '--headless=new',
+        '--no-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-background-networking',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
+        '--window-size=1440,900',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
+        '--mute-audio',
+        '--autoplay-policy=no-user-gesture-required',
+        '--remote-debugging-port=0',
+        '--remote-debugging-address=127.0.0.1',
+        '--no-first-run',
+        '--no-default-browser-check',
+        `--user-data-dir=${userDataDir}`,
+        'about:blank',
+      ],
+      {
+        stdio: ['ignore', 'ignore', 'pipe'],
+      },
+    );
+
+    chrome.stderr?.setEncoding('utf8');
+    chrome.stderr?.on('data', (chunk) => {
+      stderr = (stderr + chunk).slice(-12_000);
+    });
+
+    try {
+      const debugPort = await waitForDevToolsPort(
+        userDataDir,
+        7_000,
+      );
+      const debugBase = `http://127.0.0.1:${debugPort}`;
+      await waitForHttp(`${debugBase}/json/version`, 3_000);
+
+      return {
+        chrome,
+        debugBase,
+        userDataDir,
+      };
+    } catch (error) {
+      failures.push(
+        `Attempt ${attempt}: ${error instanceof Error ? error.message : String(error)}\nChrome stderr:\n${stderr || '(empty)'}`,
+      );
+      chrome.kill('SIGKILL');
+      await delay(250);
+
+      try {
+        await rm(userDataDir, {
+          recursive: true,
+          force: true,
+          maxRetries: 2,
+          retryDelay: 100,
+        });
+      } catch {
+        // Best-effort cleanup between browser-launch attempts.
+      }
+    }
+  }
+
+  throw new Error(
+    `Chrome failed to start after ${attempts} attempts:\n${failures.join('\n---\n')}`,
   );
 }
 
@@ -332,58 +415,17 @@ async function main() {
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   );
-  const chrome = spawn(
-    browserPath,
-    [
-      '--headless=new',
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-background-networking',
-      '--disable-background-timer-throttling',
-      '--disable-renderer-backgrounding',
-      '--disable-backgrounding-occluded-windows',
-      '--window-size=1440,900',
-      '--disable-default-apps',
-      '--disable-extensions',
-      '--disable-sync',
-      '--mute-audio',
-      '--autoplay-policy=no-user-gesture-required',
-      '--remote-debugging-port=0',
-      '--remote-debugging-address=127.0.0.1',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${USER_DATA_DIR}`,
-      'about:blank',
-    ],
-    {
-      stdio: ['ignore', 'ignore', 'pipe'],
-    },
-  );
-  let chromeStderr = '';
-
-  chrome.stderr?.setEncoding('utf8');
-  chrome.stderr?.on('data', (chunk) => {
-    chromeStderr = (chromeStderr + chunk).slice(-12_000);
-  });
-
+  let chrome = null;
+  let userDataDir = null;
   let client = null;
 
   try {
     await waitForHttp(APP_URL);
 
-    let debugPort;
-
-    try {
-      debugPort = await waitForDevToolsPort(USER_DATA_DIR);
-    } catch (error) {
-      throw new Error(
-        `${error instanceof Error ? error.message : String(error)}\nChrome stderr:\n${chromeStderr || '(empty)'}`,
-      );
-    }
-
-    const debugBase = `http://127.0.0.1:${debugPort}`;
-    await waitForHttp(`${debugBase}/json/version`);
+    const launched = await launchChrome(browserPath);
+    chrome = launched.chrome;
+    userDataDir = launched.userDataDir;
+    const debugBase = launched.debugBase;
 
     const targetResponse = await fetch(
       `${debugBase}/json/new?${encodeURIComponent('about:blank')}`,
@@ -788,20 +830,22 @@ async function main() {
     }
   } finally {
     client?.close();
-    chrome.kill('SIGTERM');
+    chrome?.kill('SIGTERM');
     preview.kill('SIGTERM');
 
     await delay(250);
 
-    try {
-      await rm(USER_DATA_DIR, {
-        recursive: true,
-        force: true,
-        maxRetries: 3,
-        retryDelay: 100,
-      });
-    } catch {
-      // Runner cleanup is best-effort and is not a product certification signal.
+    if (userDataDir) {
+      try {
+        await rm(userDataDir, {
+          recursive: true,
+          force: true,
+          maxRetries: 3,
+          retryDelay: 100,
+        });
+      } catch {
+        // Runner cleanup is best-effort and is not a product certification signal.
+      }
     }
   }
 }
