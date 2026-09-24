@@ -60,8 +60,8 @@ Systematically tested audio lifecycle, scheduler gaps, object manipulation, Moti
 ## Phase 15 — UX, Accessibility & Regression Audit — complete
 Completed beginner-first usability review, modal/focus isolation, keyboard parity, selected-state semantics, contrast/readability corrections, reduced-motion behavior, touch-target checks, technical-language cleanup, and cross-feature regression fixes. See [PHASE_15_ACCEPTANCE.md](PHASE_15_ACCEPTANCE.md).
 
-## Phase 16 — Performance & Soak Certification
-Measure FPS, long tasks, memory growth, audio underruns, latency, startup, persistence, background/foreground recovery, recording duration, and maximum supported World complexity.
+## Phase 16 — Performance & Soak Certification — complete
+Certified maximum V1 World complexity, ten-minute Motion/scheduler soak, repeated Magic/persistence/backup/recording workloads, production bundle budgets, and real-browser startup/render/memory/lifecycle behavior. See [PHASE_16_ACCEPTANCE.md](PHASE_16_ACCEPTANCE.md).
 
 ## Phase 17 — Release Candidate
 Produce `v1.0.0-rc.1`, run the complete clean-user workflow across supported browsers/devices, and repeat RC fixes until no release blocker remains.
