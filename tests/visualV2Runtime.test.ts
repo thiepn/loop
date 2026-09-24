@@ -120,6 +120,56 @@ describe('Visual V2 event bridge', () => {
     expect(event.intensity).toBe(0.8);
   });
 
+  it('coalesces repeated drop/charge events per Orb', () => {
+    const bridge = new VisualEventBridge();
+
+    bridge.emit({
+      kind: 'orb-drop',
+      orbId: 'orb',
+      position: { x: 0.4, y: 0.5 },
+      velocity: { x: 1, y: 0 },
+      intensity: 0.4,
+    }, 100);
+    bridge.emit({
+      kind: 'orb-drop',
+      orbId: 'orb',
+      position: { x: 0.6, y: 0.5 },
+      velocity: { x: -1, y: 0 },
+      intensity: 0.8,
+    }, 120);
+    bridge.emit({
+      kind: 'orb-charge',
+      orbId: 'orb',
+      position: { x: 0.6, y: 0.5 },
+      intensity: 0.5,
+    }, 120);
+    bridge.emit({
+      kind: 'orb-charge',
+      orbId: 'orb',
+      position: { x: 0.6, y: 0.5 },
+      intensity: 1,
+    }, 140);
+
+    const snapshot = bridge.sample(140);
+    const drops = snapshot.samples.filter(
+      (sample) => sample.event.kind === 'orb-drop',
+    );
+    const charges = snapshot.samples.filter(
+      (sample) => sample.event.kind === 'orb-charge',
+    );
+
+    expect(drops).toHaveLength(1);
+    expect(charges).toHaveLength(1);
+    expect(drops[0]?.event.kind).toBe('orb-drop');
+    if (drops[0]?.event.kind === 'orb-drop') {
+      expect(drops[0].event.intensity).toBe(0.8);
+    }
+    expect(charges[0]?.event.kind).toBe('orb-charge');
+    if (charges[0]?.event.kind === 'orb-charge') {
+      expect(charges[0].event.intensity).toBe(1);
+    }
+  });
+
   it('keeps transient events presentation-only and expires them', () => {
     const bridge = new VisualEventBridge();
 

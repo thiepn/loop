@@ -170,4 +170,84 @@ describe('Visual V2 environment model', () => {
     expect(dynamics.pointerStrength).toBeGreaterThan(0);
     expect(dynamics.pointerStrength).toBeLessThan(0.5);
   });
+
+
+  it('turns drag interaction and selection into bounded wake/spotlight dynamics', () => {
+    const world = worldWithRoles(['melody', 'bass']);
+    const baseScene = projectWorldToRenderScene(world, {
+      selectedOrbId: 'melody-0',
+      selectedFieldId: null,
+      selectedToyId: null,
+      selectedLinkId: null,
+      playing: true,
+      recording: false,
+      orbInteractions: new Map([
+        ['bass-1', {
+          hoverStrength: 0,
+          hoverOffset: { x: 0, y: 0 },
+          grabbed: true,
+          dragVelocity: { x: 0.8, y: -0.6 },
+          dragSpeed: 0.75,
+          charging: false,
+        }],
+      ]),
+    });
+
+    const dynamics = deriveEnvironmentDynamics(
+      baseScene,
+      [],
+      {
+        quality: 'balanced',
+        reduceMotion: false,
+        reduceParticles: false,
+        reduceBloom: false,
+      },
+    );
+
+    expect(dynamics.dragStrength).toBeCloseTo(0.75);
+    expect(dynamics.dragPosition).toEqual(
+      baseScene.orbs.find((orb) => orb.id === 'bass-1')?.position,
+    );
+    expect(dynamics.spotlightStrength).toBeGreaterThan(0);
+    expect(dynamics.spotlightPosition).toEqual(
+      baseScene.orbs.find((orb) => orb.id === 'melody-0')?.position,
+    );
+  });
+
+  it('reduces drag wake under Reduce Motion while preserving spotlight', () => {
+    const world = worldWithRoles(['melody']);
+    const scene = projectWorldToRenderScene(world, {
+      selectedOrbId: 'melody-0',
+      selectedFieldId: null,
+      selectedToyId: null,
+      selectedLinkId: null,
+      playing: true,
+      recording: false,
+      orbInteractions: new Map([
+        ['melody-0', {
+          hoverStrength: 0,
+          hoverOffset: { x: 0, y: 0 },
+          grabbed: true,
+          dragVelocity: { x: 1, y: 0 },
+          dragSpeed: 1,
+          charging: false,
+        }],
+      ]),
+    });
+
+    const dynamics = deriveEnvironmentDynamics(
+      scene,
+      [],
+      {
+        quality: 'balanced',
+        reduceMotion: true,
+        reduceParticles: false,
+        reduceBloom: false,
+      },
+    );
+
+    expect(dynamics.dragStrength).toBeLessThanOrEqual(0.25);
+    expect(dynamics.dragDelta).toEqual({ x: 0, y: 0 });
+    expect(dynamics.spotlightStrength).toBeGreaterThan(0);
+  });
 });
