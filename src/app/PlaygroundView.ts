@@ -130,7 +130,7 @@ export class PlaygroundView {
             <span class="listener-dot"></span>
             <small>YOU</small>
           </div>
-          <div class="orb-layer" data-orb-layer></div>
+          <div class="orb-layer" data-orb-layer role="group" aria-label="Sounds in this World"></div>
 
           <p class="world-hint" data-status aria-live="polite" aria-atomic="true"></p>
 
@@ -333,7 +333,7 @@ export class PlaygroundView {
   public render(state: Readonly<AppState>): void {
     this.root.dataset.selectedOrbId = state.selectedOrbId ?? '';
     this.worldName.textContent = state.world.name;
-    this.tempo.textContent = `${state.world.music.bpm} BPM`;
+    this.tempo.textContent = `Tempo ${state.world.music.bpm}`;
     this.status.textContent = state.message;
 
     const playLabel = this.playButton.querySelector<HTMLElement>('[data-play-label]');
