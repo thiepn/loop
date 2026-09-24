@@ -44,6 +44,9 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   const initialSoundCount = await page.locator('.sound-orb').count();
   const firstOrb = page.locator('.sound-orb').first();
 
+  await firstOrb.click();
+  await expect(page.locator('.selection-panel')).toBeVisible();
+
   const initialX = Number(await firstOrb.getAttribute('data-x'));
   await firstOrb.focus();
   await firstOrb.press('ArrowRight');
