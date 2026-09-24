@@ -47,6 +47,7 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + 'uniform float u_variation;\n'
   + 'uniform float u_seed;\n'
   + 'uniform float u_selected;\n'
+  + 'uniform float u_focused;\n'
   + 'uniform float u_muted;\n'
   + 'uniform float u_pulse;\n'
   + 'uniform float u_pulse_progress;\n'
@@ -180,9 +181,14 @@ const FRAGMENT_SOURCE = '#version 300 es\n'
   + '    alpha = max(alpha, satellites * 0.88);\n'
   + '  }\n'
   + '\n'
+  + '  float focusDash = step(0.0, sin(angle * 12.0));\n'
+  + '  float focusRing = u_focused * focusDash\n'
+  + '    * smoothstep(0.022, 0.004, abs(d - 1.10));\n'
   + '  float selectionRing = u_selected\n'
   + '    * smoothstep(0.025, 0.004, abs(d - 1.18));\n'
+  + '  color = mix(color, vec3(0.88, 0.92, 1.0), focusRing * 0.72);\n'
   + '  color = mix(color, vec3(0.94, 0.96, 1.0), selectionRing * 0.86);\n'
+  + '  alpha = max(alpha, focusRing * 0.8);\n'
   + '  alpha = max(alpha, selectionRing * 0.88);\n'
   + '\n'
   + '  if (u_muted > 0.5) {\n'
@@ -324,6 +330,7 @@ export class WebGLOrbMaterialLayer {
   private readonly variation: WebGLUniformLocation;
   private readonly seed: WebGLUniformLocation;
   private readonly selected: WebGLUniformLocation;
+  private readonly focused: WebGLUniformLocation;
   private readonly muted: WebGLUniformLocation;
   private readonly pulse: WebGLUniformLocation;
   private readonly pulseProgress: WebGLUniformLocation;
@@ -360,6 +367,7 @@ export class WebGLOrbMaterialLayer {
     this.variation = requiredUniform(gl, program, 'u_variation');
     this.seed = requiredUniform(gl, program, 'u_seed');
     this.selected = requiredUniform(gl, program, 'u_selected');
+    this.focused = requiredUniform(gl, program, 'u_focused');
     this.muted = requiredUniform(gl, program, 'u_muted');
     this.pulse = requiredUniform(gl, program, 'u_pulse');
     this.pulseProgress = requiredUniform(gl, program, 'u_pulse_progress');
@@ -453,6 +461,7 @@ export class WebGLOrbMaterialLayer {
       gl.uniform1f(this.variation, orb.material.variation);
       gl.uniform1f(this.seed, orb.material.seed);
       gl.uniform1f(this.selected, orb.selected ? 1 : 0);
+      gl.uniform1f(this.focused, orb.focused ? 1 : 0);
       gl.uniform1f(this.muted, orb.muted ? 1 : 0);
       gl.uniform1f(this.pulse, pulse.amount);
       gl.uniform1f(this.pulseProgress, pulse.progress);

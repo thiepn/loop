@@ -61,6 +61,7 @@ export class WorldRendererView {
   private externalFrameDriverActive = false;
   private lastPointerPosition: NormalizedPoint | null = null;
   private lastPointerAtMs = 0;
+  private focusedOrbId: string | null = null;
 
   private readonly handleWindowResize = () => {
     this.syncViewport();
@@ -117,6 +118,44 @@ export class WorldRendererView {
   private readonly handlePointerLeave = () => {
     this.lastPointerPosition = null;
     this.lastPointerAtMs = 0;
+  };
+
+  private readonly handleFocusIn = (event: FocusEvent) => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const orb = target.closest<HTMLElement>('[data-orb-id]');
+    const next = orb?.dataset.orbId ?? null;
+
+    if (next === this.focusedOrbId) {
+      return;
+    }
+
+    this.focusedOrbId = next;
+    this.rebuildScene();
+    this.requestRender();
+  };
+
+  private readonly handleFocusOut = (event: FocusEvent) => {
+    const related = event.relatedTarget;
+
+    if (
+      related instanceof HTMLElement
+      && related.closest<HTMLElement>('[data-orb-id]')
+    ) {
+      return;
+    }
+
+    if (this.focusedOrbId === null) {
+      return;
+    }
+
+    this.focusedOrbId = null;
+    this.rebuildScene();
+    this.requestRender();
   };
 
   private readonly handleContextLost = (event: Event) => {
@@ -195,6 +234,14 @@ export class WorldRendererView {
       'pointerleave',
       this.handlePointerLeave,
       { passive: true },
+    );
+    worldCanvas.addEventListener(
+      'focusin',
+      this.handleFocusIn,
+    );
+    worldCanvas.addEventListener(
+      'focusout',
+      this.handleFocusOut,
     );
 
     if (typeof ResizeObserver !== 'undefined') {
@@ -363,6 +410,7 @@ export class WorldRendererView {
     this.lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
     this.lastPointerPosition = null;
     this.lastPointerAtMs = 0;
+    this.focusedOrbId = null;
     this.rebuildScene();
   }
 
@@ -405,6 +453,14 @@ export class WorldRendererView {
       'pointerleave',
       this.handlePointerLeave,
     );
+    this.worldCanvas.removeEventListener(
+      'focusin',
+      this.handleFocusIn,
+    );
+    this.worldCanvas.removeEventListener(
+      'focusout',
+      this.handleFocusOut,
+    );
     this.renderer.destroy();
     this.canvas.remove();
     delete this.shell.dataset.rendererV2;
@@ -423,6 +479,7 @@ export class WorldRendererView {
       state.world,
       {
         selectedOrbId: state.selectedOrbId,
+        focusedOrbId: this.focusedOrbId,
         selectedFieldId: state.selectedFieldId,
         selectedToyId: state.selectedToyId,
         selectedLinkId: state.selectedLinkId,

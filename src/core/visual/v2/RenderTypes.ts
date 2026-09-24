@@ -65,6 +65,7 @@ export interface RenderOrb {
   readonly position: NormalizedPoint;
   readonly muted: boolean;
   readonly selected: boolean;
+  readonly focused: boolean;
   readonly material: RenderOrbMaterial;
 }
 

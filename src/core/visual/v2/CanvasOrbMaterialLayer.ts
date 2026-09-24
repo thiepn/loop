@@ -150,6 +150,26 @@ export class CanvasOrbMaterialLayer {
         );
       }
 
+      if (orb.focused) {
+        this.context.save();
+        this.context.setLineDash([
+          Math.max(2, radius * 0.12),
+          Math.max(2, radius * 0.08),
+        ]);
+        this.context.beginPath();
+        this.context.arc(
+          x,
+          y,
+          radius * 1.11,
+          0,
+          Math.PI * 2,
+        );
+        this.context.strokeStyle = 'rgba(220, 228, 255, 0.66)';
+        this.context.lineWidth = Math.max(1, 1.05 * dpr);
+        this.context.stroke();
+        this.context.restore();
+      }
+
       if (orb.selected) {
         this.context.beginPath();
         this.context.arc(

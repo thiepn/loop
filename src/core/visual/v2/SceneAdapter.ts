@@ -11,6 +11,7 @@ import { deriveOrbMaterial } from './OrbMaterialModel';
 
 export interface SceneProjectionOptions {
   readonly selectedOrbId: string | null;
+  readonly focusedOrbId?: string | null;
   readonly selectedFieldId: string | null;
   readonly selectedToyId: string | null;
   readonly selectedLinkId: string | null;
@@ -67,6 +68,7 @@ export function projectWorldToRenderScene(
       position,
       muted: orb.muted,
       selected: options.selectedOrbId === orb.id,
+      focused: options.focusedOrbId === orb.id,
       material: deriveOrbMaterial(
         orb,
         effectAmountsAtPoint(fieldDocuments, position),
