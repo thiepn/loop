@@ -1735,6 +1735,14 @@ export class App {
         return;
       }
 
+      if (latest.world.soundOrbs.length === 0) {
+        appStore.patch({
+          playing: false,
+          message: 'Add a sound first.',
+        });
+        return;
+      }
+
       const runtime = audioEngine.getRuntime();
 
       if (!runtime || audio.state !== 'running') {
@@ -1750,7 +1758,7 @@ export class App {
         this.playground = new PlaygroundEngine(
           runtime.context,
           runtime.destination,
-          state.world,
+          latest.world,
         );
         this.unsubscribeActivity = this.playground.subscribeActivity((activity) => {
           this.scheduleVisualPulse(activity);
@@ -1759,7 +1767,7 @@ export class App {
           this.scheduleLinkVisual(activity);
         });
       } else {
-        this.playground.syncWorld(state.world);
+        this.playground.syncWorld(latest.world);
       }
 
       this.playground.start();
