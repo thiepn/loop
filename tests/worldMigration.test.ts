@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PersistenceError } from '../src/core/persistence/PersistenceError';
 import { migrateWorldDocument } from '../src/core/persistence/WorldMigration';
 import { WORLD_SCHEMA_VERSION } from '../src/core/world/World';
+import { MAX_SOUND_ORBS } from '../src/core/world/SoundOrb';
 import { addSnapshot } from '../src/core/world/Snapshot';
 import { createStarterWorld } from '../src/core/world/StarterWorlds';
 
@@ -76,6 +77,28 @@ describe('WorldMigration', () => {
 
     expect(result.world.soundOrbs).toEqual(current.soundOrbs);
     expect(result.warnings.length).toBeGreaterThan(0);
+  });
+
+  it('bounds oversized recovered sound collections to the product limit', () => {
+    const current = createStarterWorld('beat', 100);
+    const source = current.soundOrbs[0]!;
+    const damaged = {
+      ...current,
+      soundOrbs: Array.from(
+        { length: MAX_SOUND_ORBS + 4 },
+        (_, index) => ({
+          ...source,
+          id: `recovered-orb-${index}`,
+        }),
+      ),
+    };
+
+    const result = migrateWorldDocument(damaged);
+
+    expect(result.world.soundOrbs).toHaveLength(MAX_SOUND_ORBS);
+    expect(
+      result.warnings.some((warning) => warning.includes('sound limit')),
+    ).toBe(true);
   });
 
   it('rejects invalid roots', () => {
