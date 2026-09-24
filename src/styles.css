@@ -1952,8 +1952,8 @@ a:focus-visible,
 }
 
 .field-label small {
-  color: rgba(210, 210, 220, 0.46);
-  font-size: 8px;
+  color: var(--muted-text);
+  font-size: 9px;
   font-weight: 600;
   line-height: 1.2;
 }
