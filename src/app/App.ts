@@ -1219,6 +1219,16 @@ export class App {
               'Recording reached the 10 minute safety limit.',
             );
           },
+          onUnexpectedStop: (result) => {
+            void this.finalizeCaptureResult(
+              result,
+              false,
+              'The browser stopped recording. The captured audio was preserved.',
+            );
+          },
+          onError: (error) => {
+            this.handleCaptureError(error);
+          },
         },
       );
 
@@ -1276,55 +1286,78 @@ export class App {
     try {
       const result = await this.masterRecorder.stop();
 
-      if (result.blob.size === 0) {
-        throw new Error('The browser returned an empty recording.');
-      }
-
-      this.clearCaptureArtifacts();
-
-      this.captureResult = result;
-      this.capturePreviewUrl = URL.createObjectURL(result.blob);
-
-      const runtime = audioEngine.getRuntime();
-      this.captureWavBlob = (
-        runtime
-        && result.durationMs <= MAX_AUTOMATIC_WAV_CONVERSION_MS
-      )
-        ? await convertRecordingToWav(
-            runtime.context,
-            result.blob,
-          )
-        : null;
-
-      appStore.patch({
-        captureStatus: 'ready',
-        captureStartedAt: null,
-        captureDurationMs: result.durationMs,
-        capturePreviewUrl: this.capturePreviewUrl,
-        captureFormatLabel: result.format.label,
-        captureWavAvailable: this.captureWavBlob !== null,
-        captureAutoStopped: autoStopped,
-        captureError: null,
-        message: completionMessage,
-      });
+      await this.finalizeCaptureResult(
+        result,
+        autoStopped,
+        completionMessage,
+      );
     } catch (error) {
-      this.clearCaptureArtifacts();
-
-      const message = error instanceof Error
-        ? error.message
-        : 'Performance recording failed.';
-
-      appStore.patch({
-        captureStatus: 'error',
-        captureStartedAt: null,
-        captureDurationMs: 0,
-        capturePreviewUrl: null,
-        captureFormatLabel: null,
-        captureWavAvailable: false,
-        captureError: message,
-        message,
-      });
+      this.handleCaptureError(error);
     }
+  }
+
+  private async finalizeCaptureResult(
+    result: RecordingResult,
+    autoStopped: boolean,
+    completionMessage: string,
+  ): Promise<void> {
+    this.clearCaptureTimer();
+
+    if (result.blob.size === 0) {
+      this.handleCaptureError(
+        new Error('The browser returned an empty recording.'),
+      );
+      return;
+    }
+
+    this.clearCaptureArtifacts();
+
+    this.captureResult = result;
+    this.capturePreviewUrl = URL.createObjectURL(result.blob);
+
+    const runtime = audioEngine.getRuntime();
+    this.captureWavBlob = (
+      runtime
+      && result.durationMs <= MAX_AUTOMATIC_WAV_CONVERSION_MS
+    )
+      ? await convertRecordingToWav(
+          runtime.context,
+          result.blob,
+        )
+      : null;
+
+    appStore.patch({
+      captureStatus: 'ready',
+      captureStartedAt: null,
+      captureDurationMs: result.durationMs,
+      capturePreviewUrl: this.capturePreviewUrl,
+      captureFormatLabel: result.format.label,
+      captureWavAvailable: this.captureWavBlob !== null,
+      captureAutoStopped: autoStopped,
+      captureError: null,
+      message: completionMessage,
+    });
+  }
+
+  private handleCaptureError(error: unknown): void {
+    this.clearCaptureTimer();
+    this.clearCaptureArtifacts();
+
+    const message = error instanceof Error
+      ? error.message
+      : 'Performance recording failed.';
+
+    appStore.patch({
+      captureStatus: 'error',
+      captureStartedAt: null,
+      captureDurationMs: 0,
+      capturePreviewUrl: null,
+      captureFormatLabel: null,
+      captureWavAvailable: false,
+      captureAutoStopped: false,
+      captureError: message,
+      message,
+    });
   }
 
   private async cancelCapture(): Promise<void> {
