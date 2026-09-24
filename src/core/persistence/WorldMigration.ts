@@ -34,6 +34,7 @@ import type {
   SnapshotState,
 } from '../world/Snapshot';
 import {
+  MAX_SOUND_ORBS,
   createSoundOrb,
   type NormalizedPoint,
   type SoundOrbDocument,
@@ -258,6 +259,13 @@ function migrateSoundOrbs(
   const ids = new Set<string>();
 
   for (const [index, item] of value.entries()) {
+    if (result.length >= MAX_SOUND_ORBS) {
+      warnings.push(
+        `${prefix}.soundOrbs exceeded the ${MAX_SOUND_ORBS}-sound limit; extra sounds were dropped.`,
+      );
+      break;
+    }
+
     if (!isRecord(item)) {
       warnings.push(`${prefix}.soundOrbs[${index}] was invalid and was dropped.`);
       continue;
