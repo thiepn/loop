@@ -17,6 +17,37 @@ export interface MasterCaptureTap {
 
 type BrowserAudioContextConstructor = new (options?: AudioContextOptions) => AudioContext;
 
+const AUDIO_RESUME_TIMEOUT_MS = 1_500;
+
+async function resumeAudioContext(
+  context: AudioContext,
+): Promise<void> {
+  if (context.state !== 'suspended') {
+    return;
+  }
+
+  const resumeAttempt = context.resume();
+  void resumeAttempt.catch(() => undefined);
+
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    await Promise.race([
+      resumeAttempt,
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(
+          resolve,
+          AUDIO_RESUME_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
 function getAudioContextConstructor(): BrowserAudioContextConstructor | null {
   if (typeof window === 'undefined') {
     return null;
@@ -61,7 +92,7 @@ export class AudioEngine {
   public async initialize(): Promise<AudioEngineSnapshot> {
     if (this.context) {
       if (this.context.state === 'suspended') {
-        await this.context.resume();
+        await resumeAudioContext(this.context);
       }
 
       return this.getSnapshot();
@@ -98,7 +129,7 @@ export class AudioEngine {
     this.limiter = limiter;
 
     if (context.state === 'suspended') {
-      await context.resume();
+      await resumeAudioContext(context);
     }
 
     return this.getSnapshot();
@@ -150,7 +181,7 @@ export class AudioEngine {
 
   public async resume(): Promise<AudioEngineSnapshot> {
     if (this.context?.state === 'suspended') {
-      await this.context.resume();
+      await resumeAudioContext(this.context);
     }
 
     return this.getSnapshot();
