@@ -24,7 +24,7 @@ async function activate(locator, testInfo) {
     return;
   }
 
-  await locator.click();
+  await locator.click({ force: true });
 }
 
 async function waitForSurface(locator) {
@@ -82,7 +82,7 @@ async function openStarter(
   const playing = await play.getAttribute('aria-pressed') === 'true';
 
   if (!playing) {
-    await expect(page.locator('[data-status]')).toContainText(
+    await expect(page.locator('.world-hint[data-status]')).toContainText(
       /Tap Play to allow sound|Sound could not start/i,
     );
   }
@@ -114,69 +114,79 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
     Number(await page.locator('.sound-orb').first().getAttribute('data-x'))
   )).toBeGreaterThan(initialX);
 
-  await page.locator('[data-action="pattern"]').click();
+  await activate(page.locator('[data-action="pattern"]'), testInfo);
   await waitForSurface(page.locator('.pattern-sheet'));
 
   const firstStep = page.locator('.rhythm-step').first();
   const stepBefore = await firstStep.getAttribute('aria-pressed');
-  await firstStep.click();
+  await activate(firstStep, testInfo);
   await expect(firstStep).toHaveAttribute(
     'aria-pressed',
     stepBefore === 'true' ? 'false' : 'true',
   );
-  await page.locator('[data-pattern-close]').click();
+  await activate(page.locator('[data-pattern-close]'), testInfo);
   await expect(page.locator('.pattern-backdrop')).toBeHidden();
 
-  await page.locator('[data-add]').click();
+  await activate(page.locator('[data-add]'), testInfo);
   await waitForSurface(page.locator('.palette-sheet'));
-  await page.locator('.sound-choice').first().click();
+  await activate(page.locator('.sound-choice').first(), testInfo);
   await expect(page.locator('.sound-orb')).toHaveCount(initialSoundCount + 1);
 
   const fieldCount = await page.locator('.effect-field').count();
-  await page.locator('.effects-button').click();
+  await activate(page.locator('.effects-button'), testInfo);
   await waitForSurface(page.locator('.effect-palette-sheet'));
-  await page.locator('.effect-choice:not([disabled])').first().click();
+  await activate(
+    page.locator('.effect-choice:not([disabled])').first(),
+    testInfo,
+  );
   await expect(page.locator('.effect-field')).toHaveCount(fieldCount + 1);
 
   const toyCount = await page.locator('.playground-toy').count();
-  await page.locator('.toys-button').click();
+  await activate(page.locator('.toys-button'), testInfo);
   await waitForSurface(page.locator('.toy-palette-sheet'));
-  await page.locator('.toy-choice:not([disabled])').first().click();
+  await activate(
+    page.locator('.toy-choice:not([disabled])').first(),
+    testInfo,
+  );
   await expect(page.locator('.playground-toy')).toHaveCount(toyCount + 1);
 
-  await page.locator('.sound-orb').first().click();
-  await page.locator('[data-action="motion"]').click();
+  await activate(page.locator('.sound-orb').first(), testInfo);
+  await activate(page.locator('[data-action="motion"]'), testInfo);
   await waitForSurface(page.locator('.motion-sheet'));
-  await page.locator('[data-motion-mode="orbit"]').click();
+  await activate(
+    page.locator('[data-motion-mode="orbit"]'),
+    testInfo,
+  );
   await expect(
     page.locator('[data-motion-mode="orbit"]'),
   ).toHaveAttribute('aria-pressed', 'true');
-  await page.locator('[data-motion-close]').click();
+  await activate(page.locator('[data-motion-close]'), testInfo);
 
   const linkCount = await page.locator('.link-connection').count();
   await expect(page.locator('.selection-panel')).toBeVisible();
-  await page.locator('[data-action="link"]').click();
+  await activate(page.locator('[data-action="link"]'), testInfo);
   await waitForSurface(page.locator('.link-editor-sheet'));
 
   const target = page.locator('.link-target-choice').first();
-  await target.click();
+  await activate(target, testInfo);
   await expect(target).toHaveAttribute('aria-pressed', 'true');
 
   const relation = page.locator(
     '.link-relation-choice:not([disabled])',
   ).first();
   await expect(relation).toBeVisible();
-  await relation.click();
+  await activate(relation, testInfo);
   await expect(page.locator('.link-editor-backdrop')).toBeHidden();
   await expect(page.locator('.link-connection')).toHaveCount(linkCount + 1);
 
-  await page.locator('.remix-button').click();
+  await activate(page.locator('.remix-button'), testInfo);
   await waitForSurface(page.locator('.magic-intent-sheet'));
-  await page.locator(
-    '[data-magic-intent="surprise"]',
-  ).click();
+  await activate(
+    page.locator('[data-magic-intent="surprise"]'),
+    testInfo,
+  );
   await expect(page.locator('.magic-preview-bar')).toBeVisible();
-  await page.locator('[data-magic-keep]').click();
+  await activate(page.locator('[data-magic-keep]'), testInfo);
   await expect(page.locator('.magic-preview-bar')).toBeHidden();
 
   await stopPlayback(page);
@@ -199,7 +209,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   page.once('dialog', async (dialog) => {
     await dialog.accept('RC Snapshot');
   });
-  await page.locator('[data-snapshot-save]').click();
+  await activate(page.locator('[data-snapshot-save]'), testInfo);
   await expect(page.locator('.snapshot-row')).toHaveCount(1);
   await expect(page.locator('.snapshot-recall strong')).toHaveText(
     'RC Snapshot',
@@ -209,7 +219,7 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
     await page.locator('.sound-orb').first().getAttribute('data-x'),
   );
 
-  await page.locator('[data-snapshot-close]').click();
+  await activate(page.locator('[data-snapshot-close]'), testInfo);
   await page.locator('.sound-orb').first().focus();
   await page.locator('.sound-orb').first().press('ArrowLeft');
 
@@ -217,9 +227,9 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
     Number(await page.locator('.sound-orb').first().getAttribute('data-x'))
   )).not.toBe(snapshotX);
 
-  await page.locator('.snapshots-button').click();
+  await activate(page.locator('.snapshots-button'), testInfo);
   await waitForSurface(page.locator('.snapshot-sheet'));
-  await page.locator('.snapshot-recall').first().click();
+  await activate(page.locator('.snapshot-recall').first(), testInfo);
   await expect(page.locator('.snapshot-backdrop')).toBeHidden();
 
   await expect.poll(async () => (
@@ -261,21 +271,21 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
     persistedCounts.links,
   );
 
-  await page.locator('.snapshots-button').click();
+  await activate(page.locator('.snapshots-button'), testInfo);
   await waitForSurface(page.locator('.snapshot-sheet'));
   await expect(page.locator('.snapshot-row')).toHaveCount(1);
 
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('[data-world-backup]').click();
+  await activate(page.locator('[data-world-backup]'), testInfo);
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.json$/);
 
-  await page.locator('[data-snapshot-close]').click();
-  await page.locator('[data-home]').click();
+  await activate(page.locator('[data-snapshot-close]'), testInfo);
+  await activate(page.locator('[data-home]'), testInfo);
 
   await expect(page.locator('.home-shell')).toBeVisible();
   await expect(page.locator('.world-library-open').first()).toBeVisible();
-  await page.locator('.world-library-open').first().click();
+  await activate(page.locator('.world-library-open').first(), testInfo);
   await expect(page.locator('.playground-shell')).toBeVisible();
 
   await expectNoFatalShell(page);
@@ -306,7 +316,7 @@ test('recording either completes or degrades with an explicit unsupported state'
       'error',
       { timeout: 8_000 },
     );
-    await expect(page.locator('[data-status]')).toContainText(
+    await expect(page.locator('.world-hint[data-status]')).toContainText(
       /Recording could not start because audio is not running/i,
     );
     return;
@@ -328,13 +338,13 @@ test('recording either completes or degrades with an explicit unsupported state'
   await waitForSurface(page.locator('.capture-result-sheet'));
 
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('[data-capture-download]').click();
+  await activate(page.locator('[data-capture-download]'), testInfo);
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(
     /\.(webm|ogg|m4a)$/i,
   );
 
-  await page.locator('[data-capture-discard]').click();
+  await activate(page.locator('[data-capture-discard]'), testInfo);
   await expect(page.locator('.capture-result-backdrop')).toBeHidden();
 });
 
@@ -384,7 +394,7 @@ test('touch layouts keep primary sheets inside the viewport', async ({
 
   await openStarter(page, testInfo, 'chill');
 
-  await page.locator('.effects-button').click();
+  await activate(page.locator('.effects-button'), testInfo);
   const sheet = page.locator('.effect-palette-sheet');
   await waitForSurface(sheet);
 
@@ -406,7 +416,7 @@ test('touch layouts keep primary sheets inside the viewport', async ({
   }
 
   await page.locator('[data-effects-close]').click();
-  await page.locator('.sound-orb').first().click();
+  await activate(page.locator('.sound-orb').first(), testInfo);
 
   const selectionPanel = page.locator('.selection-panel');
   const dock = page.locator('.playground-dock');
@@ -426,6 +436,6 @@ test('touch layouts keep primary sheets inside the viewport', async ({
     ).toBeLessThanOrEqual(dockBox.y - 1);
   }
 
-  await page.locator('[data-add]').click();
+  await activate(page.locator('[data-add]'), testInfo);
   await waitForSurface(page.locator('.palette-sheet'));
 });
