@@ -5453,9 +5453,12 @@ a:focus-visible {
 .field-selection-panel,
 .toy-selection-panel,
 .link-selection-panel,
-.magic-preview-bar,
-.capture-live-bar {
+.magic-preview-bar {
   animation: contextual-panel-in 160ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.capture-live-bar {
+  animation: visual-backdrop-in 160ms ease-out both;
 }
 
 /* Reduced motion / battery behavior */
@@ -5482,6 +5485,10 @@ a:focus-visible {
 
 .playground-shell[data-reduce-motion="true"] .motion-trail-layer {
   display: none;
+}
+
+.playground-shell[data-reduce-motion="true"] .orb-burst-particle {
+  animation: reduced-particle-feedback 180ms ease-out forwards !important;
 }
 
 .playground-shell[data-reduce-motion="true"] .palette-sheet,
@@ -5744,5 +5751,20 @@ a:focus-visible {
   to {
     translate: -50% 0;
     opacity: 1;
+  }
+}
+
+
+@keyframes reduced-particle-feedback {
+  0% {
+    translate: -50% -50%;
+    scale: 0.7;
+    opacity: 0.72;
+  }
+
+  100% {
+    translate: -50% -50%;
+    scale: 1.15;
+    opacity: 0;
   }
 }
