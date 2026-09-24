@@ -163,6 +163,8 @@ export class App {
   private autosaveInFlightWorld: WorldDocument | null = null;
   private lastSavedWorld: WorldDocument | null = null;
   private snapshotRecallTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingSnapshotRecallId: string | null = null;
+  private snapshotRecallTargetTime: number | null = null;
   private pendingHomeSave: Promise<void> | null = null;
   private bootstrapInteractionOccurred = false;
   private readonly handleVisibilityChange = () => {
@@ -1686,6 +1688,7 @@ export class App {
         playing: false,
         message: 'Paused.',
       });
+      this.completePendingSnapshotRecall();
       return;
     }
 
@@ -2564,12 +2567,9 @@ export class App {
       now,
       'bar',
     );
-    const delayMs = Math.max(0, (targetTime - now) * 1000);
-
-    this.snapshotRecallTimer = setTimeout(() => {
-      this.snapshotRecallTimer = null;
-      this.applySnapshotRecall(snapshotId);
-    }, delayMs);
+    this.pendingSnapshotRecallId = snapshotId;
+    this.snapshotRecallTargetTime = targetTime;
+    this.scheduleSnapshotRecallCheck();
 
     appStore.patch({
       snapshotsOpen: false,
@@ -2596,11 +2596,79 @@ export class App {
     });
   }
 
+  private scheduleSnapshotRecallCheck(): void {
+    const snapshotId = this.pendingSnapshotRecallId;
+    const targetTime = this.snapshotRecallTargetTime;
+
+    if (!snapshotId || targetTime === null) {
+      return;
+    }
+
+    const runtime = audioEngine.getRuntime();
+    const state = appStore.getState();
+
+    if (!runtime || !state.playing || !this.playground) {
+      this.completePendingSnapshotRecall();
+      return;
+    }
+
+    const delayMs = Math.max(
+      0,
+      (targetTime - runtime.context.currentTime) * 1000,
+    );
+
+    this.snapshotRecallTimer = setTimeout(() => {
+      this.snapshotRecallTimer = null;
+
+      if (
+        this.pendingSnapshotRecallId !== snapshotId
+        || this.snapshotRecallTargetTime !== targetTime
+      ) {
+        return;
+      }
+
+      const currentRuntime = audioEngine.getRuntime();
+      const current = appStore.getState();
+
+      if (!currentRuntime || !current.playing || !this.playground) {
+        this.completePendingSnapshotRecall();
+        return;
+      }
+
+      if (currentRuntime.context.currentTime + 0.002 < targetTime) {
+        this.scheduleSnapshotRecallCheck();
+        return;
+      }
+
+      this.completePendingSnapshotRecall();
+    }, delayMs);
+  }
+
+  private completePendingSnapshotRecall(): void {
+    const snapshotId = this.pendingSnapshotRecallId;
+
+    if (!snapshotId) {
+      return;
+    }
+
+    if (this.snapshotRecallTimer !== null) {
+      clearTimeout(this.snapshotRecallTimer);
+      this.snapshotRecallTimer = null;
+    }
+
+    this.pendingSnapshotRecallId = null;
+    this.snapshotRecallTargetTime = null;
+    this.applySnapshotRecall(snapshotId);
+  }
+
   private cancelSnapshotRecall(): void {
     if (this.snapshotRecallTimer !== null) {
       clearTimeout(this.snapshotRecallTimer);
       this.snapshotRecallTimer = null;
     }
+
+    this.pendingSnapshotRecallId = null;
+    this.snapshotRecallTargetTime = null;
   }
 
   private undoWorld(): void {
