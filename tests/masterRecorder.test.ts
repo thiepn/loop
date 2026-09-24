@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AudioEngine } from '../src/core/audio/AudioEngine';
 import {
+  MAX_RECORDING_MS,
   MasterRecorder,
 } from '../src/core/audio/MasterRecorder';
 
@@ -185,6 +186,27 @@ describe('MasterRecorder', () => {
     expect(dispose).toHaveBeenCalledTimes(250);
     expect(elapsedMs).toBeLessThan(1_000);
   }, 15_000);
+
+  it('uses the production 10-minute recording cap by default', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
+
+    const onLimitReached = vi.fn();
+    const recorder = new MasterRecorder();
+
+    await recorder.start(
+      fakeEngine(vi.fn()),
+      { onLimitReached },
+    );
+
+    vi.advanceTimersByTime(MAX_RECORDING_MS - 1);
+    expect(onLimitReached).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(onLimitReached).toHaveBeenCalledTimes(1);
+
+    await recorder.cancel();
+  });
 
   it('fires the bounded-duration callback while recording', async () => {
     vi.useFakeTimers();
