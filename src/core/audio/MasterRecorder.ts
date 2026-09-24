@@ -98,9 +98,9 @@ export class MasterRecorder {
       }
     });
 
-    recorder.addEventListener('error', (event) => {
+    recorder.addEventListener('error', () => {
       this.rejectStop(
-        event.error ?? new Error('Browser recording failed.'),
+        new Error('Browser recording failed.'),
       );
     });
 
@@ -141,12 +141,13 @@ export class MasterRecorder {
     this.stateValue = 'stopping';
     this.clearLimitTimer();
 
-    this.stopPromise = new Promise<RecordingResult>(
+    const promise = new Promise<RecordingResult>(
       (resolve, reject) => {
         this.stopResolve = resolve;
         this.stopReject = reject;
       },
     );
+    this.stopPromise = promise;
 
     try {
       if (this.recorder.state === 'inactive') {
@@ -158,7 +159,7 @@ export class MasterRecorder {
       this.rejectStop(error);
     }
 
-    return this.stopPromise;
+    return promise;
   }
 
   public async cancel(): Promise<void> {
