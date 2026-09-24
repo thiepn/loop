@@ -2218,7 +2218,17 @@ export class App {
   }
 
   private queueHomeOperation(operation: () => Promise<void>): void {
-    const run = this.homeOperationTail.then(operation, operation);
+    const runIfStillHome = async () => {
+      if (appStore.getState().screen !== 'home') {
+        return;
+      }
+
+      await operation();
+    };
+    const run = this.homeOperationTail.then(
+      runIfStillHome,
+      runIfStillHome,
+    );
     this.homeOperationTail = run.catch(() => undefined);
   }
 
