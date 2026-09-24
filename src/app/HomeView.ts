@@ -143,8 +143,7 @@ export class HomeView {
     root.innerHTML = `
       <main class="home-shell">
         <div class="home-universe" aria-hidden="true">
-          <i></i><i></i><i></i><i></i><i></i>
-          <span></span>
+          <i></i><i></i><i></i>
         </div>
 
         <header class="home-topbar">
@@ -173,7 +172,6 @@ export class HomeView {
             <div class="home-hero-world" aria-hidden="true">
               ${dioramaMarkup(heroVisual, 'hero-diorama')}
               <span class="home-hero-ring"></span>
-              <span class="home-hero-label">Sound becomes space</span>
             </div>
           </section>
 
