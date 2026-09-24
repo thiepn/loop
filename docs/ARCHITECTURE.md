@@ -1,7 +1,7 @@
 # Loop — Architecture Baseline
 
 ## Status
-Updated through Phase 9.
+Updated through Phase 10.
 
 The architecture remains intentionally smaller than the old Spatial Tape Matrix experiments. It creates boundaries only when a user-facing roadmap phase requires them.
 
@@ -73,14 +73,32 @@ Current responsibilities:
 The UI should ask this layer for suitable options rather than implementing music-theory rules itself.
 
 ### core/state/
-Contains the small observable Store primitive.
+Contains the small observable Store primitive plus bounded in-memory World history.
 
-The Store has no dependency on DOM or Web Audio and can be tested in isolation.
+Current responsibilities:
+- Store — observable application state;
+- WorldHistory — bounded 64-entry World undo/redo history with branch/reset semantics.
+
+Neither depends on DOM or Web Audio.
+
+### core/persistence/
+Owns browser-local durability outside the musical runtime.
+
+Current responsibilities:
+- IndexedDbWorldStorage — native IndexedDB adapter;
+- MemoryWorldStorage — deterministic test backend;
+- WorldRepository — library, active-World, Trash, restore, purge, duplicate/import, migration and quarantine;
+- WorldMigration — schema v1–v8 validation/migration;
+- Backup — versioned JSON backup encode/decode;
+- PersistenceError — quota/unavailable/corruption/future-version classification;
+- PersistenceTypes — storage/library contracts.
+
+App does not issue IndexedDB requests directly.
 
 ### core/world/
 Owns the serializable World document boundary and pure creative-state mutations.
 
-World schema version 7 contains:
+World schema version 8 contains:
 - BPM;
 - tonic;
 - scale;
@@ -89,7 +107,7 @@ World schema version 7 contains:
 - full EffectFieldDocument objects;
 - PlaygroundToyDocument objects;
 - typed LinkDocument objects;
-- placeholder Snapshots.
+- typed SnapshotDocument objects.
 
 SoundOrbDocument contains:
 - id;
@@ -121,6 +139,10 @@ PlaygroundToyActions owns immutable toy Add/move/Portal OUT/delete operations.
 LinkActions owns bounded Link validation, Add/Delete, and lifecycle cleanup.
 
 Magic owns seeded mutation of existing Sound Orbs, Effect Fields, toys, and coherent whole-World Remix without changing structural caps or roles.
+
+Snapshot owns bounded playable-state capture/rename/delete/recall.
+
+WorldLibraryActions owns pure World rename/duplicate operations.
 
 EffectField geometry maps normalized orb/field positions into smooth 0–1 effect amounts.
 
@@ -156,6 +178,9 @@ Examples:
 - serializable creative state belongs to World;
 - transient selection/playback UI state belongs to AppState/Store;
 - Magic preview/session/undo metadata is transient AppState;
+- library metadata (last-opened, deletedAt, active World) belongs to persistence records, not WorldDocument;
+- autosave/persistence status and open Snapshot sheet state are transient AppState;
+- undo/redo stacks belong to WorldHistory and are intentionally session-only;
 - rendered DOM is a projection of state, not a second persistent data model.
 
 During a drag, DOM position and spatial audio may preview continuously. The normalized position is committed back to World state when the drag ends.
@@ -224,7 +249,9 @@ Phase 7 adds contextual Motion plus directly manipulable playground toys. Motion
 
 Phase 8 adds visible one-way Links between Sound Orbs. Link creation is vocabulary-driven rather than port/routing driven, and reactive audio is deliberately non-recursive.
 
-Phase 9 adds ✦ Magic and ✦ Remix as bounded mutation operations over the existing World model. Preview transactions live in AppState; World schema remains unchanged.
+Phase 9 adds ✦ Magic and ✦ Remix as bounded mutation operations over the existing World model. Preview transactions live in AppState.
+
+Phase 10 adds the local World library, autosave/restore, typed Snapshots, bounded general undo/redo, schema migration/quarantine, and versioned JSON backups. Persistence remains independent of the audio runtime.
 
 ## GitHub Pages
 The production URL is expected to use the repository path:
@@ -282,7 +309,14 @@ Current automated coverage includes:
 - role/id/position preservation;
 - intent-aware sound/density/tempo behavior;
 - Effect Field and toy bounds under Magic;
-- Remix structure/Link validity preservation.
+- Remix structure/Link validity preservation;
+- Snapshot capture/recall/cap;
+- bounded undo/redo history;
+- schema v1–v8 migration and future-version rejection;
+- backup round-trip and partial recovery;
+- WorldRepository library/Trash/restore/purge/duplicate/import;
+- corruption quarantine;
+- persistence error/quota classification.
 
 Future phases add tests at their domain boundaries.
 
@@ -301,6 +335,8 @@ Sound Orb and Effect Field visuals use lightweight DOM/CSS animation. Heavier re
 Phase 6 explicitly avoids a convolution engine or granular AudioWorklet per Sound Orb. Space uses filtered delay diffusion and Frost uses bounded short-delay feedback so the 12-orb cap remains realistic for web/mobile hardware.
 
 Phase 7 adds one demand-driven requestAnimationFrame loop. It runs only while at least one Sound Orb exists and Motion/toys require live position evaluation; static Worlds do not keep the loop alive.
+
+Phase 10 persistence is event/debounce-driven and adds no render or audio loop. Live Motion positions are never serialized.
 
 Future render loops and expensive DSP must be pausable when hidden or unnecessary.
 
@@ -472,3 +508,44 @@ Keep stores a one-step transient Magic undo pair. Undo remains available only wh
 During an active preview, the main canvas is pointer-locked while audio/Motion/Links continue running. This prevents hidden edits from being destroyed by Retry/Revert.
 
 Magic creates no additional audio graph, scheduler, worker, or animation loop.
+
+
+## Phase 10 persistence rule
+
+Persistence is a boundary around WorldDocument, not part of audio scheduling.
+
+World schema v8 replaces the old Snapshot placeholder array with typed SnapshotDocument objects. Snapshot payloads contain playable creative state but exclude the Snapshot collection itself, preventing recursive documents.
+
+Library metadata is stored separately from the World:
+- lastOpenedAt;
+- deletedAt;
+- active World id.
+
+The IndexedDB database `loop-local` contains:
+- `worlds`;
+- `meta`;
+- `quarantine`.
+
+WorldRepository is the only application-facing persistence boundary. Every loaded/imported record passes through WorldMigration before entering AppState.
+
+Migration:
+- recovers schemas v1–v8;
+- revalidates current Sound/Field/Toy/Link rules;
+- can drop damaged child records with warnings;
+- rejects invalid roots;
+- rejects unsupported future schemas rather than guessing.
+
+Unrecoverable stored Worlds are quarantined best-effort and removed from the normal library. User Trash remains a separate recoverable state.
+
+Autosave watches immutable World-reference changes, not UI state. It is debounced, ignores active Magic preview Worlds, flushes when the document becomes hidden, and performs a final serialized save before Home library operations.
+
+The active World id allows reload/restart restoration. Restored playback remains stopped until a new browser user gesture.
+
+General WorldHistory is intentionally session-only and bounded to 64 past states. It resets when switching Worlds and supports top-bar + Ctrl/Cmd keyboard undo/redo.
+
+Snapshot recall:
+- immediate while stopped;
+- queued to the next bar through MusicalTransport while playing;
+- cancelled if a newer material World edit occurs before recall fires.
+
+Backup format is versioned JSON (`loop-world-backup`, version 1). Imported Worlds are always assigned new World ids, preventing silent overwrite.
