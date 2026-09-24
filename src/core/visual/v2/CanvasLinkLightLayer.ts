@@ -1,5 +1,5 @@
 import type { VisualPreferences } from '../VisualQuality';
-import { LINK_RENDER_COLORS,ROLE_RENDER_COLORS,fieldInfluencedColor,mixRenderColor,renderColorCss,withAlpha,type RenderColor } from './RenderPalette';
+import { LINK_RENDER_COLORS,ROLE_RENDER_COLORS,fieldInfluencedColor,mixRenderColor,renderColorCss,withAlpha } from './RenderPalette';
 import { crossAffectedLinkPoints,curvedLinkPoints,type PixelPoint } from './LinkGeometry';
 import { semanticLinkPacketDirections } from './LightModel';
 import type { RenderEventSample,RenderLink,RenderLinkGhost,RenderLinkCrossInteraction } from './RenderTypes';

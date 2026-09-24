@@ -29,7 +29,12 @@ function ribbon(t:number[],a:PixelPoint,b:PixelPoint,w:number,c1:RenderColor,c2:
 function diamond(t:number[],p:PixelPoint,r:number,c:RenderColor,a:number){pushV(t,p.x,p.y-r,c,a);pushV(t,p.x+r,p.y,c,a);pushV(t,p.x,p.y+r,c,a);pushV(t,p.x,p.y-r,c,a);pushV(t,p.x,p.y+r,c,a);pushV(t,p.x-r,p.y,c,a);}
 function pathPoint(points:readonly PixelPoint[],progress:number):PixelPoint|null{if(points.length<2)return null;const scaled=Math.max(0,Math.min(1,progress))*(points.length-1);const i=Math.min(points.length-2,Math.floor(scaled));const f=scaled-i;const a=points[i]!,b=points[i+1]!;return{x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};}
 function createdProgress(id:string,events:readonly RenderEventSample[]){for(const s of events)if(s.event.kind==='link-created'&&s.event.linkId===id)return s.progress;return null;}
-function pulseProgress(id:string,events:readonly RenderEventSample[]){return events.filter(s=>s.event.kind==='link-pulse'&&s.event.linkId===id);}
+function pulseProgress(id:string,events:readonly RenderEventSample[]){
+  return events.filter(
+    (s): s is RenderEventSample & {event:{kind:'link-pulse';linkId:string;intensity:number}} =>
+      s.event.kind==='link-pulse'&&s.event.linkId===id,
+  );
+}
 function ghostLinks(events:readonly RenderEventSample[]){return events.filter((s):s is RenderEventSample & {event:{kind:'link-deleted';link:RenderLinkGhost}}=>s.event.kind==='link-deleted');}
 
 export class WebGLLinkLightLayer{

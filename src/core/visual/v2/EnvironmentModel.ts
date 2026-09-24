@@ -245,6 +245,13 @@ export function deriveEnvironmentDynamics(
       continue;
     }
 
+    if (
+      event.kind === 'link-created'
+      || event.kind === 'link-deleted'
+    ) {
+      continue;
+    }
+
     const orb = scene.orbs.find(
       (candidate) => candidate.id === event.orbId,
     );

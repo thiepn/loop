@@ -622,55 +622,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       return;
     }
 
-    if (
-      event.kind === 'pointer-disturbance'
-      || event.kind === 'orb-drop'
-      || event.kind === 'orb-charge'
-    ) {
-      return;
-    }
-
     return;
-
-    const link = scene.links.find(
-      (candidate) => candidate.id === event.linkId,
-    );
-
-    if (!link) {
-      return;
-    }
-
-    const points = crossAffectedLinkPoints(
-      curvedLinkPoints(
-        link.id,
-        link.source,
-        link.target,
-        width,
-        height,
-        12,
-      ),
-      link.cross,
-      width,
-      height,
-    );
-    const midpoint = points[Math.floor(points.length / 2)];
-
-    if (!midpoint) {
-      return;
-    }
-
-    this.drawCircle(
-      midpoint.x,
-      midpoint.y,
-      (8 + sample.progress * 16) * dpr,
-      withAlpha(
-        fieldInfluencedColor(
-          LINK_RENDER_COLORS[link.type],
-          link.cross.fieldInfluence,
-        ),
-        fade * 0.5 * event.intensity,
-      ),
-    );
   }
 
   private drawCircle(

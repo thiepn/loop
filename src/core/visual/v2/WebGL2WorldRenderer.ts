@@ -6,9 +6,6 @@ import {
   withAlpha,
   type RenderColor,
 } from './RenderPalette';
-import {
-  curvedLinkPoints,
-} from './LinkGeometry';
 import { deriveEnvironmentDynamics } from './EnvironmentModel';
 import { WebGLCrossSystemLayer } from './WebGLCrossSystemLayer';
 import { WebGLEnvironmentLayer } from './WebGLEnvironmentLayer';
@@ -200,30 +197,6 @@ function pushDisc(
       color[3],
     );
   }
-}
-
-function pushLineSegment(
-  target: number[],
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  color: RenderColor,
-): void {
-  target.push(
-    fromX,
-    fromY,
-    color[0],
-    color[1],
-    color[2],
-    color[3],
-    toX,
-    toY,
-    color[0],
-    color[1],
-    color[2],
-    color[3],
-  );
 }
 
 export class WebGL2WorldRenderer implements WorldRenderer {
@@ -582,44 +555,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     gl.drawArrays(gl.TRIANGLES, 0, data.length / 8);
   }
 
-  private drawLines(
-    resources: ProgramResources,
-    vertices: readonly number[],
-    width: number,
-    height: number,
-  ): void {
-    const gl = this.gl;
-    const data = new Float32Array(vertices);
-    const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
-
-    gl.useProgram(resources.program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, resources.buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-    gl.uniform2f(resources.resolutionLocation, width, height);
-
-    gl.enableVertexAttribArray(resources.positionLocation);
-    gl.vertexAttribPointer(
-      resources.positionLocation,
-      2,
-      gl.FLOAT,
-      false,
-      stride,
-      0,
-    );
-
-    gl.enableVertexAttribArray(resources.colorLocation);
-    gl.vertexAttribPointer(
-      resources.colorLocation,
-      4,
-      gl.FLOAT,
-      false,
-      stride,
-      2 * Float32Array.BYTES_PER_ELEMENT,
-    );
-
-    gl.drawArrays(gl.LINES, 0, data.length / 6);
-  }
-
   private pushEventDiscs(
     target: number[],
     sample: RenderEventSample,
@@ -663,57 +598,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       return;
     }
 
-    if (
-      event.kind === 'pointer-disturbance'
-      || event.kind === 'orb-drop'
-      || event.kind === 'orb-charge'
-    ) {
-      return;
-    }
-
     return;
-
-    const link = scene.links.find(
-      (candidate) => candidate.id === event.linkId,
-    );
-
-    if (!link) {
-      return;
-    }
-
-    const points = crossAffectedLinkPoints(
-      curvedLinkPoints(
-        link.id,
-        link.source,
-        link.target,
-        width,
-        height,
-        12,
-      ),
-      link.cross,
-      width,
-      height,
-    );
-    const midpoint = points[Math.floor(points.length / 2)];
-
-    if (!midpoint) {
-      return;
-    }
-
-    const radius = (8 + sample.progress * 16) * dpr;
-    pushDisc(
-      target,
-      midpoint.x,
-      midpoint.y,
-      radius,
-      radius,
-      withAlpha(
-        fieldInfluencedColor(
-          LINK_RENDER_COLORS[link.type],
-          link.cross.fieldInfluence,
-        ),
-        fade * 0.5 * event.intensity,
-      ),
-    );
   }
 }
