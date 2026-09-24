@@ -10,6 +10,7 @@ import type {
   MagicTarget,
 } from '../core/world/Magic';
 import type { SoundPaletteCategoryId } from '../core/sounds/SoundPalette';
+import type { VisualQuality } from '../core/visual/VisualQuality';
 import { Store } from '../core/state/Store';
 import { createStarterWorld } from '../core/world/StarterWorlds';
 import type { WorldDocument } from '../core/world/World';
@@ -74,6 +75,11 @@ export interface AppState {
   readonly autosave: AutosaveStatus;
   readonly library: readonly WorldLibraryItem[];
   readonly snapshotsOpen: boolean;
+  readonly visualSettingsOpen: boolean;
+  readonly visualQuality: VisualQuality;
+  readonly visualReduceMotion: boolean;
+  readonly visualReduceParticles: boolean;
+  readonly visualReduceBloom: boolean;
   readonly captureStatus: CaptureStatus;
   readonly captureStartedAt: number | null;
   readonly captureDurationMs: number;
@@ -110,6 +116,11 @@ export const appStore = new Store<AppState>({
   autosave: 'idle',
   library: [],
   snapshotsOpen: false,
+  visualSettingsOpen: false,
+  visualQuality: 'balanced',
+  visualReduceMotion: false,
+  visualReduceParticles: false,
+  visualReduceBloom: false,
   captureStatus: 'idle',
   captureStartedAt: null,
   captureDurationMs: 0,
