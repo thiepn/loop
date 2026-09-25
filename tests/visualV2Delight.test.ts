@@ -7,6 +7,7 @@ import { projectWorldToRenderScene } from '../src/core/visual/v2/SceneAdapter';
 import { createSoundOrb } from '../src/core/world/SoundOrb';
 import { createEmptyWorld } from '../src/core/world/World';
 import type { RenderEventSample } from '../src/core/visual/v2/RenderTypes';
+import type { VisualPreferences } from '../src/core/visual/VisualQuality';
 
 const HIGH = {
   quality: 'high' as const,
@@ -99,7 +100,7 @@ function samples(
 
 function frame(
   bar: number,
-  preferences = HIGH,
+  preferences: VisualPreferences = HIGH,
   options: Parameters<typeof samples>[1] = {},
 ) {
   return deriveDelightFrame(
