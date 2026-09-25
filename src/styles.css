@@ -3386,22 +3386,16 @@ a:focus-visible,
 .playground-shell {
   --visual-bloom: 0.74;
   --visual-depth: 1;
-  --visual-ambient-opacity: 0.7;
-  --visual-trail-opacity: 0.7;
 }
 
 .playground-shell[data-visual-quality="high"] {
   --visual-bloom: 1;
   --visual-depth: 1;
-  --visual-ambient-opacity: 0.9;
-  --visual-trail-opacity: 0.82;
 }
 
 .playground-shell[data-visual-quality="battery"] {
   --visual-bloom: 0.38;
   --visual-depth: 0.72;
-  --visual-ambient-opacity: 0.34;
-  --visual-trail-opacity: 0.38;
 }
 
 .playground-shell[data-reduce-bloom="true"] {
@@ -3424,119 +3418,6 @@ a:focus-visible,
 
 .world-grid {
   opacity: calc(0.24 + 0.18 * var(--visual-depth));
-}
-
-.visual-effects-layer {
-  display: contents;
-  pointer-events: none;
-}
-
-.ambient-particle-layer,
-.motion-trail-layer,
-.orb-burst-layer {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.ambient-particle-layer {
-  z-index: 1;
-  opacity: var(--visual-ambient-opacity);
-}
-
-.motion-trail-layer {
-  z-index: 4;
-  opacity: var(--visual-trail-opacity);
-}
-
-.orb-burst-layer {
-  z-index: 8;
-}
-
-.ambient-particle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(226, 232, 240, 0.46);
-  box-shadow:
-    0 0 calc(7px * var(--visual-bloom))
-    rgba(196, 181, 253, calc(0.34 * var(--visual-bloom)));
-  animation: ambient-drift 12s ease-in-out infinite alternate;
-}
-
-.playground-shell[data-visual-quality="battery"] .ambient-particle {
-  animation: none;
-  opacity: 0.42;
-}
-
-.motion-trail-point {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--trail-color) 68%, white 8%),
-    color-mix(in srgb, var(--trail-color) 18%, transparent) 55%,
-    transparent 72%
-  );
-  filter:
-    blur(0.4px)
-    drop-shadow(
-      0 0 calc(8px * var(--visual-bloom))
-      color-mix(in srgb, var(--trail-color) 38%, transparent)
-    );
-  animation:
-    trail-release var(--trail-lifetime, 800ms)
-    cubic-bezier(.2,.7,.2,1) forwards;
-}
-
-.motion-trail-point[data-role="bass"],
-.motion-trail-point[data-role="texture"] {
-  width: 16px;
-  height: 16px;
-}
-
-.motion-trail-point[data-role="percussion"] {
-  width: 6px;
-  height: 6px;
-}
-
-.orb-burst-particle {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: var(--burst-color);
-  box-shadow:
-    0 0 calc(12px * var(--visual-bloom))
-    color-mix(in srgb, var(--burst-color) 55%, transparent);
-  animation: orb-burst-out 460ms cubic-bezier(.15,.8,.25,1) forwards;
-}
-
-.orb-burst-particle[data-role="percussion"] {
-  width: 4px;
-  height: 4px;
-  border-radius: 1px;
-}
-
-.orb-burst-particle[data-role="bass"] {
-  width: 9px;
-  height: 9px;
-  opacity: 0.78;
-}
-
-.orb-burst-particle[data-role="texture"] {
-  width: 10px;
-  height: 10px;
-  filter:
-    blur(1.5px)
-    drop-shadow(
-      0 0 calc(14px * var(--visual-bloom))
-      color-mix(in srgb, var(--burst-color) 45%, transparent)
-    );
 }
 
 /* Orb material system */
@@ -4083,17 +3964,8 @@ a:focus-visible,
 .playground-shell[data-reduce-motion="true"] .portal-exit-surface,
 .playground-shell[data-reduce-motion="true"] .listener-rings span,
 .playground-shell[data-reduce-motion="true"] .link-path,
-.playground-shell[data-reduce-motion="true"] .ambient-particle,
 .playground-shell[data-reduce-motion="true"] .capture-live-dot {
   animation: none !important;
-}
-
-.playground-shell[data-reduce-motion="true"] .motion-trail-layer {
-  display: none;
-}
-
-.playground-shell[data-reduce-motion="true"] .orb-burst-particle {
-  animation: reduced-particle-feedback 180ms ease-out forwards !important;
 }
 
 .playground-shell[data-reduce-motion="true"] .palette-sheet,
@@ -4125,14 +3997,6 @@ a:focus-visible,
   opacity: 0.35;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ambient-particle,
-  .motion-trail-point,
-  .orb-burst-particle {
-    animation-duration: 1ms !important;
-  }
-}
-
 @media (max-width: 620px) {
   .visual-settings-backdrop {
     padding: 8px;
@@ -4157,56 +4021,6 @@ a:focus-visible,
 
   .visual-quality-art {
     min-height: 54px;
-  }
-}
-
-@keyframes ambient-drift {
-  0% {
-    translate: -3px 4px;
-    opacity: 0.22;
-  }
-
-  50% {
-    translate: 6px -7px;
-    opacity: 0.72;
-  }
-
-  100% {
-    translate: -5px -11px;
-    opacity: 0.34;
-  }
-}
-
-@keyframes trail-release {
-  0% {
-    scale: 0.95;
-    opacity: 0.72;
-  }
-
-  55% {
-    scale: 0.62;
-    opacity: 0.34;
-  }
-
-  100% {
-    scale: 0.2;
-    opacity: 0;
-  }
-}
-
-@keyframes orb-burst-out {
-  0% {
-    translate: -50% -50%;
-    scale: 0.4;
-    opacity: 0.88;
-  }
-
-  100% {
-    translate:
-      calc(-50% + var(--burst-x))
-      calc(-50% + var(--burst-y));
-    scale: 0.15;
-    opacity: 0;
   }
 }
 
@@ -4470,11 +4284,6 @@ a:focus-visible,
 }
 
 /* Explicit user reductions override decorative extras. */
-
-.playground-shell[data-reduce-particles="true"] .ambient-particle-layer,
-.playground-shell[data-reduce-particles="true"] .orb-burst-layer {
-  display: none;
-}
 
 .playground-shell[data-reduce-bloom="true"] .world-glow {
   opacity: 0.06;
@@ -6651,9 +6460,6 @@ a:focus-visible,
   .link-layer,
   .listener-rings,
   .listener-core,
-  .ambient-particle-layer,
-  .motion-trail-layer,
-  .orb-burst-layer,
   .world-hint,
   .onboarding-tip,
   .selection-panel,
