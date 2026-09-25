@@ -5955,6 +5955,13 @@ a:focus-visible,
 
 /* Visual V2 Phase 14 — Performance / Presentation Mode */
 
+.presentation-dom-stage {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
 .presentation-exit-button {
   position: absolute;
   z-index: 96;
@@ -5984,7 +5991,10 @@ a:focus-visible,
   box-shadow: none;
 }
 
-.playground-shell[data-presentation="true"] .world-renderer-v2 {
+.playground-shell[data-presentation="true"] :is(
+  .world-renderer-v2,
+  .presentation-dom-stage
+) {
   transform-origin: 0 0;
   will-change: transform;
 }
@@ -5998,13 +6008,29 @@ a:focus-visible,
   display: none;
 }
 
+.playground-shell[data-presentation="true"][data-presentation-renderer="v2"] .presentation-dom-stage {
+  opacity: 0 !important;
+}
+
+.playground-shell[data-presentation="true"] .presentation-dom-stage * {
+  pointer-events: none !important;
+}
+
+.playground-shell[data-presentation="true"][data-presentation-renderer="fallback"] :is(
+  .orb-label,
+  .field-label,
+  .toy-label,
+  .portal-exit-label
+) {
+  opacity: 0 !important;
+}
+
+.playground-shell[data-presentation="true"][data-presentation-renderer="fallback"] .field-resize-handle,
+.playground-shell[data-presentation="true"][data-presentation-renderer="fallback"] .sound-orb.is-selected .orb-visual::after {
+  display: none !important;
+}
+
 .playground-shell[data-presentation="true"] :is(
-  .orb-layer,
-  .effect-field-layer,
-  .toy-layer,
-  .link-layer,
-  .listener-rings,
-  .listener-core,
   .world-hint,
   .onboarding-tip,
   .selection-panel,

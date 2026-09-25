@@ -316,10 +316,34 @@ test('presentation mode frames the World without changing creative coordinates',
   await expect(shell).toHaveAttribute('data-presentation', 'true');
   await expect(page.locator('[data-presentation-exit]')).toBeVisible();
 
-  const transform = await page.locator('.world-renderer-v2').evaluate(
+  const rendererMode = await shell.getAttribute(
+    'data-presentation-renderer',
+  );
+  expect(['v2', 'fallback']).toContain(rendererMode);
+
+  const cameraSurface = rendererMode === 'v2'
+    ? page.locator('.world-renderer-v2')
+    : page.locator('.presentation-dom-stage');
+  const transform = await cameraSurface.evaluate(
     (element) => getComputedStyle(element).transform,
   );
   expect(transform).not.toBe('none');
+
+  await expect(page.locator('.world-canvas')).toHaveCSS(
+    'transform',
+    'none',
+  );
+  await expect(page.locator('.playground-dock')).toHaveCSS(
+    'transform',
+    'none',
+  );
+
+  if (rendererMode === 'fallback') {
+    await expect(page.locator('.presentation-dom-stage')).toHaveAttribute(
+      'inert',
+      '',
+    );
+  }
 
   if (isTouchProject(testInfo)) {
     const box = await page.locator('[data-presentation-exit]').boundingBox();

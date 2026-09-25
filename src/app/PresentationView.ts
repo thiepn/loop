@@ -23,9 +23,11 @@ export class PresentationView {
   private readonly shell: HTMLElement;
   private readonly canvas: HTMLElement;
   private readonly renderer: HTMLCanvasElement;
+  private readonly domStage: HTMLElement;
   private readonly enterButton: HTMLButtonElement;
   private readonly exitButton: HTMLButtonElement;
   private readonly resizeObserver: ResizeObserver | null;
+  private readonly rendererObserver: MutationObserver | null;
   private state: Readonly<AppState> | null = null;
   private active = false;
   private nativeFullscreen = false;
@@ -128,12 +130,33 @@ export class PresentationView {
     const play = actions?.querySelector<HTMLElement>('[data-play]');
 
     if (!shell || !canvas || !renderer || !actions || !play) {
-      throw new Error('Presentation mode requires the Visual V2 playground.');
+      throw new Error('Presentation mode requires the playground surface.');
     }
 
     this.shell = shell;
     this.canvas = canvas;
     this.renderer = renderer;
+
+    const domStage = document.createElement('div');
+    domStage.className = 'presentation-dom-stage';
+
+    for (const selector of [
+      '.listener-rings',
+      '.listener-core',
+      '.effect-field-layer',
+      '.link-layer',
+      '.playground-toy-layer',
+      '.orb-layer',
+    ]) {
+      const element = canvas.querySelector(selector);
+
+      if (element) {
+        domStage.append(element);
+      }
+    }
+
+    canvas.append(domStage);
+    this.domStage = domStage;
 
     const enter = document.createElement('button');
     enter.type = 'button';
@@ -178,20 +201,41 @@ export class PresentationView {
           }
         });
     this.resizeObserver?.observe(canvas);
+
+    this.rendererObserver = typeof MutationObserver === 'undefined'
+      ? null
+      : new MutationObserver(() => {
+          if (!this.active) {
+            return;
+          }
+
+          this.syncRendererMode();
+          this.updateCamera(performance.now());
+        });
+    this.rendererObserver?.observe(shell, {
+      attributes: true,
+      attributeFilter: [
+        'data-renderer-state',
+        'data-renderer-v2',
+      ],
+    });
   }
 
   public render(state: Readonly<AppState>): void {
     this.state = state;
     const blocked = blocksPresentation(state);
-    const rendererReady = this.shell.dataset.rendererState === 'ready'
-      && this.shell.dataset.rendererV2 !== 'none';
+    const rendererReady = this.rendererReady();
 
-    this.enterButton.disabled = blocked || !rendererReady;
+    this.enterButton.disabled = blocked;
     this.enterButton.title = blocked
       ? 'Close the open panel before presenting'
       : rendererReady
         ? 'Present World'
-        : 'Presentation requires the Visual V2 renderer';
+        : 'Present World using compatibility visuals';
+
+    if (this.active) {
+      this.syncRendererMode();
+    }
 
     if (
       this.active
@@ -220,6 +264,7 @@ export class PresentationView {
   public destroy(): void {
     this.deactivate(true);
     this.resizeObserver?.disconnect();
+    this.rendererObserver?.disconnect();
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     document.removeEventListener('visibilitychange', this.handleVisibility);
     window.removeEventListener('pointermove', this.handleActivity);
@@ -229,6 +274,7 @@ export class PresentationView {
     window.removeEventListener('pageshow', this.handlePageShow);
     this.enterButton.remove();
     this.exitButton.remove();
+    this.domStage.remove();
   }
 
   private async activate(): Promise<void> {
@@ -247,16 +293,20 @@ export class PresentationView {
     this.nativeFullscreen = false;
     this.shell.dataset.presentation = 'true';
     this.shell.dataset.presentationSurface = 'viewport';
+    this.syncRendererMode();
     this.shell.dataset.presentationActivity = state.captureStatus === 'recording'
       ? 'recording'
       : state.playing
         ? 'playing'
         : 'idle';
+    this.domStage.setAttribute('inert', '');
+    this.domStage.setAttribute('aria-hidden', 'true');
     this.enterButton.setAttribute('aria-pressed', 'true');
     this.exitButton.hidden = false;
     this.revealChrome();
     this.updateCamera(performance.now());
     this.syncAnimation();
+    this.exitButton.focus({ preventScroll: true });
 
     if (
       document.fullscreenElement === null
@@ -284,7 +334,11 @@ export class PresentationView {
     this.cancelFrame();
     this.clearChromeTimer();
     this.renderer.style.removeProperty('transform');
+    this.domStage.style.removeProperty('transform');
+    this.domStage.removeAttribute('inert');
+    this.domStage.removeAttribute('aria-hidden');
     delete this.shell.dataset.presentation;
+    delete this.shell.dataset.presentationRenderer;
     delete this.shell.dataset.presentationChrome;
     delete this.shell.dataset.presentationSurface;
     delete this.shell.dataset.presentationActivity;
@@ -298,6 +352,10 @@ export class PresentationView {
 
     if (shouldExitFullscreen) {
       void document.exitFullscreen().catch(() => undefined);
+    }
+
+    if (this.enterButton.isConnected) {
+      this.enterButton.focus({ preventScroll: true });
     }
   }
 
@@ -322,14 +380,32 @@ export class PresentationView {
     });
     const x = (0.5 - camera.zoom * camera.center.x) * width;
     const y = (0.5 - camera.zoom * camera.center.y) * height;
-
-    this.renderer.style.transform = 'translate3d('
+    const transform = 'translate3d('
       + x.toFixed(2)
       + 'px,'
       + y.toFixed(2)
       + 'px,0) scale('
       + camera.zoom.toFixed(4)
       + ')';
+
+    if (this.rendererReady()) {
+      this.domStage.style.removeProperty('transform');
+      this.renderer.style.transform = transform;
+    } else {
+      this.renderer.style.removeProperty('transform');
+      this.domStage.style.transform = transform;
+    }
+  }
+
+  private rendererReady(): boolean {
+    return this.shell.dataset.rendererState === 'ready'
+      && this.shell.dataset.rendererV2 !== 'none';
+  }
+
+  private syncRendererMode(): void {
+    this.shell.dataset.presentationRenderer = this.rendererReady()
+      ? 'v2'
+      : 'fallback';
   }
 
   private syncAnimation(): void {
