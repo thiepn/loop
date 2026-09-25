@@ -147,7 +147,7 @@ describe('Visual V2 Phase 16 delight', () => {
 
     expect(result.mask & 16).toBe(16);
     expect(result.dots).toHaveLength(8);
-    expect(result.dots.every((dot) => dot.color[3] <= 1)).toBe(true);
+    expect(result.dots.every((dot) => dot[3][3] <= 1)).toBe(true);
   });
 
   it('suppresses particle delight under Reduce Particles', () => {
