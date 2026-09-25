@@ -134,15 +134,25 @@ async function run() {
   );
   const manifest = await manifestResponse.json();
 
-  assert(manifest.id === '/loop/', `Manifest id is ${manifest.id}`);
-  assert(
-    manifest.scope === '/loop/',
-    `Manifest scope is ${manifest.scope}`,
-  );
-  assert(
-    manifest.start_url === '/loop/',
-    `Manifest start_url is ${manifest.start_url}`,
-  );
+  const manifestBaseUrl = new URL(manifestResponse.url);
+  const manifestId = new URL(manifest.id, manifestBaseUrl);
+  const manifestScope = new URL(manifest.scope, manifestBaseUrl);
+  const manifestStartUrl = new URL(manifest.start_url, manifestBaseUrl);
+
+  for (const [label, url] of [
+    ['id', manifestId],
+    ['scope', manifestScope],
+    ['start_url', manifestStartUrl],
+  ]) {
+    assert(
+      url.origin === liveProductionUrl.origin,
+      `Manifest ${label} escaped production origin: ${url.href}`,
+    );
+    assert(
+      url.pathname === '/loop/',
+      `Manifest ${label} resolves to ${url.pathname}`,
+    );
+  }
 
   const iconSizes = new Set(
     (manifest.icons ?? []).map((icon) => icon.sizes),
