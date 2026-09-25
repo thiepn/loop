@@ -1,24 +1,9 @@
 import type { VisualPreferences } from '../VisualQuality';
 import type { RenderLightFrame } from './LightModel';
 
-const VERTEX = '#version 300 es\n'
-  + 'in vec2 a_position;\n'
-  + 'in vec2 a_local;\n'
-  + 'in vec4 a_color;\n'
-  + 'uniform vec2 u_resolution;\n'
-  + 'out vec2 v_local;\n'
-  + 'out vec4 v_color;\n'
-  + 'void main(){\n'
-  + ' vec2 p=a_position/u_resolution*2.0-1.0; p.y=-p.y;\n'
-  + ' gl_Position=vec4(p,0.0,1.0); v_local=a_local; v_color=a_color;\n'
-  + '}';
+const VERTEX = "#version 300 es\nin vec2 a_position;\nin vec2 a_local;\nin vec4 a_color;\nuniform vec2 u_resolution;\nout vec2 v_local;\nout vec4 v_color;\nvoid main(){\nvec2 p=a_position/u_resolution*2.0-1.0; p.y=-p.y;\ngl_Position=vec4(p,0.0,1.0); v_local=a_local; v_color=a_color;\n}";
 
-const FRAGMENT = '#version 300 es\n'
-  + 'precision mediump float;\n'
-  + 'in vec2 v_local; in vec4 v_color; out vec4 out_color;\n'
-  + 'void main(){ float d=length(v_local); if(d>1.0) discard;\n'
-  + ' float a=pow(max(0.0,1.0-d),2.2)*v_color.a;\n'
-  + ' out_color=vec4(v_color.rgb,a); }';
+const FRAGMENT = "#version 300 es\nprecision mediump float;\nin vec2 v_local; in vec4 v_color; out vec4 out_color;\nvoid main(){ float d=length(v_local); if(d>1.0) discard;\nfloat a=pow(max(0.0,1.0-d),2.2)*v_color.a;\nout_color=vec4(v_color.rgb,a); }";
 
 function compile(gl:WebGL2RenderingContext,type:number,source:string):WebGLShader{
   const s=gl.createShader(type); if(!s) throw new Error('light shader');
