@@ -197,7 +197,7 @@ describe('Visual V2 Phase 16 delight', () => {
         { ...HIGH, quality: 'battery' },
       );
 
-      expect(result.kinds).toEqual([]);
+      expect(result.mask & 15).toBe(0);
     }
   });
 
