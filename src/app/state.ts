@@ -80,6 +80,7 @@ export interface AppState {
   readonly visualReduceMotion: boolean;
   readonly visualReduceParticles: boolean;
   readonly visualReduceBloom: boolean;
+  readonly visualSystemReduceMotion: boolean;
   readonly pwaInstallAvailable: boolean;
   readonly pwaManualInstallAvailable: boolean;
   readonly pwaInstalled: boolean;
@@ -126,6 +127,7 @@ export const appStore = new Store<AppState>({
   visualReduceMotion: false,
   visualReduceParticles: false,
   visualReduceBloom: false,
+  visualSystemReduceMotion: false,
   pwaInstallAvailable: false,
   pwaManualInstallAvailable: false,
   pwaInstalled: false,
