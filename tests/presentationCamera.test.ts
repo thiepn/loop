@@ -116,6 +116,47 @@ describe('Visual V2 presentation camera', () => {
     expect(ultrawide.zoom).toBeLessThanOrEqual(standard.zoom);
   });
 
+  it('biases adaptive framing toward an explicit composition focus', () => {
+    const world = createEmptyWorld({
+      soundOrbs: [
+        createSoundOrb({
+          id: 'left',
+          soundId: 'test',
+          role: 'beat',
+          position: { x: 0.32, y: 0.48 },
+        }),
+        createSoundOrb({
+          id: 'right',
+          soundId: 'test',
+          role: 'melody',
+          position: { x: 0.68, y: 0.48 },
+        }),
+      ],
+    });
+    const base = presentationCameraForWorld(world, {
+      width: 1440,
+      height: 900,
+      quality: 'high',
+      reduceMotion: true,
+      playing: true,
+      recording: false,
+      timestampMs: 0,
+    });
+    const focused = presentationCameraForWorld(world, {
+      width: 1440,
+      height: 900,
+      quality: 'high',
+      reduceMotion: true,
+      playing: true,
+      recording: false,
+      timestampMs: 0,
+      focus: { x: 0.68, y: 0.48 },
+    });
+
+    expect(focused.center.x).toBeGreaterThan(base.center.x);
+    expect(focused.zoom).toBeGreaterThanOrEqual(base.zoom);
+  });
+
   it('makes Reduce Motion framing time-invariant', () => {
     const world = createEmptyWorld({
       soundOrbs: [
