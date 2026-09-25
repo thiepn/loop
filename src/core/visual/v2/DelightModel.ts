@@ -67,6 +67,9 @@ export function deriveDelightFrame(
   const hit = hitSample?.event.kind === 'choreography-hit'
     ? hitSample.event
     : null;
+  const environment = scene.environment;
+  const listener = scene.listener;
+  const high = preferences.quality === 'high';
   const active = scene.orbs.filter((orb) => !orb.muted);
   const pulsing = active.filter((orb) => samples.some(
     (sample) => (
@@ -76,7 +79,7 @@ export function deriveDelightFrame(
     ),
   ));
   const seed = random(
-    scene.environment.seed,
+    environment.seed,
     bar.bar * 97 + bar.phrasePosition * 17,
   );
   const rand = (salt: number) => random(seed, salt);
@@ -86,9 +89,6 @@ export function deriveDelightFrame(
   );
   const particles = moving && !preferences.reduceParticles;
   const bloom = preferences.reduceBloom ? 0.58 : 1;
-  const environment = scene.environment;
-  const listener = scene.listener;
-  const high = high;
   const envelope = Math.sin(Math.PI * barSample.progress);
   const dots: DelightDot[] = [];
   let mask = 0;
