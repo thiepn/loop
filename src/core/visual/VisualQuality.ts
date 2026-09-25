@@ -57,6 +57,18 @@ export function chooseAutomaticVisualQuality(
   return 'balanced';
 }
 
+export function applySystemVisualPreferences(
+  preferences: VisualPreferences,
+  prefersReducedMotion: boolean,
+): VisualPreferences {
+  return prefersReducedMotion
+    ? {
+        ...preferences,
+        reduceMotion: true,
+      }
+    : preferences;
+}
+
 export function initialVisualPreferences(
   hints: VisualEnvironmentHints,
 ): VisualPreferences {
