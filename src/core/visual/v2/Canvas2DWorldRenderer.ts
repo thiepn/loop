@@ -154,6 +154,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       width,
       height,
       dpr,
+      scene.environment.detailScale,
     );
 
     this.crossLayer.render(
@@ -249,6 +250,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       width,
       height,
       dpr,
+      scene.environment.detailScale,
     );
 
     for (const sample of events) {
@@ -486,6 +488,24 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       );
       spotlight.addColorStop(1, 'rgba(0, 0, 0, 0)');
       context.fillStyle = spotlight;
+      context.fillRect(0, 0, width, height);
+    }
+
+    const air = Math.max(
+      0,
+      dynamics.energy - dynamics.bassPressure * 0.55,
+    );
+
+    if (dynamics.transient > 0.01 || air > 0.01) {
+      context.fillStyle = this.rgbCss(
+        dynamics.transient >= air
+          ? [0.98, 0.45, 0.36]
+          : secondary,
+        Math.max(
+          dynamics.transient * 0.012,
+          air * 0.016,
+        ),
+      );
       context.fillRect(0, 0, width, height);
     }
 
