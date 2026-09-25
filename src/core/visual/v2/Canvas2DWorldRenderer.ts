@@ -25,6 +25,10 @@ import {
   deriveTransitionFrame,
   type TransitionFrame,
 } from './TransitionModel';
+import {
+  deriveDelightFrame,
+  type DelightFrame,
+} from './DelightModel';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
@@ -111,6 +115,9 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       scene,
       events,
       preferences,
+      width,
+      height,
+      dpr,
     );
     const particles = environmentParticleLayout(
       scene.environment,
@@ -137,14 +144,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       height,
       false,
     );
-    this.drawDelight(
-      delight,
-      scene,
-      preferences,
-      width,
-      height,
-      dpr,
-    );
+    this.drawDelight(delight);
 
     this.fieldLayer.render(
       scene.fields,
@@ -734,178 +734,25 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
 
   private drawDelight(
     frame: Readonly<DelightFrame>,
-    scene: Readonly<RenderScene>,
-    preferences: Readonly<VisualPreferences>,
-    width: number,
-    height: number,
-    dpr: number,
   ): void {
     const context = this.context;
-    const minDimension = Math.min(width, height);
-    const glowScale = preferences.reduceBloom ? 0.58 : 1;
-    const primary = scene.environment.primary;
-    const secondary = scene.environment.secondary;
 
-    if (frame.constellation) {
-      const { points, strength } = frame.constellation;
-
-      context.save();
+    for (const line of frame.lines) {
       context.beginPath();
-
-      points.forEach((point, index) => {
-        const x = point.x * width;
-        const y = point.y * height;
-
-        if (index === 0) {
-          context.moveTo(x, y);
-        } else {
-          context.lineTo(x, y);
-        }
-      });
-
-      context.strokeStyle = this.rgbCss(
-        secondary,
-        strength * 0.12 * glowScale,
-      );
-      context.lineWidth = Math.max(0.8, dpr * 0.85);
+      context.moveTo(line.x1, line.y1);
+      context.lineTo(line.x2, line.y2);
+      context.strokeStyle = renderColorCss(line.color);
+      context.lineWidth = Math.max(0.75, this.viewport.dpr * 0.8);
       context.stroke();
-
-      for (const point of points) {
-        context.beginPath();
-        context.arc(
-          point.x * width,
-          point.y * height,
-          Math.max(1, dpr * (1.2 + strength * 1.4)),
-          0,
-          Math.PI * 2,
-        );
-        context.fillStyle = this.rgbCss(
-          primary,
-          strength * 0.34 * glowScale,
-        );
-        context.fill();
-      }
-
-      context.restore();
     }
 
-    if (frame.alignment) {
-      context.save();
-      context.setLineDash([
-        Math.max(1, dpr * 2),
-        Math.max(3, dpr * 7),
-      ]);
-      context.lineDashOffset = 0;
-      context.strokeStyle = this.rgbCss(
-        primary,
-        frame.alignment.strength * 0.1 * glowScale,
+    for (const dot of frame.dots) {
+      this.drawCircle(
+        dot.x,
+        dot.y,
+        dot.radius,
+        dot.color,
       );
-      context.lineWidth = Math.max(0.7, dpr * 0.72);
-
-      for (const point of frame.alignment.points) {
-        context.beginPath();
-        context.moveTo(
-          scene.listener.x * width,
-          scene.listener.y * height,
-        );
-        context.lineTo(
-          point.x * width,
-          point.y * height,
-        );
-        context.stroke();
-      }
-
-      context.restore();
-    }
-
-    if (frame.mote) {
-      const { from, head, strength } = frame.mote;
-      const tail = 0.16;
-      const tailX = head.x + (from.x - head.x) * tail;
-      const tailY = head.y + (from.y - head.y) * tail;
-
-      context.save();
-      context.beginPath();
-      context.moveTo(tailX * width, tailY * height);
-      context.lineTo(head.x * width, head.y * height);
-      context.strokeStyle = this.rgbCss(
-        secondary,
-        strength * 0.22 * glowScale,
-      );
-      context.lineWidth = Math.max(0.8, dpr * 1.1);
-      context.stroke();
-
-      context.beginPath();
-      context.arc(
-        head.x * width,
-        head.y * height,
-        Math.max(1, dpr * 1.7),
-        0,
-        Math.PI * 2,
-      );
-      context.fillStyle = this.rgbCss(
-        primary,
-        strength * 0.62 * glowScale,
-      );
-      context.fill();
-      context.restore();
-    }
-
-    if (frame.orbit) {
-      const radius = minDimension * frame.orbit.radius;
-
-      for (let index = 0; index < 3; index += 1) {
-        const angle = frame.orbit.phase
-          + (Math.PI * 2 * index) / 3;
-        const x = scene.listener.x * width
-          + Math.cos(angle) * radius;
-        const y = scene.listener.y * height
-          + Math.sin(angle) * radius;
-
-        context.beginPath();
-        context.arc(
-          x,
-          y,
-          Math.max(1, dpr * 1.45),
-          0,
-          Math.PI * 2,
-        );
-        context.fillStyle = this.rgbCss(
-          secondary,
-          frame.orbit.strength * 0.48 * glowScale,
-        );
-        context.fill();
-      }
-    }
-
-    if (frame.silenceDust) {
-      const fall = preferences.reduceMotion
-        ? 0
-        : frame.silenceDust.progress * 0.1;
-
-      for (const [index, point] of frame.silenceDust.points.entries()) {
-        const y = Math.min(
-          0.94,
-          point.y
-            + fall * (0.42 + (index % 3) * 0.16),
-        );
-        const alpha = frame.silenceDust.strength
-          * (0.11 + (index % 2) * 0.035);
-
-        context.beginPath();
-        context.arc(
-          point.x * width,
-          y * height,
-          Math.max(0.65, dpr * (0.72 + (index % 3) * 0.18)),
-          0,
-          Math.PI * 2,
-        );
-        context.fillStyle = this.rgbCss(
-          primary,
-          alpha * glowScale,
-        );
-        context.fill();
-      }
     }
   }
 
