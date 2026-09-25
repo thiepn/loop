@@ -388,13 +388,8 @@ export class PresentationView {
       + camera.zoom.toFixed(4)
       + ')';
 
-    if (this.rendererReady()) {
-      this.domStage.style.removeProperty('transform');
-      this.renderer.style.transform = transform;
-    } else {
-      this.renderer.style.removeProperty('transform');
-      this.domStage.style.transform = transform;
-    }
+    this.renderer.style.transform = transform;
+    this.domStage.style.transform = transform;
   }
 
   private rendererReady(): boolean {
