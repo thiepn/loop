@@ -6139,7 +6139,7 @@ a:focus-visible,
     opacity: 0 !important;
   }
 
-  .playground-shell[data-presentation="true"] .presentation-dom-stage {
+  .playground-shell[data-presentation="true"][data-presentation-renderer="v2"] .presentation-dom-stage {
     opacity: 1 !important;
   }
 
