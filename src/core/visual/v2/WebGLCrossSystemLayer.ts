@@ -9,49 +9,9 @@ import type {
   RenderOrbCoupling,
 } from './RenderTypes';
 
-const VERTEX_SOURCE = '#version 300 es\n'
-  + 'in vec2 a_local;\n'
-  + 'uniform vec2 u_resolution;\n'
-  + 'uniform vec2 u_center;\n'
-  + 'uniform vec2 u_half_vector;\n'
-  + 'uniform float u_half_width;\n'
-  + 'out vec2 v_local;\n'
-  + 'void main() {\n'
-  + '  float length_value = max(0.001, length(u_half_vector));\n'
-  + '  vec2 direction = u_half_vector / length_value;\n'
-  + '  vec2 normal = vec2(-direction.y, direction.x);\n'
-  + '  vec2 position = u_center\n'
-  + '    + u_half_vector * a_local.x\n'
-  + '    + normal * u_half_width * a_local.y;\n'
-  + '  vec2 zeroToOne = position / u_resolution;\n'
-  + '  vec2 clip = zeroToOne * 2.0 - 1.0;\n'
-  + '  clip.y = -clip.y;\n'
-  + '  gl_Position = vec4(clip, 0.0, 1.0);\n'
-  + '  v_local = a_local;\n'
-  + '}';
+const VERTEX_SOURCE = "#version 300 es\nin vec2 a_local;\nuniform vec2 u_resolution;\nuniform vec2 u_center;\nuniform vec2 u_half_vector;\nuniform float u_half_width;\nout vec2 v_local;\nvoid main() {\nfloat length_value = max(0.001, length(u_half_vector));\nvec2 direction = u_half_vector / length_value;\nvec2 normal = vec2(-direction.y, direction.x);\nvec2 position = u_center\n+ u_half_vector * a_local.x\n+ normal * u_half_width * a_local.y;\nvec2 zeroToOne = position / u_resolution;\nvec2 clip = zeroToOne * 2.0 - 1.0;\nclip.y = -clip.y;\ngl_Position = vec4(clip, 0.0, 1.0);\nv_local = a_local;\n}";
 
-const FRAGMENT_SOURCE = '#version 300 es\n'
-  + 'precision mediump float;\n'
-  + 'in vec2 v_local;\n'
-  + 'uniform vec4 u_color_a;\n'
-  + 'uniform vec4 u_color_b;\n'
-  + 'uniform float u_strength;\n'
-  + 'uniform float u_pulse;\n'
-  + 'out vec4 out_color;\n'
-  + 'void main() {\n'
-  + '  float transverse = exp(-v_local.y * v_local.y * 3.8);\n'
-  + '  float ends = smoothstep(1.0, 0.42, abs(v_local.x));\n'
-  + '  float core = transverse * ends;\n'
-  + '  if (core <= 0.002) discard;\n'
-  + '  vec3 color = mix(\n'
-  + '    u_color_a.rgb,\n'
-  + '    u_color_b.rgb,\n'
-  + '    v_local.x * 0.5 + 0.5\n'
-  + '  );\n'
-  + '  color += vec3(0.22, 0.25, 0.34) * u_pulse * core;\n'
-  + '  float alpha = core * u_strength * (0.055 + u_pulse * 0.08);\n'
-  + '  out_color = vec4(color, alpha);\n'
-  + '}';
+const FRAGMENT_SOURCE = "#version 300 es\nprecision mediump float;\nin vec2 v_local;\nuniform vec4 u_color_a;\nuniform vec4 u_color_b;\nuniform float u_strength;\nuniform float u_pulse;\nout vec4 out_color;\nvoid main() {\nfloat transverse = exp(-v_local.y * v_local.y * 3.8);\nfloat ends = smoothstep(1.0, 0.42, abs(v_local.x));\nfloat core = transverse * ends;\nif (core <= 0.002) discard;\nvec3 color = mix(\nu_color_a.rgb,\nu_color_b.rgb,\nv_local.x * 0.5 + 0.5\n);\ncolor += vec3(0.22, 0.25, 0.34) * u_pulse * core;\nfloat alpha = core * u_strength * (0.055 + u_pulse * 0.08);\nout_color = vec4(color, alpha);\n}";
 
 function compileShader(
   gl: WebGL2RenderingContext,
