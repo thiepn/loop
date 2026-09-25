@@ -76,6 +76,24 @@ function samples(
       },
       progress: 0.12,
     },
+    {
+      event: {
+        kind: 'orb-pulse',
+        orbId: 'beat',
+        intensity: 0.9,
+        position: null,
+      },
+      progress: 0.1,
+    },
+    {
+      event: {
+        kind: 'orb-pulse',
+        orbId: 'bass',
+        intensity: 0.8,
+        position: null,
+      },
+      progress: 0.16,
+    },
   ];
 }
 
