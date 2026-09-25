@@ -4,11 +4,25 @@ const DEFAULT_URL = 'https://thiepn.github.io/loop/';
 const productionUrl = new URL(
   process.env.LOOP_PRODUCTION_URL || DEFAULT_URL,
 );
+
+if (productionUrl.protocol === 'http:') {
+  productionUrl.protocol = 'https:';
+}
+
+assertProtocol(productionUrl);
 const expectedCommit = process.env.EXPECTED_COMMIT ?? '';
 const expectedVersion = process.env.EXPECTED_VERSION ?? '1.0.0';
 
 if (!productionUrl.pathname.endsWith('/')) {
   productionUrl.pathname += '/';
+}
+
+function assertProtocol(url) {
+  if (url.protocol !== 'https:') {
+    throw new Error(
+      `Production URL must use HTTP(S) and resolve through HTTPS: ${url.href}`,
+    );
+  }
 }
 
 function assert(condition, message) {
