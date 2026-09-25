@@ -183,15 +183,20 @@ export class PresentationView {
   public render(state: Readonly<AppState>): void {
     this.state = state;
     const blocked = blocksPresentation(state);
-    const rendererReady = this.shell.dataset.rendererState === 'ready'
-      && this.shell.dataset.rendererV2 !== 'none';
+    const rendererReady = this.rendererReady();
 
-    this.enterButton.disabled = blocked || !rendererReady;
+    this.enterButton.disabled = blocked;
     this.enterButton.title = blocked
       ? 'Close the open panel before presenting'
       : rendererReady
         ? 'Present World'
-        : 'Presentation requires the Visual V2 renderer';
+        : 'Present World using compatibility visuals';
+
+    if (this.active) {
+      this.shell.dataset.presentationRenderer = rendererReady
+        ? 'v2'
+        : 'fallback';
+    }
 
     if (
       this.active
@@ -247,6 +252,9 @@ export class PresentationView {
     this.nativeFullscreen = false;
     this.shell.dataset.presentation = 'true';
     this.shell.dataset.presentationSurface = 'viewport';
+    this.shell.dataset.presentationRenderer = this.rendererReady()
+      ? 'v2'
+      : 'fallback';
     this.shell.dataset.presentationActivity = state.captureStatus === 'recording'
       ? 'recording'
       : state.playing
@@ -284,7 +292,9 @@ export class PresentationView {
     this.cancelFrame();
     this.clearChromeTimer();
     this.renderer.style.removeProperty('transform');
+    this.canvas.style.removeProperty('transform');
     delete this.shell.dataset.presentation;
+    delete this.shell.dataset.presentationRenderer;
     delete this.shell.dataset.presentationChrome;
     delete this.shell.dataset.presentationSurface;
     delete this.shell.dataset.presentationActivity;
@@ -308,7 +318,7 @@ export class PresentationView {
       return;
     }
 
-    const rect = this.canvas.getBoundingClientRect();
+    const rect = this.shell.getBoundingClientRect();
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
     const camera = presentationCameraForWorld(state.world, {
@@ -323,13 +333,26 @@ export class PresentationView {
     const x = (0.5 - camera.zoom * camera.center.x) * width;
     const y = (0.5 - camera.zoom * camera.center.y) * height;
 
-    this.renderer.style.transform = 'translate3d('
+    const transform = 'translate3d('
       + x.toFixed(2)
       + 'px,'
       + y.toFixed(2)
       + 'px,0) scale('
       + camera.zoom.toFixed(4)
       + ')';
+
+    if (this.rendererReady()) {
+      this.canvas.style.removeProperty('transform');
+      this.renderer.style.transform = transform;
+    } else {
+      this.renderer.style.removeProperty('transform');
+      this.canvas.style.transform = transform;
+    }
+  }
+
+  private rendererReady(): boolean {
+    return this.shell.dataset.rendererState === 'ready'
+      && this.shell.dataset.rendererV2 !== 'none';
   }
 
   private syncAnimation(): void {
