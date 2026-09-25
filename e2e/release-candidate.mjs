@@ -316,7 +316,15 @@ test('presentation mode frames the World without changing creative coordinates',
   await expect(shell).toHaveAttribute('data-presentation', 'true');
   await expect(page.locator('[data-presentation-exit]')).toBeVisible();
 
-  const transform = await page.locator('.world-renderer-v2').evaluate(
+  const rendererMode = await shell.getAttribute(
+    'data-presentation-renderer',
+  );
+  expect(['v2', 'fallback']).toContain(rendererMode);
+
+  const cameraSurface = rendererMode === 'v2'
+    ? page.locator('.world-renderer-v2')
+    : page.locator('.world-canvas');
+  const transform = await cameraSurface.evaluate(
     (element) => getComputedStyle(element).transform,
   );
   expect(transform).not.toBe('none');
