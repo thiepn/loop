@@ -362,6 +362,135 @@ test('presentation mode frames the World without changing creative coordinates',
   await expectNoFatalShell(page);
 });
 
+test('compact viewport keeps the primary visual shell bounded', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Canonical compact-layout stress is certified in Chromium.',
+  );
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('./');
+  await expect(page.locator('.home-shell')).toBeVisible();
+
+  const homeOverflow = await page.evaluate(() => (
+    document.documentElement.scrollWidth - window.innerWidth
+  ));
+  expect(homeOverflow).toBeLessThanOrEqual(1);
+
+  await openStarter(page, testInfo, 'chill');
+  const viewport = page.viewportSize();
+  const canvas = await page.locator('.world-canvas').boundingBox();
+
+  expect(viewport).not.toBeNull();
+  expect(canvas).not.toBeNull();
+
+  if (viewport && canvas) {
+    expect(canvas.x).toBeGreaterThanOrEqual(0);
+    expect(canvas.x + canvas.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(canvas.y + canvas.height).toBeLessThanOrEqual(viewport.height + 1);
+  }
+
+  const playgroundOverflow = await page.evaluate(() => (
+    document.documentElement.scrollWidth - window.innerWidth
+  ));
+  expect(playgroundOverflow).toBeLessThanOrEqual(1);
+  await expectNoFatalShell(page);
+});
+
+test('forced colors and Reduce Motion keep presentation semantic and static', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Canonical accessibility media stress is certified in Chromium.',
+  );
+
+  await page.emulateMedia({
+    forcedColors: 'active',
+    reducedMotion: 'reduce',
+  });
+  await openStarter(page, testInfo, 'weird');
+  await stopPlayback(page);
+
+  const shell = page.locator('.playground-shell');
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
+  await expect(page.locator('.world-renderer-v2')).toHaveCSS('opacity', '0');
+  await expect(page.locator('.sound-orb .orb-visual').first()).toHaveCSS(
+    'opacity',
+    '1',
+  );
+
+  await activate(page.locator('[data-presentation-enter]'), testInfo);
+  const stage = page.locator('.presentation-dom-stage');
+  await expect(stage).toHaveCSS('opacity', '1');
+
+  const firstTransform = await stage.evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  await page.waitForTimeout(350);
+  const secondTransform = await stage.evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+
+  expect(firstTransform).not.toBe('none');
+  expect(secondTransform).toBe(firstTransform);
+
+  await activate(page.locator('[data-presentation-exit]'), testInfo);
+  await expectNoFatalShell(page);
+});
+
+test('renderer-less compatibility presentation remains fully usable', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Canonical renderer-less fallback is certified in Chromium.',
+  );
+
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+
+    HTMLCanvasElement.prototype.getContext = function getContext(
+      contextId,
+      ...args
+    ) {
+      if (
+        contextId === '2d'
+        || contextId === 'webgl'
+        || contextId === 'webgl2'
+      ) {
+        return null;
+      }
+
+      return original.call(this, contextId, ...args);
+    };
+  });
+
+  await openStarter(page, testInfo, 'beat');
+  await stopPlayback(page);
+
+  const shell = page.locator('.playground-shell');
+  await expect(shell).toHaveAttribute('data-renderer-v2', 'none');
+  await activate(page.locator('[data-presentation-enter]'), testInfo);
+  await expect(shell).toHaveAttribute('data-presentation-renderer', 'fallback');
+
+  const stage = page.locator('.presentation-dom-stage');
+  await expect(stage).toHaveAttribute('inert', '');
+  const transform = await stage.evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  expect(transform).not.toBe('none');
+
+  await expect(page.locator('.playground-dock')).toHaveCSS(
+    'transform',
+    'none',
+  );
+  await activate(page.locator('[data-presentation-exit]'), testInfo);
+  await expectNoFatalShell(page);
+});
+
 test('recording either completes or degrades with an explicit unsupported state', async ({
   page,
 }, testInfo) => {
@@ -463,6 +592,21 @@ test('touch layouts keep primary sheets inside the viewport', async ({
   test.skip(!touchProject, 'Touch-layout check only.');
 
   await openStarter(page, testInfo, 'chill');
+
+  const topbarButtons = page.locator(
+    '.playground-topbar-actions button:visible',
+  );
+  const topbarCount = await topbarButtons.count();
+
+  for (let index = 0; index < topbarCount; index += 1) {
+    const box = await topbarButtons.nth(index).boundingBox();
+    expect(box).not.toBeNull();
+
+    if (box) {
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+  }
 
   await activate(page.locator('.effects-button'), testInfo);
   const sheet = page.locator('.effect-palette-sheet');
