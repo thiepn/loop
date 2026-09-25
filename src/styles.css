@@ -5982,9 +5982,11 @@ a:focus-visible,
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  pointer-events: none;
 }
 
-.playground-shell[data-presentation="true"] .world-renderer-v2 {
+.playground-shell[data-presentation="true"] .world-renderer-v2,
+.playground-shell[data-presentation="true"][data-presentation-renderer="fallback"] .world-canvas {
   transform-origin: 0 0;
   will-change: transform;
 }
@@ -5998,13 +6000,18 @@ a:focus-visible,
   display: none;
 }
 
-.playground-shell[data-presentation="true"] :is(
+.playground-shell[data-presentation="true"][data-presentation-renderer="v2"] :is(
   .orb-layer,
   .effect-field-layer,
   .toy-layer,
   .link-layer,
   .listener-rings,
-  .listener-core,
+  .listener-core
+) {
+  opacity: 0 !important;
+}
+
+.playground-shell[data-presentation="true"] :is(
   .world-hint,
   .onboarding-tip,
   .selection-panel,
