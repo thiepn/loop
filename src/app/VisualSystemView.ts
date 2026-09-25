@@ -22,6 +22,7 @@ export class VisualSystemView {
   private readonly reduceMotionInput: HTMLInputElement;
   private readonly reduceParticlesInput: HTMLInputElement;
   private readonly reduceBloomInput: HTMLInputElement;
+  private readonly systemMotionNote: HTMLElement;
 
   public constructor(
     root: HTMLElement,
@@ -70,8 +71,9 @@ export class VisualSystemView {
             <span>
               <strong>Reduce motion</strong>
               <small>Keep state feedback, remove travel-heavy animation</small>
+              <small id="visual-system-motion-note" data-system-motion-note hidden>Enabled by your system accessibility setting</small>
             </span>
-            <input type="checkbox" data-reduce-motion />
+            <input type="checkbox" data-reduce-motion aria-describedby="visual-system-motion-note" />
           </label>
 
           <label>
@@ -111,12 +113,16 @@ export class VisualSystemView {
     const reduceBloomInput = settingsBackdrop.querySelector<HTMLInputElement>(
       '[data-reduce-bloom]',
     );
+    const systemMotionNote = settingsBackdrop.querySelector<HTMLElement>(
+      '[data-system-motion-note]',
+    );
 
     if (
       !qualityGrid
       || !reduceMotionInput
       || !reduceParticlesInput
       || !reduceBloomInput
+      || !systemMotionNote
     ) {
       throw new Error('Visual settings failed to mount.');
     }
@@ -124,6 +130,7 @@ export class VisualSystemView {
     this.reduceMotionInput = reduceMotionInput;
     this.reduceParticlesInput = reduceParticlesInput;
     this.reduceBloomInput = reduceBloomInput;
+    this.systemMotionNote = systemMotionNote;
 
     const qualityChoices: readonly {
       readonly id: VisualQuality;
@@ -205,6 +212,8 @@ export class VisualSystemView {
     }
 
     this.reduceMotionInput.checked = state.visualReduceMotion;
+    this.reduceMotionInput.disabled = state.visualSystemReduceMotion;
+    this.systemMotionNote.hidden = !state.visualSystemReduceMotion;
     this.reduceParticlesInput.checked = state.visualReduceParticles;
     this.reduceBloomInput.checked = state.visualReduceBloom;
   }

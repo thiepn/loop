@@ -1,9 +1,9 @@
 import type { VisualPreferences } from '../VisualQuality';
 import type { RenderLightFrame } from './LightModel';
 
-const VERTEX = "#version 300 es\nin vec2 a_position;\nin vec2 a_local;\nin vec4 a_color;\nuniform vec2 u_resolution;\nout vec2 v_local;\nout vec4 v_color;\nvoid main(){\nvec2 p=a_position/u_resolution*2.0-1.0; p.y=-p.y;\ngl_Position=vec4(p,0.0,1.0); v_local=a_local; v_color=a_color;\n}";
+const VERTEX = "#version 300 es\nin vec2 a_position;in vec2 a_local;in vec4 a_color;uniform vec2 u_resolution;out vec2 v_local;out vec4 v_color;void main(){vec2 p=a_position/u_resolution*2.0-1.0;p.y=-p.y;gl_Position=vec4(p,0.0,1.0);v_local=a_local;v_color=a_color;}";
 
-const FRAGMENT = "#version 300 es\nprecision mediump float;\nin vec2 v_local; in vec4 v_color; out vec4 out_color;\nvoid main(){ float d=length(v_local); if(d>1.0) discard;\nfloat a=pow(max(0.0,1.0-d),2.2)*v_color.a;\nout_color=vec4(v_color.rgb,a); }";
+const FRAGMENT = "#version 300 es\nprecision mediump float;in vec2 v_local;in vec4 v_color;out vec4 out_color;void main(){float d=length(v_local);if(d>1.0)discard;float a=pow(max(0.0,1.0-d),2.2)*v_color.a;out_color=vec4(v_color.rgb,a);}";
 
 function compile(gl:WebGL2RenderingContext,type:number,source:string):WebGLShader{
   const s=gl.createShader(type); if(!s) throw new Error('light shader');
@@ -40,17 +40,17 @@ export class WebGLLightPropagationLayer{
     const r=gl.getUniformLocation(this.p,'u_resolution'); if(!r) throw new Error('light resolution'); this.res=r;
   }
   public render(frame:Readonly<RenderLightFrame>,preferences:Readonly<VisualPreferences>,width:number,height:number,dpr:number):void{
-    const vertices:number[]=[]; const min=Math.min(width,height);
+    const vertices:number[]=[]; const min=Math.min(width,height); const glow=preferences.reduceBloom?.28:1;
     for(const s of frame.localLights){
-      pushDisc(vertices,s.position.x*width,s.position.y*height,s.radius*min,[s.color[0],s.color[1],s.color[2],s.intensity]);
+      pushDisc(vertices,s.position.x*width,s.position.y*height,s.radius*min,[s.color[0],s.color[1],s.color[2],s.intensity*glow]);
     }
     if(!preferences.reduceMotion){
       for(const packet of frame.listenerPackets){
         const p=bezier(packet.source,packet.target,packet.progress);
         const r=(3.2+packet.intensity*3.2)*dpr;
-        pushDisc(vertices,p.x*width,p.y*height,r,[packet.color[0],packet.color[1],packet.color[2],0.52*packet.intensity]);
+        pushDisc(vertices,p.x*width,p.y*height,r,[packet.color[0],packet.color[1],packet.color[2],0.52*packet.intensity*glow]);
         const tail=bezier(packet.source,packet.target,Math.max(0,packet.progress-0.055));
-        pushDisc(vertices,tail.x*width,tail.y*height,r*1.55,[packet.color[0],packet.color[1],packet.color[2],0.14*packet.intensity]);
+        pushDisc(vertices,tail.x*width,tail.y*height,r*1.55,[packet.color[0],packet.color[1],packet.color[2],0.14*packet.intensity*glow]);
       }
     }
     if(vertices.length===0) return;

@@ -57,6 +57,18 @@ export function chooseAutomaticVisualQuality(
   return 'balanced';
 }
 
+export function applySystemVisualPreferences(
+  preferences: VisualPreferences,
+  prefersReducedMotion: boolean,
+): VisualPreferences {
+  return prefersReducedMotion
+    ? {
+        ...preferences,
+        reduceMotion: true,
+      }
+    : preferences;
+}
+
 export function initialVisualPreferences(
   hints: VisualEnvironmentHints,
 ): VisualPreferences {
@@ -173,11 +185,9 @@ function isVisualQuality(value: unknown): value is VisualQuality {
     || value === 'battery';
 }
 
-export function loadVisualPreferences(): VisualPreferences {
-  const fallback = initialVisualPreferences(
-    readBrowserVisualHints(),
-  );
-
+function loadStoredVisualPreferences(
+  fallback: VisualPreferences,
+): VisualPreferences {
   if (typeof localStorage === 'undefined') {
     return fallback;
   }
@@ -208,6 +218,23 @@ export function loadVisualPreferences(): VisualPreferences {
   } catch {
     return fallback;
   }
+}
+
+export function loadVisualPreferenceIntent(): VisualPreferences {
+  const hints = readBrowserVisualHints();
+
+  return loadStoredVisualPreferences({
+    quality: chooseAutomaticVisualQuality(hints),
+    reduceMotion: false,
+    reduceParticles: false,
+    reduceBloom: false,
+  });
+}
+
+export function loadVisualPreferences(): VisualPreferences {
+  return loadStoredVisualPreferences(
+    initialVisualPreferences(readBrowserVisualHints()),
+  );
 }
 
 export function saveVisualPreferences(

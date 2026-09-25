@@ -44,6 +44,7 @@ button {
 
 button:focus-visible,
 a:focus-visible,
+.sound-orb:focus-visible,
 .effect-field:focus-visible,
 .playground-toy:focus-visible,
 .portal-exit:focus-visible {
@@ -4443,6 +4444,7 @@ a:focus-visible,
 @media (forced-colors: active) {
   button:focus-visible,
   a:focus-visible,
+  .sound-orb:focus-visible,
   .effect-field:focus-visible,
   .playground-toy:focus-visible,
   .portal-exit:focus-visible {
@@ -6172,5 +6174,66 @@ a:focus-visible,
     background: Canvas;
     box-shadow: none;
     backdrop-filter: none;
+  }
+
+  .link-connection.is-selected .link-path {
+    stroke: Highlight;
+    stroke-width: 4;
+  }
+
+  .link-connection.is-selected .link-node {
+    fill: Highlight;
+    opacity: 1;
+  }
+}
+
+.playground-shell[data-reduce-bloom="true"] :is(
+  .orb-visual,
+  .field-surface,
+  .toy-surface,
+  .portal-exit-surface,
+  .link-path,
+  .link-node,
+  .listener-dot
+) {
+  filter: none;
+}
+
+.playground-shell[data-reduce-bloom="true"] :is(
+  .field-surface,
+  .toy-surface,
+  .portal-exit-surface,
+  .listener-dot
+),
+.playground-shell[data-reduce-bloom="true"] .sound-orb.is-selected .orb-visual::after {
+  box-shadow: none;
+}
+
+@media (prefers-contrast: more) {
+  :is(
+    button,
+    a,
+    .sound-orb,
+    .effect-field,
+    .playground-toy,
+    .portal-exit
+  ):focus-visible {
+    outline-width: 3px;
+    outline-offset: 3px;
+  }
+
+  :is(
+    .sound-orb,
+    .effect-field,
+    .playground-toy,
+    .portal-exit
+  ).is-selected {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .link-connection.is-selected .link-path {
+    opacity: 1;
+    stroke-width: 4;
   }
 }

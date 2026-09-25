@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  applySystemVisualPreferences,
   chooseAutomaticVisualQuality,
   initialVisualPreferences,
   loadVisualPreferences,
@@ -61,6 +62,25 @@ describe('VisualQuality', () => {
       reduceParticles: true,
       reduceBloom: false,
     });
+  });
+
+  it('treats system reduced motion as a live effective floor without changing stored intent', () => {
+    const intent = {
+      quality: 'high' as const,
+      reduceMotion: false,
+      reduceParticles: false,
+      reduceBloom: true,
+    };
+
+    const reduced = applySystemVisualPreferences(intent, true);
+    const restored = applySystemVisualPreferences(intent, false);
+
+    expect(reduced).toEqual({
+      ...intent,
+      reduceMotion: true,
+    });
+    expect(reduced.reduceParticles).toBe(false);
+    expect(restored).toBe(intent);
   });
 
   it('scales visual density without changing semantic feature availability', () => {

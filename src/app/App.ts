@@ -28,7 +28,8 @@ import {
 import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
 import { WorldHistory } from '../core/state/WorldHistory';
 import {
-  loadVisualPreferences,
+  applySystemVisualPreferences,
+  loadVisualPreferenceIntent,
   saveVisualPreferences,
   type VisualPreferences,
 } from '../core/visual/VisualQuality';
@@ -176,6 +177,24 @@ export class App {
   private pendingHomeSave: Promise<void> | null = null;
   private homeOperationTail: Promise<void> = Promise.resolve();
   private bootstrapInteractionOccurred = false;
+  private visualPreferenceIntent: VisualPreferences | null = null;
+  private reducedMotionMedia: MediaQueryList | null = null;
+  private systemReducedMotion = false;
+  private readonly handleReducedMotionChange = (
+    event: MediaQueryListEvent,
+  ) => {
+    this.systemReducedMotion = event.matches;
+    const intent = this.visualPreferenceIntent ?? loadVisualPreferenceIntent();
+    const effective = applySystemVisualPreferences(
+      intent,
+      this.systemReducedMotion,
+    );
+
+    appStore.patch({
+      visualReduceMotion: effective.reduceMotion,
+      visualSystemReduceMotion: this.systemReducedMotion,
+    });
+  };
   private readonly handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
       void this.flushAutosave();
@@ -273,14 +292,29 @@ export class App {
   public constructor(private readonly root: HTMLElement) {}
 
   public mount(): void {
-    const visualPreferences = loadVisualPreferences();
+    const visualPreferences = loadVisualPreferenceIntent();
+    this.visualPreferenceIntent = visualPreferences;
+    this.reducedMotionMedia = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+    this.systemReducedMotion = this.reducedMotionMedia?.matches ?? false;
+    const effectiveVisualPreferences = applySystemVisualPreferences(
+      visualPreferences,
+      this.systemReducedMotion,
+    );
 
     appStore.patch({
-      visualQuality: visualPreferences.quality,
-      visualReduceMotion: visualPreferences.reduceMotion,
-      visualReduceParticles: visualPreferences.reduceParticles,
-      visualReduceBloom: visualPreferences.reduceBloom,
+      visualQuality: effectiveVisualPreferences.quality,
+      visualReduceMotion: effectiveVisualPreferences.reduceMotion,
+      visualReduceParticles: effectiveVisualPreferences.reduceParticles,
+      visualReduceBloom: effectiveVisualPreferences.reduceBloom,
+      visualSystemReduceMotion: this.systemReducedMotion,
     });
+
+    this.reducedMotionMedia?.addEventListener(
+      'change',
+      this.handleReducedMotionChange,
+    );
 
     document.addEventListener(
       'visibilitychange',
@@ -375,6 +409,11 @@ export class App {
       'keydown',
       this.handleHistoryShortcut,
     );
+    this.reducedMotionMedia?.removeEventListener(
+      'change',
+      this.handleReducedMotionChange,
+    );
+    this.reducedMotionMedia = null;
     if (this.surfaceTransitionTimer !== null) {
       clearTimeout(this.surfaceTransitionTimer);
       this.surfaceTransitionTimer = null;
@@ -1003,21 +1042,29 @@ export class App {
   private updateVisualPreferences(
     patch: Partial<VisualPreferences>,
   ): void {
-    const current = appStore.getState();
-    const preferences: VisualPreferences = {
-      quality: patch.quality ?? current.visualQuality,
-      reduceMotion: patch.reduceMotion ?? current.visualReduceMotion,
-      reduceParticles: patch.reduceParticles ?? current.visualReduceParticles,
-      reduceBloom: patch.reduceBloom ?? current.visualReduceBloom,
+    const intent = this.visualPreferenceIntent
+      ?? loadVisualPreferenceIntent();
+    const nextIntent: VisualPreferences = {
+      quality: patch.quality ?? intent.quality,
+      reduceMotion: patch.reduceMotion ?? intent.reduceMotion,
+      reduceParticles: patch.reduceParticles ?? intent.reduceParticles,
+      reduceBloom: patch.reduceBloom ?? intent.reduceBloom,
     };
 
-    saveVisualPreferences(preferences);
+    this.visualPreferenceIntent = nextIntent;
+    saveVisualPreferences(nextIntent);
+
+    const preferences = applySystemVisualPreferences(
+      nextIntent,
+      this.systemReducedMotion,
+    );
 
     appStore.patch({
       visualQuality: preferences.quality,
       visualReduceMotion: preferences.reduceMotion,
       visualReduceParticles: preferences.reduceParticles,
       visualReduceBloom: preferences.reduceBloom,
+      visualSystemReduceMotion: this.systemReducedMotion,
     });
   }
 

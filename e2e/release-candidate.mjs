@@ -441,6 +441,158 @@ test('forced colors and Reduce Motion keep presentation semantic and static', as
   await expectNoFatalShell(page);
 });
 
+test('system reduced motion updates live and is explained in visual settings', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Canonical live accessibility preference stress is certified in Chromium.',
+  );
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openStarter(page, testInfo, 'chill');
+
+  const shell = page.locator('.playground-shell');
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
+
+  await activate(
+    page.locator('[aria-label="Visual settings"]'),
+    testInfo,
+  );
+  const motion = page.locator('[data-reduce-motion]');
+  await expect(motion).toBeChecked();
+  await expect(motion).toBeDisabled();
+  await expect(page.locator('[data-system-motion-note]')).toBeVisible();
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'false');
+  await expect(motion).toBeEnabled();
+  await expect(page.locator('[data-system-motion-note]')).toBeHidden();
+
+  await motion.check();
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(motion).toBeDisabled();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(motion).toBeEnabled();
+  await expect(motion).toBeChecked();
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
+});
+
+test('high contrast and grayscale preserve keyboard and selected-state redundancy', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Canonical non-color state certification is certified in Chromium.',
+  );
+
+  await page.emulateMedia({ contrast: 'more' });
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+
+    HTMLCanvasElement.prototype.getContext = function getContext(
+      contextId,
+      ...args
+    ) {
+      if (
+        contextId === '2d'
+        || contextId === 'webgl'
+        || contextId === 'webgl2'
+      ) {
+        return null;
+      }
+
+      return original.call(this, contextId, ...args);
+    };
+  });
+
+  await openStarter(page, testInfo, 'beat');
+  await stopPlayback(page);
+
+  const orb = page.locator('.sound-orb').first();
+  await orb.focus();
+  await page.keyboard.press('ArrowRight');
+
+  await expect(orb).toBeFocused();
+  await expect(orb).toHaveAttribute('aria-pressed', 'true');
+
+  const focusVisible = await orb.evaluate(
+    (element) => element.matches(':focus-visible'),
+  );
+  expect(focusVisible).toBe(true);
+
+  const outlineWidth = await orb.evaluate(
+    (element) => Number.parseFloat(getComputedStyle(element).outlineWidth),
+  );
+  expect(outlineWidth).toBeGreaterThanOrEqual(3);
+
+  await page.evaluate(() => {
+    document.documentElement.style.filter = 'grayscale(1)';
+  });
+
+  const selectedRingWidth = await orb.locator('.orb-visual').evaluate(
+    (element) => Number.parseFloat(
+      getComputedStyle(element, '::after').borderTopWidth,
+    ),
+  );
+  expect(selectedRingWidth).toBeGreaterThanOrEqual(1);
+  await expectNoFatalShell(page);
+});
+
+test('reduced particles and glow remain effective in semantic fallback visuals', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Canonical reduced-effects fallback certification is certified in Chromium.',
+  );
+
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+
+    HTMLCanvasElement.prototype.getContext = function getContext(
+      contextId,
+      ...args
+    ) {
+      if (
+        contextId === '2d'
+        || contextId === 'webgl'
+        || contextId === 'webgl2'
+      ) {
+        return null;
+      }
+
+      return original.call(this, contextId, ...args);
+    };
+  });
+
+  await openStarter(page, testInfo, 'weird');
+  const shell = page.locator('.playground-shell');
+
+  await activate(
+    page.locator('[aria-label="Visual settings"]'),
+    testInfo,
+  );
+  await page.locator('[data-reduce-particles]').check();
+  await page.locator('[data-reduce-bloom]').check();
+
+  await expect(shell).toHaveAttribute('data-reduce-particles', 'true');
+  await expect(shell).toHaveAttribute('data-reduce-bloom', 'true');
+
+  const bloom = await shell.evaluate(
+    (element) => getComputedStyle(element).getPropertyValue('--visual-bloom'),
+  );
+  expect(Number.parseFloat(bloom)).toBeLessThanOrEqual(0.22);
+
+  await expect(page.locator('.orb-visual').first()).toHaveCSS(
+    'filter',
+    'none',
+  );
+  await expectNoFatalShell(page);
+});
+
 test('renderer-less compatibility presentation remains fully usable', async ({
   page,
 }, testInfo) => {
