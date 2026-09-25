@@ -14,38 +14,24 @@ const HIGH = {
   reduceParticles: false,
   reduceBloom: false,
 };
+const VIEWPORT = [1200, 800, 1.5] as const;
 
-function createScene(playing = true) {
+function scene(playing = true) {
   return projectWorldToRenderScene(
     createEmptyWorld({
       id: 'delight-world',
       music: { seed: 164 },
       soundOrbs: [
-        createSoundOrb({
-          id: 'beat',
-          soundId: 'beat-round-kick',
-          role: 'beat',
-          position: { x: 0.2, y: 0.35 },
-        }),
-        createSoundOrb({
-          id: 'bass',
-          soundId: 'bass-warm',
-          role: 'bass',
-          position: { x: 0.38, y: 0.68 },
-        }),
-        createSoundOrb({
-          id: 'harmony',
-          soundId: 'harmony-dream',
-          role: 'harmony',
-          position: { x: 0.62, y: 0.3 },
-        }),
-        createSoundOrb({
-          id: 'melody',
-          soundId: 'melody-soft-pluck',
-          role: 'melody',
-          position: { x: 0.8, y: 0.62 },
-        }),
-      ],
+        ['beat', 'beat-round-kick', 'beat', 0.2, 0.35],
+        ['bass', 'bass-warm', 'bass', 0.38, 0.68],
+        ['harmony', 'harmony-dream', 'harmony', 0.62, 0.3],
+        ['melody', 'melody-soft-pluck', 'melody', 0.8, 0.62],
+      ].map(([id, soundId, role, x, y]) => createSoundOrb({
+        id: id as string,
+        soundId: soundId as string,
+        role: role as 'beat' | 'bass' | 'harmony' | 'melody',
+        position: { x: x as number, y: y as number },
+      })),
     }),
     {
       selectedOrbId: null,
@@ -66,8 +52,6 @@ function samples(
     progress?: number;
   } = {},
 ): readonly RenderEventSample[] {
-  const progress = options.progress ?? 0.35;
-
   return [
     {
       event: {
@@ -78,7 +62,7 @@ function samples(
         silent: options.silent ?? false,
         durationMs: 2000,
       },
-      progress,
+      progress: options.progress ?? 0.35,
     },
     {
       event: {
@@ -95,35 +79,29 @@ function samples(
   ];
 }
 
-describe('Visual V2 Phase 16 delight model', () => {
-  it('is deterministic for the same World, bar and scheduler samples', () => {
-    const scene = createScene();
-    const input = samples(48);
+function frame(
+  bar: number,
+  preferences = HIGH,
+  options: Parameters<typeof samples>[1] = {},
+) {
+  return deriveDelightFrame(
+    scene(),
+    samples(bar, options),
+    preferences,
+    ...VIEWPORT,
+  );
+}
 
-    expect(
-      deriveDelightFrame(scene, input, HIGH),
-    ).toEqual(
-      deriveDelightFrame(scene, input, HIGH),
-    );
+describe('Visual V2 Phase 16 delight', () => {
+  it('is deterministic for the same World and scheduler cue', () => {
+    expect(frame(48)).toEqual(frame(48));
   });
 
-  it('keeps rare events bounded instead of firing every bar', () => {
-    const scene = createScene();
+  it('keeps delight rare instead of firing on every bar', () => {
     let rareBars = 0;
 
     for (let bar = 0; bar < 512; bar += 1) {
-      const frame = deriveDelightFrame(
-        scene,
-        samples(bar),
-        HIGH,
-      );
-
-      if (
-        frame.constellation
-        || frame.mote
-        || frame.alignment
-        || frame.orbit
-      ) {
+      if (frame(bar).kinds.length > 0) {
         rareBars += 1;
       }
     }
@@ -132,125 +110,106 @@ describe('Visual V2 Phase 16 delight model', () => {
     expect(rareBars).toBeLessThan(120);
   });
 
-  it('uses silence bars for a bounded settle-dust cue', () => {
-    const frame = deriveDelightFrame(
-      createScene(),
-      samples(12, {
-        silent: true,
-        progress: 0.6,
-      }),
-      HIGH,
-    );
+  it('creates constellation, mote, alignment and orbit moments over a long deterministic run', () => {
+    const seen = new Set<string>();
 
-    expect(frame.silenceDust).not.toBeNull();
-    expect(frame.silenceDust?.points.length).toBe(8);
-    expect(frame.silenceDust?.strength).toBeGreaterThan(0);
-    expect(frame.silenceDust?.strength).toBeLessThanOrEqual(1);
-  });
-
-  it('suppresses particle delight when Reduce Particles is enabled', () => {
-    const scene = createScene();
-    let foundParticleMoment = false;
-
-    for (let bar = 0; bar < 1024; bar += 1) {
-      const normal = deriveDelightFrame(
-        scene,
-        samples(bar, { silent: true }),
-        HIGH,
-      );
-      const reduced = deriveDelightFrame(
-        scene,
-        samples(bar, { silent: true }),
-        {
-          ...HIGH,
-          reduceParticles: true,
-        },
-      );
-
-      if (normal.mote || normal.orbit || normal.silenceDust) {
-        foundParticleMoment = true;
+    for (let bar = 0; bar < 2048; bar += 1) {
+      for (const kind of frame(bar).kinds) {
+        seen.add(kind);
       }
-
-      expect(reduced.mote).toBeNull();
-      expect(reduced.orbit).toBeNull();
-      expect(reduced.silenceDust).toBeNull();
     }
 
-    expect(foundParticleMoment).toBe(true);
+    expect(seen).toEqual(
+      new Set(['constellation', 'mote', 'alignment', 'orbit']),
+    );
   });
 
-  it('suppresses travel-heavy rare events for Reduce Motion', () => {
-    const scene = createScene();
+  it('uses silent bars for bounded settle dust', () => {
+    const result = frame(12, HIGH, {
+      silent: true,
+      progress: 0.6,
+    });
 
-    for (let bar = 0; bar < 256; bar += 1) {
-      const frame = deriveDelightFrame(
-        scene,
-        samples(bar),
-        {
-          ...HIGH,
-          reduceMotion: true,
-        },
+    expect(result.kinds).toContain('silence');
+    expect(result.dots).toHaveLength(8);
+    expect(result.dots.every((dot) => dot.color[3] <= 1)).toBe(true);
+  });
+
+  it('suppresses particle delight under Reduce Particles', () => {
+    for (let bar = 0; bar < 512; bar += 1) {
+      const result = frame(
+        bar,
+        { ...HIGH, reduceParticles: true },
+        { silent: true },
       );
 
-      expect(frame.constellation).toBeNull();
-      expect(frame.mote).toBeNull();
-      expect(frame.alignment).toBeNull();
-      expect(frame.orbit).toBeNull();
+      expect(result.kinds).not.toContain('mote');
+      expect(result.kinds).not.toContain('orbit');
+      expect(result.kinds).not.toContain('silence');
     }
   });
 
-  it('keeps silence feedback static and restrained under Reduce Motion', () => {
-    const frame = deriveDelightFrame(
-      createScene(),
-      samples(20, {
-        silent: true,
-        progress: 0.8,
-      }),
-      {
-        ...HIGH,
-        reduceMotion: true,
-      },
+  it('suppresses travel-heavy delight under Reduce Motion', () => {
+    for (let bar = 0; bar < 256; bar += 1) {
+      const result = frame(
+        bar,
+        { ...HIGH, reduceMotion: true },
+      );
+
+      expect(result.kinds).toEqual([]);
+    }
+  });
+
+  it('keeps silence settle static under Reduce Motion', () => {
+    const preferences = { ...HIGH, reduceMotion: true };
+    const early = frame(
+      20,
+      preferences,
+      { silent: true, progress: 0.2 },
+    );
+    const late = frame(
+      20,
+      preferences,
+      { silent: true, progress: 0.8 },
     );
 
-    expect(frame.silenceDust).not.toBeNull();
-    expect(frame.silenceDust?.strength).toBeCloseTo(0.22);
+    expect(early.kinds).toEqual(['silence']);
+    expect(late.dots).toEqual(early.dots);
   });
 
   it('uses Battery Saver as a no-rare-motion profile', () => {
-    const scene = createScene();
-
     for (let bar = 0; bar < 256; bar += 1) {
-      const frame = deriveDelightFrame(
-        scene,
-        samples(bar),
-        {
-          ...HIGH,
-          quality: 'battery',
-        },
+      const result = frame(
+        bar,
+        { ...HIGH, quality: 'battery' },
       );
 
-      expect(frame.constellation).toBeNull();
-      expect(frame.mote).toBeNull();
-      expect(frame.alignment).toBeNull();
-      expect(frame.orbit).toBeNull();
+      expect(result.kinds).toEqual([]);
     }
   });
 
   it('returns no delight when playback is stopped', () => {
     expect(
       deriveDelightFrame(
-        createScene(false),
+        scene(false),
         samples(8, { silent: true }),
         HIGH,
+        ...VIEWPORT,
       ),
     ).toBe(EMPTY_DELIGHT_FRAME);
   });
 
-  it('never requires creative-state mutation to derive a frame', () => {
-    const scene = createScene();
-    const before = JSON.stringify(scene);
-    deriveDelightFrame(scene, samples(24), HIGH);
+  it('does not mutate creative/render scene state', () => {
+    const current = scene();
+    const before = JSON.stringify(current);
 
-    expect(JSON.stringify(scene)).toBe(before);
+    deriveDelightFrame(
+      current,
+      samples(24),
+      HIGH,
+      ...VIEWPORT,
+    );
+
+    expect(JSON.stringify(current)).toBe(before);
   });
 });
