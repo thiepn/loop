@@ -119,6 +119,7 @@ import { MotionView } from './MotionView';
 import { PatternEditorView } from './PatternEditorView';
 import { PersistenceView } from './PersistenceView';
 import { PlaygroundView } from './PlaygroundView';
+import { PresentationView } from './PresentationView';
 import { PwaView } from './PwaView';
 import { VisualSystemView } from './VisualSystemView';
 import { WorldRendererView } from './WorldRendererView';
@@ -131,6 +132,7 @@ export class App {
   private unsubscribeChoreography: (() => void) | null = null;
   private homeView: HomeView | null = null;
   private playgroundView: PlaygroundView | null = null;
+  private presentationView: PresentationView | null = null;
   private captureView: CaptureView | null = null;
   private effectFieldView: EffectFieldView | null = null;
   private linkView: LinkView | null = null;
@@ -337,6 +339,9 @@ export class App {
     this.pwaView?.destroy();
     this.pwaView = null;
 
+    this.presentationView?.destroy();
+    this.presentationView = null;
+
     this.worldRendererView?.destroy();
     this.worldRendererView = null;
 
@@ -395,6 +400,9 @@ export class App {
       this.pwaView?.destroy();
       this.pwaView = null;
 
+      this.presentationView?.destroy();
+      this.presentationView = null;
+
       this.worldRendererView?.destroy();
       this.worldRendererView = null;
 
@@ -445,6 +453,7 @@ export class App {
       canRedo: this.history.canRedo,
     });
     this.worldRendererView?.render(state);
+    this.presentationView?.render(state);
     this.visualSystemView?.render(state);
     this.captureView?.render(state, this.root);
     this.effectFieldView?.render(state);
@@ -987,6 +996,8 @@ export class App {
         );
       },
     });
+
+    this.presentationView = new PresentationView(this.root);
   }
 
   private updateVisualPreferences(
