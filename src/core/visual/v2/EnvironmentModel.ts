@@ -158,7 +158,7 @@ export function deriveWorldEnvironment(
       (world.soundOrbs.length === 0 ? 0.62 : 1)
       * (1 - density * 0.52),
     ),
-    detailScale: Math.max(0.68, 1.08 - density * 0.4),
+    detailScale: Math.min(1, Math.max(0.68, 1.08 - density * 0.4)),
     seed: visualSeedFromWorld(
       world.id,
       world.music.seed,
