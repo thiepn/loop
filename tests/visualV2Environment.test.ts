@@ -7,6 +7,7 @@ import {
 } from '../src/core/visual/v2/EnvironmentModel';
 import { projectWorldToRenderScene } from '../src/core/visual/v2/SceneAdapter';
 import { createSoundOrb } from '../src/core/world/SoundOrb';
+import { createEffectField } from '../src/core/world/EffectField';
 import { createEmptyWorld } from '../src/core/world/World';
 
 function worldWithRoles(
@@ -60,6 +61,47 @@ describe('Visual V2 environment model', () => {
 
     expect(dense.density).toBeGreaterThan(sparse.density);
     expect(dense.particleDensity).toBeLessThan(sparse.particleDensity);
+  });
+
+  it('reduces material detail as the whole composition becomes dense', () => {
+    const sparseWorld = worldWithRoles(['melody']);
+    const denseWorld = worldWithRoles([
+      'beat',
+      'bass',
+      'harmony',
+      'melody',
+      'texture',
+      'beat',
+      'bass',
+      'harmony',
+      'melody',
+      'texture',
+    ]);
+    denseWorld.effectFields.push(
+      createEffectField({
+        id: 'space-density',
+        type: 'space',
+        position: { x: 0.5, y: 0.5 },
+        radius: 0.18,
+      }),
+    );
+
+    const sparse = deriveWorldEnvironment(sparseWorld);
+    const dense = deriveWorldEnvironment(denseWorld);
+
+    expect(dense.density).toBeGreaterThan(sparse.density);
+    expect(dense.detailScale).toBeLessThan(sparse.detailScale);
+    expect(dense.detailScale).toBeGreaterThanOrEqual(0.68);
+  });
+
+  it('keeps composition-derived palettes distinct across role balances', () => {
+    const beat = deriveWorldEnvironment(worldWithRoles(['beat', 'beat']));
+    const texture = deriveWorldEnvironment(
+      worldWithRoles(['texture', 'texture']),
+    );
+
+    expect(beat.primary).not.toEqual(texture.primary);
+    expect(beat.secondary).not.toEqual(texture.secondary);
   });
 
   it('scales deterministic particles by quality and respects Reduce Particles', () => {
