@@ -180,7 +180,7 @@ Revamp:
 - loading visuals;
 - World open/close continuity.
 
-## Phase 13 — UI Chrome, Panels, Icons & Spatial Controls
+## Phase 13 — UI Chrome, Panels, Icons & Spatial Controls — implemented; certification pending
 
 Refine:
 - lightweight chrome;
