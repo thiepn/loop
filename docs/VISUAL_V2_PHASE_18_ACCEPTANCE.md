@@ -67,9 +67,9 @@
 - [x] reduced-particles / reduced-glow semantic fallback.
 - [x] existing forced-colors + Reduce Motion presentation stress.
 - [x] existing renderer-less compatibility presentation.
-- [ ] exact final tree passes strict typecheck/unit/soak suite.
-- [ ] production JS+CSS raw/gzip budgets pass unchanged.
-- [ ] browser performance certification passes.
+- [x] exact final tree passes strict typecheck/unit/soak suite.
+- [x] production JS+CSS raw/gzip budgets pass unchanged: 504,921 raw bytes / 122,641 gzip bytes.
+- [x] browser performance certification passes.
 - [ ] full Release Candidate Matrix passes after merge.
 
 ## Exit condition
