@@ -735,23 +735,12 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
   private drawDelight(
     frame: Readonly<DelightFrame>,
   ): void {
-    const context = this.context;
-
-    for (const line of frame.lines) {
-      context.beginPath();
-      context.moveTo(line.x1, line.y1);
-      context.lineTo(line.x2, line.y2);
-      context.strokeStyle = renderColorCss(line.color);
-      context.lineWidth = Math.max(0.75, this.viewport.dpr * 0.8);
-      context.stroke();
-    }
-
     for (const dot of frame.dots) {
       this.drawCircle(
-        dot.x,
-        dot.y,
-        dot.radius,
-        dot.color,
+        dot[0],
+        dot[1],
+        dot[2],
+        dot[3],
       );
     }
   }
