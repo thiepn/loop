@@ -202,34 +202,9 @@ function pushDisc(
   }
 }
 
-function pushLine(
-  target: number[],
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  color: RenderColor,
-): void {
-  target.push(
-    fromX,
-    fromY,
-    color[0],
-    color[1],
-    color[2],
-    color[3],
-    toX,
-    toY,
-    color[0],
-    color[1],
-    color[2],
-    color[3],
-  );
-}
-
 export class WebGL2WorldRenderer implements WorldRenderer {
   public readonly kind = 'webgl2' as const;
   private disc: DiscProgramResources | null = null;
-  private line: ProgramResources | null = null;
   private environment: WebGLEnvironmentLayer | null = null;
   private crossLayer: WebGLCrossSystemLayer | null = null;
   private fieldLayer: WebGLFieldMaterialLayer | null = null;
@@ -303,27 +278,15 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       dpr,
     );
     const discVertices: number[] = [];
-    const delightLineVertices: number[] = [];
-
-    for (const item of delight.lines) {
-      pushLine(
-        delightLineVertices,
-        item.x1,
-        item.y1,
-        item.x2,
-        item.y2,
-        item.color,
-      );
-    }
 
     for (const item of delight.dots) {
       pushDisc(
         discVertices,
-        item.x,
-        item.y,
-        item.radius,
-        item.radius,
-        item.color,
+        item[0],
+        item[1],
+        item[2],
+        item[2],
+        item[3],
       );
     }
 
@@ -421,17 +384,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       scene.recording,
     );
 
-    if (delightLineVertices.length > 0 && line) {
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      this.drawLines(
-        line,
-        delightLineVertices,
-        width,
-        height,
-      );
-    }
-
     this.fieldLayer?.render(
       scene.fields,
       scene.fieldIntersections,
@@ -523,12 +475,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       DISC_VERTEX_SOURCE,
       DISC_FRAGMENT_SOURCE,
     );
-    const lineProgram = createProgram(
-      gl,
-      LINE_VERTEX_SOURCE,
-      LINE_FRAGMENT_SOURCE,
-    );
-
     this.disc = {
       program: discProgram,
       buffer: requiredBuffer(gl),
@@ -536,14 +482,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       localLocation: gl.getAttribLocation(discProgram, 'a_local'),
       colorLocation: gl.getAttribLocation(discProgram, 'a_color'),
       resolutionLocation: requiredUniform(gl, discProgram, 'u_resolution'),
-    };
-
-    this.line = {
-      program: lineProgram,
-      buffer: requiredBuffer(gl),
-      positionLocation: gl.getAttribLocation(lineProgram, 'a_position'),
-      colorLocation: gl.getAttribLocation(lineProgram, 'a_color'),
-      resolutionLocation: requiredUniform(gl, lineProgram, 'u_resolution'),
     };
 
     this.environment = new WebGLEnvironmentLayer(gl);
@@ -580,11 +518,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       this.disc = null;
     }
 
-    if (this.line) {
-      this.gl.deleteBuffer(this.line.buffer);
-      this.gl.deleteProgram(this.line.program);
-      this.line = null;
-    }
   }
 
   private drawDiscs(
@@ -633,44 +566,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     );
 
     gl.drawArrays(gl.TRIANGLES, 0, data.length / 8);
-  }
-
-  private drawLines(
-    resources: ProgramResources,
-    vertices: readonly number[],
-    width: number,
-    height: number,
-  ): void {
-    const gl = this.gl;
-    const data = new Float32Array(vertices);
-    const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
-
-    gl.useProgram(resources.program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, resources.buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-    gl.uniform2f(resources.resolutionLocation, width, height);
-
-    gl.enableVertexAttribArray(resources.positionLocation);
-    gl.vertexAttribPointer(
-      resources.positionLocation,
-      2,
-      gl.FLOAT,
-      false,
-      stride,
-      0,
-    );
-
-    gl.enableVertexAttribArray(resources.colorLocation);
-    gl.vertexAttribPointer(
-      resources.colorLocation,
-      4,
-      gl.FLOAT,
-      false,
-      stride,
-      2 * Float32Array.BYTES_PER_ELEMENT,
-    );
-
-    gl.drawArrays(gl.LINES, 0, data.length / 6);
   }
 
   private pushEventDiscs(
