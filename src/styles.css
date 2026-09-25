@@ -6597,3 +6597,135 @@ a:focus-visible,
     bottom: max(92px, calc(env(safe-area-inset-bottom) + 84px));
   }
 }
+
+
+/* Visual V2 Phase 14 — Performance / Presentation Mode */
+
+.presentation-exit-button {
+  position: absolute;
+  z-index: 96;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  opacity: .2;
+  pointer-events: auto;
+  transition: opacity 180ms ease, background 180ms ease;
+}
+
+.presentation-exit-button[hidden] {
+  display: none;
+}
+
+.playground-shell[data-presentation="true"] {
+  display: block;
+  padding: 0;
+  background: #030307;
+}
+
+.playground-shell[data-presentation="true"] .world-canvas {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.playground-shell[data-presentation="true"] .world-renderer-v2 {
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.playground-shell[data-presentation="true"] :is(
+  .brand,
+  .persistence-topbar-tools,
+  .visual-settings-button,
+  .presentation-button
+) {
+  display: none;
+}
+
+.playground-shell[data-presentation="true"] :is(
+  .orb-layer,
+  .effect-field-layer,
+  .toy-layer,
+  .link-layer,
+  .listener-rings,
+  .listener-core,
+  .ambient-particle-layer,
+  .motion-trail-layer,
+  .orb-burst-layer,
+  .world-hint,
+  .onboarding-tip,
+  .selection-panel,
+  .field-selection-panel,
+  .toy-selection-panel,
+  .link-selection-panel,
+  .magic-preview-bar,
+  .magic-undo-button
+) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.playground-shell[data-presentation="true"] .playground-topbar {
+  position: absolute;
+  z-index: 90;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  right: max(76px, calc(env(safe-area-inset-right) + 68px));
+  grid-template-columns: 1fr auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.playground-shell[data-presentation="true"] .world-heading {
+  justify-self: start;
+}
+
+.playground-shell[data-presentation="true"] .playground-dock {
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.playground-shell[data-presentation="true"] .playground-dock > :not(.record-button) {
+  display: none !important;
+}
+
+.playground-shell[data-presentation="true"][data-presentation-chrome="visible"] :is(
+  .playground-topbar,
+  .playground-dock
+) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.playground-shell[data-presentation="true"][data-presentation-chrome="visible"] .presentation-exit-button,
+.playground-shell[data-presentation="true"][data-presentation-activity="recording"] .presentation-exit-button {
+  opacity: 1;
+}
+
+.playground-shell[data-presentation="true"][data-presentation-activity="recording"] .capture-live-bar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (pointer: coarse) {
+  .playground-shell[data-presentation="true"] .presentation-exit-button {
+    min-width: 48px;
+    min-height: 48px;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playground-shell[data-presentation="true"] :is(
+    .playground-topbar,
+    .playground-dock,
+    .presentation-exit-button
+  ) {
+    transition: none;
+  }
+}
