@@ -178,8 +178,12 @@ export class CanvasOrbMaterialLayer {
     width: number,
     height: number,
     dpr: number,
+    detailScale: number,
   ): void {
-    const detail = renderPolicyForPreferences(preferences).orbDetail;
+    const baseDetail = Math.min(
+      1,
+      renderPolicyForPreferences(preferences).orbDetail * detailScale,
+    );
     const minDimension = Math.min(width, height);
     const choreography = objectChoreographyEmphasis(events);
     const choreographyScale = 1
@@ -195,6 +199,10 @@ export class CanvasOrbMaterialLayer {
     const hasSelection = orbs.some((orb) => orb.selected);
 
     for (const orb of orbs) {
+      const detail = Math.max(
+        baseDetail,
+        orb.selected || orb.focused ? 0.92 : 0,
+      );
       const diameter = orbDiameterPixels(
         orb.role,
         minDimension,
