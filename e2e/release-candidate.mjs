@@ -449,13 +449,10 @@ test('system reduced motion updates live and is explained in visual settings', a
     'Canonical live accessibility preference stress is certified in Chromium.',
   );
 
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await openStarter(page, testInfo, 'chill');
 
   const shell = page.locator('.playground-shell');
-  await expect(shell).toHaveAttribute('data-reduce-motion', 'false');
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
 
   await activate(
@@ -471,6 +468,16 @@ test('system reduced motion updates live and is explained in visual settings', a
   await expect(shell).toHaveAttribute('data-reduce-motion', 'false');
   await expect(motion).toBeEnabled();
   await expect(page.locator('[data-system-motion-note]')).toBeHidden();
+
+  await motion.check();
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(motion).toBeDisabled();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(motion).toBeEnabled();
+  await expect(motion).toBeChecked();
+  await expect(shell).toHaveAttribute('data-reduce-motion', 'true');
 });
 
 test('high contrast and grayscale preserve keyboard and selected-state redundancy', async ({
