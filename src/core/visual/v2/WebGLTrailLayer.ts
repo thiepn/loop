@@ -13,9 +13,9 @@ import type {
 } from './RenderTypes';
 import { renderPolicyForPreferences } from './RendererPolicy';
 
-const VERTEX_SOURCE = "#version 300 es\nin vec2 a_position;\nin vec4 a_color;\nuniform vec2 u_resolution;\nout vec4 v_color;\nvoid main() {\nvec2 zeroToOne = a_position / u_resolution;\nvec2 clip = zeroToOne * 2.0 - 1.0;\nclip.y = -clip.y;\ngl_Position = vec4(clip, 0.0, 1.0);\nv_color = a_color;\n}";
+const VERTEX_SOURCE = "#version 300 es\nin vec2 a_position;in vec4 a_color;uniform vec2 u_resolution;out vec4 v_color;void main(){vec2 zeroToOne=a_position/u_resolution;vec2 clip=zeroToOne*2.0-1.0;clip.y=-clip.y;gl_Position=vec4(clip,0.0,1.0);v_color=a_color;}";
 
-const FRAGMENT_SOURCE = "#version 300 es\nprecision mediump float;\nin vec4 v_color;\nout vec4 out_color;\nvoid main() {\nout_color = v_color;\n}";
+const FRAGMENT_SOURCE = "#version 300 es\nprecision mediump float;in vec4 v_color;out vec4 out_color;void main(){out_color=v_color;}";
 
 function compileShader(
   gl: WebGL2RenderingContext,
