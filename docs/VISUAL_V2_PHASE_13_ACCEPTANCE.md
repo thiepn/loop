@@ -115,22 +115,29 @@ Phase 13 is complete only when the exact final Phase 13 head passes:
 
 ## Verification record
 
-The exact certified Phase 13 implementation head `3bc7e2d6ec841a152fcae857da4209cccc32d103` passed the existing repository verification gates without changing certification budgets:
+The final Phase 13 implementation tree `fba7fc26201942a80b00d5180e46c5f904abdebf` passed the repository's release-grade verification without changing any budget:
 
 - strict TypeScript typecheck: passed;
 - unit/soak suite: **50 files, 310 tests passed**;
 - production Vite build: passed;
 - Phase 16 browser certification: passed;
-- JS+CSS raw: **511,413 bytes** (< 512,000-byte budget);
-- JS+CSS gzip: **122,294 bytes** (< 120 KiB / 122,880-byte budget);
-- page load: **827.9 ms** (< 3,000 ms budget);
-- Home → World: **623.4 ms** (< 1,500 ms budget);
-- first contentful paint: **252 ms**;
+- full Release Candidate Matrix: passed, including Chromium desktop, Firefox desktop, Android Chromium, iOS WebKit and iPad WebKit;
+- Production Release certification job: passed through unit/build, RC matrix, browser performance certification, release metadata and Pages artifact creation;
+- JS+CSS raw: **511,635 bytes** (< 512,000-byte budget);
+- JS+CSS gzip: **122,319 bytes** (< 120 KiB / 122,880-byte budget);
+- page load: **711.9 ms** (< 3,000 ms budget);
+- Home → World: **592 ms** (< 1,500 ms budget);
+- first contentful paint: **96 ms**;
 - sampled animation-frame p95: **16.8 ms** (< 80 ms budget);
-- average main-thread work per sampled frame: **5.31 ms** (< 8 ms budget);
-- post-GC heap growth: **813,212 bytes** (< 5 MiB budget);
-- DOM node growth: **121** (< 250 budget);
-- longest observed long task: **106 ms** (< 200 ms budget);
+- average main-thread work per sampled frame: **5.58 ms** (< 8 ms budget);
+- post-GC heap growth: **777,232 bytes** (< 5 MiB budget);
+- DOM node growth: **120** (< 250 budget);
+- longest observed long task: **95 ms** (< 200 ms budget);
 - frozen → active lifecycle recovery: passed.
 
-The chrome/icon overhaul therefore fits inside the original release envelope while replacing several generations of duplicated editor/panel CSS. The remaining raw-size margin is intentionally small, so Phase 14 should primarily reuse or conditionally hide this unified chrome rather than add another independent control layer.
+The RC matrix initially exposed two genuine Phase 13 regressions and both were fixed before closeout:
+
+1. contextual panels overlapped the dock on Android/iOS/iPad because the later unified panel rule overrode the older touch-specific clearance;
+2. the wider desktop contextual panel could overlap/intercept dock controls after selecting a Field.
+
+The final system keeps contextual chrome above the dock on desktop and touch layouts. The chrome/icon overhaul therefore fits inside the original release envelope while replacing several generations of duplicated editor/panel CSS. The raw-size margin remains intentionally small, so Phase 14 should primarily reuse or conditionally hide this unified chrome rather than add another independent control layer.
