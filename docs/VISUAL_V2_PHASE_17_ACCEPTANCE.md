@@ -55,7 +55,7 @@
 - [x] existing 500 KiB raw / 120 KiB gzip release limits remain unchanged.
 - [x] GLSL shader literals were compacted without changing shader semantics.
 - [x] no new shader program or external dependency was added.
-- [x] Phase 17 is expected to recover the Phase 16 163-byte gzip overage rather than relax the budget.
+- [x] Phase 17 recovered the Phase 16 gzip overage without relaxing the budget: 506,006 raw JS+CSS bytes and 122,649 gzip bytes.
 
 ## Regression coverage
 - [x] density/detail scaling is covered.
@@ -64,7 +64,13 @@
 - [x] exact final tree passes strict typecheck/unit suite.
 - [x] production JS+CSS raw/gzip budgets pass.
 - [x] browser performance certification passes.
-- [ ] Release Candidate browser matrix passes after merge.
+- [x] Release Candidate browser matrix passes after merge, including Chromium desktop, Firefox desktop, Android Chromium, iPhone WebKit and iPad WebKit.
+
+## Mobile RC hardening
+- [x] iPhone WebKit RC tracing exposed the PWA update banner overlapping the Present World control.
+- [x] the update banner now clears the primary top bar on narrow viewports.
+- [x] touch-layout RC coverage explicitly verifies the update banner does not overlap the presentation control.
+- [x] repaired main commit passed Verify and the full Release Candidate Matrix.
 
 ## Exit condition
 
