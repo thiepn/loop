@@ -23,6 +23,7 @@ export class PresentationView {
   private readonly shell: HTMLElement;
   private readonly canvas: HTMLElement;
   private readonly renderer: HTMLCanvasElement;
+  private readonly domStage: HTMLElement;
   private readonly enterButton: HTMLButtonElement;
   private readonly exitButton: HTMLButtonElement;
   private readonly resizeObserver: ResizeObserver | null;
@@ -128,12 +129,33 @@ export class PresentationView {
     const play = actions?.querySelector<HTMLElement>('[data-play]');
 
     if (!shell || !canvas || !renderer || !actions || !play) {
-      throw new Error('Presentation mode requires the Visual V2 playground.');
+      throw new Error('Presentation mode requires the playground surface.');
     }
 
     this.shell = shell;
     this.canvas = canvas;
     this.renderer = renderer;
+
+    const domStage = document.createElement('div');
+    domStage.className = 'presentation-dom-stage';
+
+    for (const selector of [
+      '.listener-rings',
+      '.listener-core',
+      '.effect-field-layer',
+      '.link-layer',
+      '.playground-toy-layer',
+      '.orb-layer',
+    ]) {
+      const element = canvas.querySelector(selector);
+
+      if (element) {
+        domStage.append(element);
+      }
+    }
+
+    canvas.append(domStage);
+    this.domStage = domStage;
 
     const enter = document.createElement('button');
     enter.type = 'button';
@@ -234,6 +256,7 @@ export class PresentationView {
     window.removeEventListener('pageshow', this.handlePageShow);
     this.enterButton.remove();
     this.exitButton.remove();
+    this.domStage.remove();
   }
 
   private async activate(): Promise<void> {
@@ -260,11 +283,14 @@ export class PresentationView {
       : state.playing
         ? 'playing'
         : 'idle';
+    this.domStage.setAttribute('inert', '');
+    this.domStage.setAttribute('aria-hidden', 'true');
     this.enterButton.setAttribute('aria-pressed', 'true');
     this.exitButton.hidden = false;
     this.revealChrome();
     this.updateCamera(performance.now());
     this.syncAnimation();
+    this.exitButton.focus({ preventScroll: true });
 
     if (
       document.fullscreenElement === null
@@ -292,7 +318,9 @@ export class PresentationView {
     this.cancelFrame();
     this.clearChromeTimer();
     this.renderer.style.removeProperty('transform');
-    this.canvas.style.removeProperty('transform');
+    this.domStage.style.removeProperty('transform');
+    this.domStage.removeAttribute('inert');
+    this.domStage.removeAttribute('aria-hidden');
     delete this.shell.dataset.presentation;
     delete this.shell.dataset.presentationRenderer;
     delete this.shell.dataset.presentationChrome;
@@ -309,6 +337,10 @@ export class PresentationView {
     if (shouldExitFullscreen) {
       void document.exitFullscreen().catch(() => undefined);
     }
+
+    if (this.enterButton.isConnected) {
+      this.enterButton.focus({ preventScroll: true });
+    }
   }
 
   private updateCamera(timestampMs: number): void {
@@ -318,7 +350,7 @@ export class PresentationView {
       return;
     }
 
-    const rect = this.shell.getBoundingClientRect();
+    const rect = this.canvas.getBoundingClientRect();
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
     const camera = presentationCameraForWorld(state.world, {
@@ -332,7 +364,6 @@ export class PresentationView {
     });
     const x = (0.5 - camera.zoom * camera.center.x) * width;
     const y = (0.5 - camera.zoom * camera.center.y) * height;
-
     const transform = 'translate3d('
       + x.toFixed(2)
       + 'px,'
@@ -342,11 +373,11 @@ export class PresentationView {
       + ')';
 
     if (this.rendererReady()) {
-      this.canvas.style.removeProperty('transform');
+      this.domStage.style.removeProperty('transform');
       this.renderer.style.transform = transform;
     } else {
       this.renderer.style.removeProperty('transform');
-      this.canvas.style.transform = transform;
+      this.domStage.style.transform = transform;
     }
   }
 
