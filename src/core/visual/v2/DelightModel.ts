@@ -86,10 +86,10 @@ export function deriveDelightFrame(
   );
   const particles = moving && !preferences.reduceParticles;
   const bloom = preferences.reduceBloom ? 0.58 : 1;
-  const minDimension = Math.min(width, height);
-  const envelope = Math.sin(
-    Math.PI * Math.max(0, Math.min(1, barSample.progress)),
-  );
+  const environment = scene.environment;
+  const listener = scene.listener;
+  const high = high;
+  const envelope = Math.sin(Math.PI * barSample.progress);
   const dots: DelightDot[] = [];
   let mask = 0;
 
@@ -103,13 +103,8 @@ export function deriveDelightFrame(
     dots.push([
       x * width,
       y * height,
-      Math.max(0.7, radius * dpr),
-      [
-        rgb[0],
-        rgb[1],
-        rgb[2],
-        Math.max(0, Math.min(1, alpha * bloom)),
-      ],
+      radius * dpr,
+      [rgb[0], rgb[1], rgb[2], alpha * bloom],
     ]);
   };
 
@@ -117,7 +112,7 @@ export function deriveDelightFrame(
     moving
     && bar.phrasePosition === 0
     && active.length >= 3
-    && rand(11) < (preferences.quality === 'high' ? 0.16 : 0.09)
+    && rand(11) < (high ? 0.16 : 0.09)
   ) {
     mask |= CONSTELLATION;
     const count = Math.min(5, active.length);
@@ -128,7 +123,7 @@ export function deriveDelightFrame(
       previous.x,
       previous.y,
       1.45,
-      scene.environment.primary,
+      environment.primary,
       envelope * 0.3,
     );
 
@@ -139,14 +134,14 @@ export function deriveDelightFrame(
         (previous.x + point.x) * 0.5,
         (previous.y + point.y) * 0.5,
         0.82,
-        scene.environment.secondary,
+        environment.secondary,
         envelope * 0.14,
       );
       dot(
         point.x,
         point.y,
         1.45,
-        scene.environment.primary,
+        environment.primary,
         envelope * 0.3,
       );
       previous = point;
@@ -155,16 +150,13 @@ export function deriveDelightFrame(
 
   if (
     particles
-    && rand(23) < (preferences.quality === 'high' ? 0.055 : 0.03)
+    && rand(23) < (high ? 0.055 : 0.03)
   ) {
     mask |= MOTE;
     const reverse = rand(24) > 0.5;
     const startY = 0.14 + rand(25) * 0.5;
-    const endY = Math.max(
-      0,
-      Math.min(1, startY + (rand(26) - 0.5) * 0.24),
-    );
-    const p = Math.max(0, Math.min(1, barSample.progress));
+    const endY = startY + (rand(26) - 0.5) * 0.24;
+    const p = barSample.progress;
     const travel = p * p * (3 - 2 * p);
     const startX = reverse ? 1.04 : -0.04;
     const endX = reverse ? -0.04 : 1.04;
@@ -178,8 +170,8 @@ export function deriveDelightFrame(
         y + (startY - y) * amount,
         tail === 0 ? 1.7 : 0.72,
         tail === 0
-          ? scene.environment.primary
-          : scene.environment.secondary,
+          ? environment.primary
+          : environment.secondary,
         envelope * (tail === 0 ? 0.6 : 0.1),
       );
     }
@@ -190,7 +182,7 @@ export function deriveDelightFrame(
     && hit
     && hit.simultaneousCount >= 2
     && pulsing.length >= 2
-    && rand(37) < (preferences.quality === 'high' ? 0.08 : 0.045)
+    && rand(37) < (high ? 0.08 : 0.045)
   ) {
     mask |= ALIGNMENT;
     const strength = Math.pow(
@@ -201,10 +193,10 @@ export function deriveDelightFrame(
     for (const orb of pulsing.slice(0, 4)) {
       for (const amount of [0.34, 0.58, 0.82]) {
         dot(
-          scene.listener.x + (orb.position.x - scene.listener.x) * amount,
-          scene.listener.y + (orb.position.y - scene.listener.y) * amount,
+          listener.x + (orb.position.x - listener.x) * amount,
+          listener.y + (orb.position.y - listener.y) * amount,
           0.72,
-          scene.environment.primary,
+          environment.primary,
           strength * 0.085,
         );
       }
@@ -214,7 +206,7 @@ export function deriveDelightFrame(
   if (
     particles
     && bar.phrasePosition === 0
-    && rand(49) < (preferences.quality === 'high' ? 0.018 : 0.008)
+    && rand(49) < (high ? 0.018 : 0.008)
   ) {
     mask |= ORBIT;
     const phase = rand(50) * Math.PI * 2
@@ -224,10 +216,10 @@ export function deriveDelightFrame(
     for (let index = 0; index < 3; index += 1) {
       const angle = phase + Math.PI * 2 * index / 3;
       dot(
-        scene.listener.x + Math.cos(angle) * radius,
-        scene.listener.y + Math.sin(angle) * radius,
+        listener.x + Math.cos(angle) * radius,
+        listener.y + Math.sin(angle) * radius,
         1.4,
-        scene.environment.secondary,
+        environment.secondary,
         envelope * 0.46,
       );
     }
@@ -235,24 +227,21 @@ export function deriveDelightFrame(
 
   if (bar.silent && !preferences.reduceParticles) {
     mask |= SILENCE;
-    const progress = Math.max(0, Math.min(1, barSample.progress));
+    const progress = barSample.progress;
     const fall = preferences.reduceMotion ? 0 : progress * 0.1;
     const strength = preferences.reduceMotion
       ? 0.22
       : 0.36 + progress * 0.34;
-    const count = preferences.quality === 'high' ? 8 : 5;
+    const count = high ? 8 : 5;
 
     for (let index = 0; index < count; index += 1) {
       dot(
         0.12 + rand(301 + index * 2) * 0.76,
-        Math.min(
-          0.94,
-          0.18
-            + rand(302 + index * 2) * 0.56
-            + fall * (0.42 + (index % 3) * 0.16),
-        ),
+        0.18
+          + rand(302 + index * 2) * 0.56
+          + fall * (0.42 + (index % 3) * 0.16),
         0.72 + (index % 3) * 0.18,
-        scene.environment.primary,
+        environment.primary,
         strength * (0.11 + (index % 2) * 0.035),
       );
     }
