@@ -12,7 +12,7 @@
 - [x] constellations require at least three active Orbs.
 - [x] they occur only at phrase boundaries.
 - [x] selection is deterministic from World visual seed + bar.
-- [x] lines are intentionally faint so they cannot be confused with authored Links.
+- [x] dotted constellation geometry is intentionally sparse so it cannot be confused with authored Links.
 - [x] they are disabled in Battery Saver and Reduce Motion.
 
 ## Rare particle moments
@@ -44,9 +44,10 @@
 - [x] the silence cue never creates an audio event.
 
 ## Renderer parity
-- [x] one shared model derives exact line/dot primitives.
-- [x] WebGL2 paints those primitives using the existing generic line/disc resources.
+- [x] one shared model derives exact bounded disc primitives.
+- [x] WebGL2 paints them with the existing disc renderer; no delight-specific shader was added.
 - [x] Canvas2D paints the same primitives.
+- [x] the previously unused generic WebGL line shader/resource was retired to recover bundle budget.
 - [x] no-renderer compatibility remains functional without decorative delight.
 - [x] renderer canvas remains pointer-transparent.
 
