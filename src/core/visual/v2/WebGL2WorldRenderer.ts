@@ -368,6 +368,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       timestampMs,
       width,
       height,
+      scene.environment.detailScale,
     );
 
     this.crossLayer?.render(
@@ -412,6 +413,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       width,
       height,
       dpr,
+      scene.environment.detailScale,
     );
 
     this.lightLayer?.render(

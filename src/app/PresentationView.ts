@@ -369,6 +369,16 @@ export class PresentationView {
     const rect = this.canvas.getBoundingClientRect();
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
+    const focus = state.world.soundOrbs.find(
+      (orb) => orb.id === state.selectedOrbId,
+    )?.position
+      ?? state.world.effectFields.find(
+        (field) => field.id === state.selectedFieldId,
+      )?.position
+      ?? state.world.playgroundToys.find(
+        (toy) => toy.id === state.selectedToyId,
+      )?.position
+      ?? null;
     const camera = presentationCameraForWorld(state.world, {
       width,
       height,
@@ -377,6 +387,7 @@ export class PresentationView {
       playing: state.playing,
       recording: state.captureStatus === 'recording',
       timestampMs,
+      focus,
     });
     const x = (0.5 - camera.zoom * camera.center.x) * width;
     const y = (0.5 - camera.zoom * camera.center.y) * height;

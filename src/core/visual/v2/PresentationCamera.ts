@@ -16,6 +16,7 @@ export interface PresentationCameraOptions {
   readonly playing: boolean;
   readonly recording: boolean;
   readonly timestampMs: number;
+  readonly focus?: NormalizedPoint | null;
 }
 
 interface Bounds {
@@ -130,6 +131,13 @@ export function presentationCameraForWorld(
     y: boundsCenter.y * 0.64 + centroid.y * 0.36,
   };
 
+  if (options.focus) {
+    center = {
+      x: center.x * 0.82 + options.focus.x * 0.18,
+      y: center.y * 0.82 + options.focus.y * 0.18,
+    };
+  }
+
   const marginPx = Math.min(
     88,
     Math.max(38, minDimension * 0.05),
@@ -150,12 +158,22 @@ export function presentationCameraForWorld(
     (0.5 - marginX) / distanceX,
     (0.5 - marginY) / distanceY,
   );
-  const objectCount = world.soundOrbs.length
+  const objectCount = world.soundOrbs.filter(
+    (orb) => !orb.muted,
+  ).length
     + world.effectFields.length * 1.25
-    + world.playgroundToys.length;
+    + world.playgroundToys.length
+    + world.links.length * 0.35;
   const density = Math.min(1, objectCount / 14);
+  const spread = Math.max(
+    bounds.maxX - bounds.minX,
+    bounds.maxY - bounds.minY,
+  );
   const aspect = width / height;
-  let desiredZoom = 1.34 - density * 0.22;
+  let desiredZoom = 1.36
+    - density * 0.24
+    - Math.min(0.1, spread * 0.08)
+    + (options.focus ? 0.04 : 0);
 
   if (aspect >= 2) {
     desiredZoom = Math.min(desiredZoom, 1.12);

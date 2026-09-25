@@ -136,7 +136,10 @@ export function deriveWorldEnvironment(
     BASE_SECONDARY,
   );
   const density = clamp01(
-    world.soundOrbs.length / MAX_SOUND_ORBS,
+    world.soundOrbs.length / MAX_SOUND_ORBS
+    + world.effectFields.length / 18
+    + world.playgroundToys.length / 20
+    + world.links.length / 32,
   );
   const activeRatio = world.soundOrbs.length > 0
     ? activeCount / world.soundOrbs.length
@@ -153,8 +156,9 @@ export function deriveWorldEnvironment(
     ),
     particleDensity: clamp01(
       (world.soundOrbs.length === 0 ? 0.62 : 1)
-      * (1 - density * 0.46),
+      * (1 - density * 0.52),
     ),
+    detailScale: Math.min(1, Math.max(0.68, 1.08 - density * 0.4)),
     seed: visualSeedFromWorld(
       world.id,
       world.music.seed,

@@ -27,6 +27,7 @@ export interface RenderEnvironment {
   readonly density: number;
   readonly ambience: number;
   readonly particleDensity: number;
+  readonly detailScale: number;
   readonly seed: number;
 }
 

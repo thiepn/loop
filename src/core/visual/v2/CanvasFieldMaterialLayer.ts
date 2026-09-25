@@ -76,6 +76,7 @@ export class CanvasFieldMaterialLayer {
     width: number,
     height: number,
     dpr: number,
+    detailScale: number,
   ): void {
     if (fields.length === 0) {
       return;
@@ -91,7 +92,10 @@ export class CanvasFieldMaterialLayer {
         width,
         height,
         dpr,
-        policy.fieldDetail,
+        Math.max(
+          policy.fieldDetail * detailScale,
+          field.selected ? 0.92 : 0,
+        ),
       );
     }
 
