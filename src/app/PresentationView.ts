@@ -265,7 +265,7 @@ export class PresentationView {
     ) {
       try {
         await this.shell.requestFullscreen();
-        if (this.active && document.fullscreenElement === this.shell) {
+        if (this.active) {
           this.nativeFullscreen = true;
           this.shell.dataset.presentationSurface = 'fullscreen';
         }
