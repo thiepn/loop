@@ -174,13 +174,12 @@ export function presentationCameraForWorld(
   } else {
     const range = cameraRange(bounds, zoom, marginX, marginY);
 
-    if (range.minX <= range.maxX) {
-      center.x = clamp(center.x, range.minX, range.maxX);
-    }
-
-    if (range.minY <= range.maxY) {
-      center.y = clamp(center.y, range.minY, range.maxY);
-    }
+    center.x = range.minX <= range.maxX
+      ? clamp(center.x, range.minX, range.maxX)
+      : clamp(center.x, 0.5 / zoom, 1 - 0.5 / zoom);
+    center.y = range.minY <= range.maxY
+      ? clamp(center.y, range.minY, range.maxY)
+      : clamp(center.y, 0.5 / zoom, 1 - 0.5 / zoom);
 
     if (!options.reduceMotion) {
       const drift = (
