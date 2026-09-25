@@ -27,6 +27,7 @@ export class PresentationView {
   private readonly enterButton: HTMLButtonElement;
   private readonly exitButton: HTMLButtonElement;
   private readonly resizeObserver: ResizeObserver | null;
+  private readonly rendererObserver: MutationObserver | null;
   private state: Readonly<AppState> | null = null;
   private active = false;
   private nativeFullscreen = false;
@@ -200,6 +201,24 @@ export class PresentationView {
           }
         });
     this.resizeObserver?.observe(canvas);
+
+    this.rendererObserver = typeof MutationObserver === 'undefined'
+      ? null
+      : new MutationObserver(() => {
+          if (!this.active) {
+            return;
+          }
+
+          this.syncRendererMode();
+          this.updateCamera(performance.now());
+        });
+    this.rendererObserver?.observe(shell, {
+      attributes: true,
+      attributeFilter: [
+        'data-renderer-state',
+        'data-renderer-v2',
+      ],
+    });
   }
 
   public render(state: Readonly<AppState>): void {
@@ -215,9 +234,7 @@ export class PresentationView {
         : 'Present World using compatibility visuals';
 
     if (this.active) {
-      this.shell.dataset.presentationRenderer = rendererReady
-        ? 'v2'
-        : 'fallback';
+      this.syncRendererMode();
     }
 
     if (
@@ -247,6 +264,7 @@ export class PresentationView {
   public destroy(): void {
     this.deactivate(true);
     this.resizeObserver?.disconnect();
+    this.rendererObserver?.disconnect();
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     document.removeEventListener('visibilitychange', this.handleVisibility);
     window.removeEventListener('pointermove', this.handleActivity);
@@ -275,9 +293,7 @@ export class PresentationView {
     this.nativeFullscreen = false;
     this.shell.dataset.presentation = 'true';
     this.shell.dataset.presentationSurface = 'viewport';
-    this.shell.dataset.presentationRenderer = this.rendererReady()
-      ? 'v2'
-      : 'fallback';
+    this.syncRendererMode();
     this.shell.dataset.presentationActivity = state.captureStatus === 'recording'
       ? 'recording'
       : state.playing
@@ -384,6 +400,12 @@ export class PresentationView {
   private rendererReady(): boolean {
     return this.shell.dataset.rendererState === 'ready'
       && this.shell.dataset.rendererV2 !== 'none';
+  }
+
+  private syncRendererMode(): void {
+    this.shell.dataset.presentationRenderer = this.rendererReady()
+      ? 'v2'
+      : 'fallback';
   }
 
   private syncAnimation(): void {
