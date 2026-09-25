@@ -134,14 +134,22 @@ async function run() {
   );
   const manifest = await manifestResponse.json();
 
-  assert(manifest.id === '/loop/', `Manifest id is ${manifest.id}`);
+  const manifestBaseUrl = new URL(manifestResponse.url);
+  const manifestId = new URL(manifest.id, manifestBaseUrl);
+  const manifestScope = new URL(manifest.scope, manifestBaseUrl);
+  const manifestStartUrl = new URL(manifest.start_url, manifestBaseUrl);
+
   assert(
-    manifest.scope === '/loop/',
-    `Manifest scope is ${manifest.scope}`,
+    manifestId.pathname === '/loop/',
+    `Manifest id resolves to ${manifestId.pathname}`,
   );
   assert(
-    manifest.start_url === '/loop/',
-    `Manifest start_url is ${manifest.start_url}`,
+    manifestScope.pathname === '/loop/',
+    `Manifest scope resolves to ${manifestScope.pathname}`,
+  );
+  assert(
+    manifestStartUrl.pathname === '/loop/',
+    `Manifest start_url resolves to ${manifestStartUrl.pathname}`,
   );
 
   const iconSizes = new Set(
