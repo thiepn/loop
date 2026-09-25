@@ -77,17 +77,22 @@ describe('Visual V2 environment model', () => {
       'melody',
       'texture',
     ]);
-    denseWorld.effectFields.push(
-      createEffectField({
-        id: 'space-density',
-        type: 'space',
-        position: { x: 0.5, y: 0.5 },
-        radius: 0.18,
-      }),
-    );
+    const denseWithField = createEmptyWorld({
+      id: denseWorld.id,
+      music: denseWorld.music,
+      soundOrbs: denseWorld.soundOrbs,
+      effectFields: [
+        createEffectField({
+          id: 'space-density',
+          type: 'space',
+          position: { x: 0.5, y: 0.5 },
+          radius: 0.18,
+        }),
+      ],
+    });
 
     const sparse = deriveWorldEnvironment(sparseWorld);
-    const dense = deriveWorldEnvironment(denseWorld);
+    const dense = deriveWorldEnvironment(denseWithField);
 
     expect(dense.density).toBeGreaterThan(sparse.density);
     expect(dense.detailScale).toBeLessThan(sparse.detailScale);
