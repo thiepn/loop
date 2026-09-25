@@ -624,13 +624,7 @@ a:focus-visible,
     --orb-size: 92px;
   }
 
-  .selection-panel {
-    bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
-    gap: 10px;
-    padding: 10px;
-  }
-
-  .selection-copy {
+    .selection-copy {
     min-width: 74px;
     padding-left: 3px;
   }
@@ -650,13 +644,7 @@ a:focus-visible,
 }
 
 @media (max-width: 430px) {
-  .selection-panel {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .selection-copy {
+    .selection-copy {
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -970,17 +958,7 @@ a:focus-visible,
 }
 
 @media (max-width: 560px) {
-  .palette-backdrop {
-    padding: 8px;
-  }
-
-  .palette-sheet {
-    max-height: 82vh;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .palette-sounds {
+      .palette-sounds {
     grid-template-columns: 1fr;
   }
 
@@ -1219,17 +1197,7 @@ a:focus-visible,
 }
 
 @media (max-width: 620px) {
-  .pattern-backdrop {
-    padding: 8px;
-  }
-
-  .pattern-sheet {
-    max-height: 86vh;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .pattern-macros {
+      .pattern-macros {
     grid-template-columns: 1fr;
     gap: 8px;
   }
@@ -1630,24 +1598,10 @@ a:focus-visible,
     display: none;
   }
 
-  .field-selection-panel {
-    bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
   }
-}
 
 @media (max-width: 430px) {
-  .effect-palette-backdrop {
-    padding: 8px;
-  }
-
-  .effect-palette-sheet {
-    max-height: 82vh;
-    overflow: auto;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .effect-palette-grid {
+      .effect-palette-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1661,10 +1615,7 @@ a:focus-visible,
     min-height: 58px;
   }
 
-  .field-selection-panel {
-    width: calc(100% - 20px);
   }
-}
 
 
 /* Phase 7 — Motion Playground */
@@ -2143,10 +2094,6 @@ a:focus-visible,
   line-height: 1.25;
 }
 
-.selection-panel {
-  width: min(680px, calc(100% - 32px));
-}
-
 @keyframes toy-spin {
   to { rotate: 360deg; }
 }
@@ -2173,25 +2120,10 @@ a:focus-visible,
     display: none;
   }
 
-  .toy-selection-panel {
-    bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
   }
-}
 
 @media (max-width: 520px) {
-  .motion-backdrop,
-  .toy-palette-backdrop {
-    padding: 8px;
-  }
-
-  .motion-sheet,
-  .toy-palette-sheet {
-    max-height: 84vh;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .motion-mode-grid {
+      .motion-mode-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2223,10 +2155,7 @@ a:focus-visible,
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .toy-selection-panel {
-    width: calc(100% - 20px);
   }
-}
 
 
 /* Phase 8 — Links & Reactive Music */
@@ -2509,17 +2438,7 @@ a:focus-visible,
 }
 
 @media (max-width: 520px) {
-  .link-editor-backdrop {
-    padding: 8px;
-  }
-
-  .link-editor-sheet {
-    max-height: 86vh;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .link-relation-grid {
+      .link-relation-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2533,10 +2452,7 @@ a:focus-visible,
     min-height: 52px;
   }
 
-  .link-selection-panel {
-    width: calc(100% - 20px);
   }
-}
 
 
 /* Phase 9 — Magic, Mutation & Controlled Randomness */
@@ -2845,17 +2761,7 @@ a:focus-visible,
 }
 
 @media (max-width: 430px) {
-  .magic-intent-backdrop {
-    padding: 8px;
-  }
-
-  .magic-intent-sheet {
-    max-height: 84vh;
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .magic-intent-grid {
+      .magic-intent-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3464,16 +3370,7 @@ a:focus-visible,
 }
 
 @media (max-width: 430px) {
-  .capture-result-backdrop {
-    padding: 8px;
-  }
-
-  .capture-result-sheet {
-    padding: 15px;
-    border-radius: 20px;
-  }
-
-  .capture-live-limit {
+      .capture-live-limit {
     display: none;
   }
 
