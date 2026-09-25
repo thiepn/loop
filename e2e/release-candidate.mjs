@@ -608,6 +608,35 @@ test('touch layouts keep primary sheets inside the viewport', async ({
     }
   }
 
+  const updateBanner = page.locator('.pwa-update-banner');
+  await updateBanner.evaluate((element) => {
+    element.hidden = false;
+  });
+  await expect(updateBanner).toBeVisible();
+
+  const updateBox = await updateBanner.boundingBox();
+  const presentBox = await page.locator(
+    '[data-presentation-enter]',
+  ).boundingBox();
+
+  expect(updateBox).not.toBeNull();
+  expect(presentBox).not.toBeNull();
+
+  if (updateBox && presentBox) {
+    const overlaps = !(
+      updateBox.x + updateBox.width <= presentBox.x
+      || presentBox.x + presentBox.width <= updateBox.x
+      || updateBox.y + updateBox.height <= presentBox.y
+      || presentBox.y + presentBox.height <= updateBox.y
+    );
+
+    expect(overlaps).toBe(false);
+  }
+
+  await updateBanner.evaluate((element) => {
+    element.hidden = true;
+  });
+
   await activate(page.locator('.effects-button'), testInfo);
   const sheet = page.locator('.effect-palette-sheet');
   await waitForSurface(sheet);
