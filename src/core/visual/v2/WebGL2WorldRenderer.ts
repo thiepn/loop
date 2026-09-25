@@ -71,27 +71,6 @@ const DISC_FRAGMENT_SOURCE = '#version 300 es\n'
   + '  out_color = vec4(v_color.rgb * body, v_color.a * edge);\n'
   + '}';
 
-const LINE_VERTEX_SOURCE = '#version 300 es\n'
-  + 'in vec2 a_position;\n'
-  + 'in vec4 a_color;\n'
-  + 'uniform vec2 u_resolution;\n'
-  + 'out vec4 v_color;\n'
-  + 'void main() {\n'
-  + '  vec2 zeroToOne = a_position / u_resolution;\n'
-  + '  vec2 clip = zeroToOne * 2.0 - 1.0;\n'
-  + '  clip.y = -clip.y;\n'
-  + '  gl_Position = vec4(clip, 0.0, 1.0);\n'
-  + '  v_color = a_color;\n'
-  + '}';
-
-const LINE_FRAGMENT_SOURCE = '#version 300 es\n'
-  + 'precision mediump float;\n'
-  + 'in vec4 v_color;\n'
-  + 'out vec4 out_color;\n'
-  + 'void main() {\n'
-  + '  out_color = v_color;\n'
-  + '}';
-
 function compileShader(
   gl: WebGL2RenderingContext,
   type: number,
@@ -240,9 +219,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     timestampMs: number,
   ): void {
     const disc = this.disc;
-    const line = this.line;
-
-    if (!disc || !line || this.gl.isContextLost()) {
+    if (!disc || this.gl.isContextLost()) {
       return;
     }
 
