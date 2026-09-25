@@ -3656,11 +3656,6 @@ export class App {
       const renderedPosition = this.playgroundView?.getOrbPosition(
         activity.orbId,
       ) ?? undefined;
-      this.visualSystemView?.pulseOrb(
-        activity.orbId,
-        activity.intensity,
-        renderedPosition,
-      );
       this.worldRendererView?.pulseOrb(
         activity.orbId,
         activity.intensity,
