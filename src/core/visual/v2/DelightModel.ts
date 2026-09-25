@@ -203,8 +203,8 @@ export function deriveDelightFrame(
   );
   const alignmentRoll = hash01(seed, 37);
   const alignmentChance = preferences.quality === 'high'
-    ? 0.18
-    : 0.1;
+    ? 0.08
+    : 0.045;
   const alignmentPoints = orderedOrbPoints(
     scene,
     seed + 0.173,
