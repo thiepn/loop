@@ -38,7 +38,7 @@ Loop is intentionally **not a DAW**. The product is designed first for people wi
 - **Post-V1 Visual V2 Phase 10 — Musical Choreography: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 11 — Magic, Portal, Snapshot & State Transitions: complete and CI-verified**
 - **Post-V1 Visual V2 Phase 12 — Home, Library, Branding & Application Surfaces: complete and CI-verified**
-- **Post-V1 Visual V2 Phase 13 — UI Chrome, Panels, Icons & Spatial Controls: implemented; certification pending**
+- **Post-V1 Visual V2 Phase 13 — UI Chrome, Panels, Icons & Spatial Controls: complete and CI-verified**
 - **Next Visual V2 phase after certification: Phase 14 — Performance / Presentation Mode**
 
 Loop's planned V1 product feature set is implemented and feature-frozen. The release candidate now carries the complete functional, accessibility, persistence, performance, PWA, and cross-browser release gates.
