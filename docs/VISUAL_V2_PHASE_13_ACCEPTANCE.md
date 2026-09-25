@@ -115,7 +115,7 @@ Phase 13 is complete only when the exact final Phase 13 head passes:
 
 ## Verification record
 
-The implemented Phase 13 head passed the existing repository verification gates without changing certification budgets:
+The exact certified Phase 13 implementation head `3bc7e2d6ec841a152fcae857da4209cccc32d103` passed the existing repository verification gates without changing certification budgets:
 
 - strict TypeScript typecheck: passed;
 - unit/soak suite: **50 files, 310 tests passed**;
@@ -123,14 +123,14 @@ The implemented Phase 13 head passed the existing repository verification gates 
 - Phase 16 browser certification: passed;
 - JS+CSS raw: **511,413 bytes** (< 512,000-byte budget);
 - JS+CSS gzip: **122,294 bytes** (< 120 KiB / 122,880-byte budget);
-- navigation load: **132.6 ms** (< 3,000 ms budget);
-- Home → World: **267 ms** (< 1,500 ms budget);
-- first contentful paint: **68 ms**;
-- sampled animation-frame p95: **16.7 ms** (< 80 ms budget);
-- average main-thread work per sampled frame: **3.03 ms** (< 8 ms budget);
-- post-GC heap growth: **742,360 bytes** (< 5 MiB budget);
-- DOM node growth: **123** (< 250 budget);
-- longest observed long task: **67 ms** (< 200 ms budget);
+- page load: **827.9 ms** (< 3,000 ms budget);
+- Home → World: **623.4 ms** (< 1,500 ms budget);
+- first contentful paint: **252 ms**;
+- sampled animation-frame p95: **16.8 ms** (< 80 ms budget);
+- average main-thread work per sampled frame: **5.31 ms** (< 8 ms budget);
+- post-GC heap growth: **813,212 bytes** (< 5 MiB budget);
+- DOM node growth: **121** (< 250 budget);
+- longest observed long task: **106 ms** (< 200 ms budget);
 - frozen → active lifecycle recovery: passed.
 
 The chrome/icon overhaul therefore fits inside the original release envelope while replacing several generations of duplicated editor/panel CSS. The remaining raw-size margin is intentionally small, so Phase 14 should primarily reuse or conditionally hide this unified chrome rather than add another independent control layer.
