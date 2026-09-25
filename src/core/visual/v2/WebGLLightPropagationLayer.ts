@@ -40,17 +40,17 @@ export class WebGLLightPropagationLayer{
     const r=gl.getUniformLocation(this.p,'u_resolution'); if(!r) throw new Error('light resolution'); this.res=r;
   }
   public render(frame:Readonly<RenderLightFrame>,preferences:Readonly<VisualPreferences>,width:number,height:number,dpr:number):void{
-    const vertices:number[]=[]; const min=Math.min(width,height);
+    const vertices:number[]=[]; const min=Math.min(width,height); const glow=preferences.reduceBloom?.28:1;
     for(const s of frame.localLights){
-      pushDisc(vertices,s.position.x*width,s.position.y*height,s.radius*min,[s.color[0],s.color[1],s.color[2],s.intensity]);
+      pushDisc(vertices,s.position.x*width,s.position.y*height,s.radius*min,[s.color[0],s.color[1],s.color[2],s.intensity*glow]);
     }
     if(!preferences.reduceMotion){
       for(const packet of frame.listenerPackets){
         const p=bezier(packet.source,packet.target,packet.progress);
         const r=(3.2+packet.intensity*3.2)*dpr;
-        pushDisc(vertices,p.x*width,p.y*height,r,[packet.color[0],packet.color[1],packet.color[2],0.52*packet.intensity]);
+        pushDisc(vertices,p.x*width,p.y*height,r,[packet.color[0],packet.color[1],packet.color[2],0.52*packet.intensity*glow]);
         const tail=bezier(packet.source,packet.target,Math.max(0,packet.progress-0.055));
-        pushDisc(vertices,tail.x*width,tail.y*height,r*1.55,[packet.color[0],packet.color[1],packet.color[2],0.14*packet.intensity]);
+        pushDisc(vertices,tail.x*width,tail.y*height,r*1.55,[packet.color[0],packet.color[1],packet.color[2],0.14*packet.intensity*glow]);
       }
     }
     if(vertices.length===0) return;
