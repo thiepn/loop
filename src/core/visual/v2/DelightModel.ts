@@ -93,6 +93,15 @@ export function deriveDelightFrame(
   );
   const envelope = Math.sin(Math.PI * clamp01(barSample.progress));
   const active = scene.orbs.filter((orb) => !orb.muted);
+  const pulsingIds = new Set(
+    samples.flatMap((sample) => (
+      sample.event.kind === 'orb-pulse'
+      && sample.progress < 0.72
+        ? [sample.event.orbId]
+        : []
+    )),
+  );
+  const pulsing = active.filter((orb) => pulsingIds.has(orb.id));
   const moving = !preferences.reduceMotion
     && preferences.quality !== 'battery';
   const particles = moving && !preferences.reduceParticles;
@@ -194,7 +203,7 @@ export function deriveDelightFrame(
     moving
     && hit
     && hit.simultaneousCount >= 2
-    && active.length >= 2
+    && pulsing.length >= 2
     && hash01(seed, 37) < (
       preferences.quality === 'high' ? 0.08 : 0.045
     )
@@ -205,7 +214,8 @@ export function deriveDelightFrame(
       1.8,
     ) * hit.intensity;
 
-    for (const point of ordered(37, Math.min(4, active.length))) {
+    for (const orb of pulsing.slice(0, 4)) {
+      const point = orb.position;
       lines.push({
         x1: scene.listener.x * width,
         y1: scene.listener.y * height,
