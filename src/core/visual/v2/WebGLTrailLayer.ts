@@ -13,26 +13,9 @@ import type {
 } from './RenderTypes';
 import { renderPolicyForPreferences } from './RendererPolicy';
 
-const VERTEX_SOURCE = '#version 300 es\n'
-  + 'in vec2 a_position;\n'
-  + 'in vec4 a_color;\n'
-  + 'uniform vec2 u_resolution;\n'
-  + 'out vec4 v_color;\n'
-  + 'void main() {\n'
-  + '  vec2 zeroToOne = a_position / u_resolution;\n'
-  + '  vec2 clip = zeroToOne * 2.0 - 1.0;\n'
-  + '  clip.y = -clip.y;\n'
-  + '  gl_Position = vec4(clip, 0.0, 1.0);\n'
-  + '  v_color = a_color;\n'
-  + '}';
+const VERTEX_SOURCE = "#version 300 es\nin vec2 a_position;\nin vec4 a_color;\nuniform vec2 u_resolution;\nout vec4 v_color;\nvoid main() {\nvec2 zeroToOne = a_position / u_resolution;\nvec2 clip = zeroToOne * 2.0 - 1.0;\nclip.y = -clip.y;\ngl_Position = vec4(clip, 0.0, 1.0);\nv_color = a_color;\n}";
 
-const FRAGMENT_SOURCE = '#version 300 es\n'
-  + 'precision mediump float;\n'
-  + 'in vec4 v_color;\n'
-  + 'out vec4 out_color;\n'
-  + 'void main() {\n'
-  + '  out_color = v_color;\n'
-  + '}';
+const FRAGMENT_SOURCE = "#version 300 es\nprecision mediump float;\nin vec4 v_color;\nout vec4 out_color;\nvoid main() {\nout_color = v_color;\n}";
 
 function compileShader(
   gl: WebGL2RenderingContext,
