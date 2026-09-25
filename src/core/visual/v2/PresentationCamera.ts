@@ -181,7 +181,7 @@ export function presentationCameraForWorld(
       ? clamp(center.y, range.minY, range.maxY)
       : clamp(center.y, 0.5 / zoom, 1 - 0.5 / zoom);
 
-    if (!options.reduceMotion) {
+    if (!options.reduceMotion && objectCount > 0) {
       const drift = (
         options.quality === 'high'
           ? 0.007
