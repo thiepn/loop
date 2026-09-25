@@ -306,6 +306,7 @@ export class WebGLFieldMaterialLayer {
     timestampMs: number,
     width: number,
     height: number,
+    detailScale: number,
   ): void {
     if (fields.length === 0) {
       return;
@@ -371,11 +372,19 @@ export class WebGLFieldMaterialLayer {
       gl.uniform1f(this.seed, field.material.seed);
       gl.uniform1f(
         this.edgeRoughness,
-        field.material.edgeRoughness * policy.fieldDetail,
+        field.material.edgeRoughness
+          * Math.max(
+            policy.fieldDetail * detailScale,
+            field.selected ? 0.92 : 0,
+          ),
       );
       gl.uniform1f(
         this.detail,
-        field.material.detail * policy.fieldDetail,
+        field.material.detail
+          * Math.max(
+            policy.fieldDetail * detailScale,
+            field.selected ? 0.92 : 0,
+          ),
       );
       gl.uniform1f(this.selected, field.selected ? 1 : 0);
       gl.uniform1f(
@@ -427,7 +436,10 @@ export class WebGLFieldMaterialLayer {
       gl.uniform4f(this.colorB, b[0], b[1], b[2], b[3]);
       gl.uniform1f(this.seed, intersection.strength);
       gl.uniform1f(this.edgeRoughness, 0);
-      gl.uniform1f(this.detail, policy.fieldDetail);
+      gl.uniform1f(
+        this.detail,
+        policy.fieldDetail * detailScale,
+      );
       gl.uniform1f(this.selected, 0);
       gl.uniform1f(this.tension, 0);
       gl.uniform1f(this.strength, intersection.strength);
