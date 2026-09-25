@@ -26,6 +26,8 @@ const ICONS: readonly LoopIconName[] = [
   'clear',
   'check',
   'download',
+  'present',
+  'exit',
 ];
 
 describe('Loop Visual V2 iconography', () => {
@@ -56,6 +58,7 @@ describe('Loop Visual V2 iconography', () => {
     expect(loopIcon('mute')).not.toBe(loopIcon('sound'));
     expect(loopIcon('record')).not.toBe(loopIcon('stop'));
     expect(loopIcon('magic')).not.toBe(loopIcon('retry'));
+    expect(loopIcon('present')).not.toBe(loopIcon('exit'));
   });
 
   it('does not place text labels inside decorative icon SVGs', () => {
