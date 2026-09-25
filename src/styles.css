@@ -6585,3 +6585,15 @@ a:focus-visible,
   overflow:hidden;color:#f4f4f5;font-size:13px;font-weight:720;text-overflow:ellipsis;white-space:nowrap
 }
 .link-selection-copy>small{color:#858590;font-size:9px}
+
+
+@media (pointer: coarse) and (orientation: portrait) and (min-height: 521px) {
+  :is(
+    .selection-panel,
+    .field-selection-panel,
+    .toy-selection-panel,
+    .link-selection-panel
+  ) {
+    bottom: max(92px, calc(env(safe-area-inset-bottom) + 84px));
+  }
+}
