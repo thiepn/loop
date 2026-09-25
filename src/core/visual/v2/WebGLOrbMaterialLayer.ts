@@ -533,13 +533,17 @@ export class WebGLOrbMaterialLayer {
     width: number,
     height: number,
     dpr: number,
+    detailScale: number,
   ): void {
     if (orbs.length === 0) {
       return;
     }
 
     const gl = this.gl;
-    const detail = renderPolicyForPreferences(preferences).orbDetail;
+    const baseDetail = Math.min(
+      1,
+      renderPolicyForPreferences(preferences).orbDetail * detailScale,
+    );
     const minDimension = Math.min(width, height);
     const choreography = objectChoreographyEmphasis(events);
     const choreographyEnergy = Math.min(
@@ -569,7 +573,6 @@ export class WebGLOrbMaterialLayer {
       this.motionScale,
       preferences.reduceMotion ? 0 : 1,
     );
-    gl.uniform1f(this.detail, detail);
     gl.uniform1f(this.choreoEnergy, choreographyEnergy);
     gl.uniform1f(this.choreoSettle, choreography.settle);
     gl.uniform1f(
@@ -578,6 +581,13 @@ export class WebGLOrbMaterialLayer {
     );
 
     for (const orb of orbs) {
+      gl.uniform1f(
+        this.detail,
+        Math.max(
+          baseDetail,
+          orb.selected || orb.focused ? 0.92 : 0,
+        ),
+      );
       const diameter = orbDiameterPixels(
         orb.role,
         minDimension,
