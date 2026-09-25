@@ -29,7 +29,7 @@ import type { DensityLevel, GrooveFeel } from '../core/music/Pattern';
 import { WorldHistory } from '../core/state/WorldHistory';
 import {
   applySystemVisualPreferences,
-  loadVisualPreferences,
+  loadVisualPreferenceIntent,
   saveVisualPreferences,
   type VisualPreferences,
 } from '../core/visual/VisualQuality';
@@ -184,7 +184,7 @@ export class App {
     event: MediaQueryListEvent,
   ) => {
     this.systemReducedMotion = event.matches;
-    const intent = this.visualPreferenceIntent ?? loadVisualPreferences();
+    const intent = this.visualPreferenceIntent ?? loadVisualPreferenceIntent();
     const effective = applySystemVisualPreferences(
       intent,
       this.systemReducedMotion,
@@ -292,7 +292,7 @@ export class App {
   public constructor(private readonly root: HTMLElement) {}
 
   public mount(): void {
-    const visualPreferences = loadVisualPreferences();
+    const visualPreferences = loadVisualPreferenceIntent();
     this.visualPreferenceIntent = visualPreferences;
     this.reducedMotionMedia = typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -1043,7 +1043,7 @@ export class App {
     patch: Partial<VisualPreferences>,
   ): void {
     const intent = this.visualPreferenceIntent
-      ?? loadVisualPreferences();
+      ?? loadVisualPreferenceIntent();
     const nextIntent: VisualPreferences = {
       quality: patch.quality ?? intent.quality,
       reduceMotion: patch.reduceMotion ?? intent.reduceMotion,
