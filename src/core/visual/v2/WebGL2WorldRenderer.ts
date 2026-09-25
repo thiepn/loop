@@ -15,10 +15,7 @@ import { WebGLListenerLayer } from './WebGLListenerLayer';
 import { deriveLightFrame } from './LightModel';
 import { deriveChoreographyFrame } from './ChoreographyModel';
 import { deriveTransitionFrame } from './TransitionModel';
-import {
-  deriveDelightFrame,
-  type DelightFrame,
-} from './DelightModel';
+import { deriveDelightFrame } from './DelightModel';
 import { WebGLFieldMaterialLayer } from './WebGLFieldMaterialLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import { WebGLTrailLayer } from './WebGLTrailLayer';
@@ -301,20 +298,34 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       scene,
       events,
       preferences,
-    );
-    const discVertices: number[] = [];
-    const delightLineVertices: number[] = [];
-
-    this.pushDelightGeometry(
-      delight,
-      scene,
-      preferences,
-      discVertices,
-      delightLineVertices,
       width,
       height,
       dpr,
     );
+    const discVertices: number[] = [];
+    const delightLineVertices: number[] = [];
+
+    for (const item of delight.lines) {
+      pushLine(
+        delightLineVertices,
+        item.x1,
+        item.y1,
+        item.x2,
+        item.y2,
+        item.color,
+      );
+    }
+
+    for (const item of delight.dots) {
+      pushDisc(
+        discVertices,
+        item.x,
+        item.y,
+        item.radius,
+        item.radius,
+        item.color,
+      );
+    }
 
     for (const toy of scene.toys) {
       const [diameterX, diameterY] = toyDiameterPixels(
@@ -660,163 +671,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     );
 
     gl.drawArrays(gl.LINES, 0, data.length / 6);
-  }
-
-  private pushDelightGeometry(
-    frame: Readonly<DelightFrame>,
-    scene: Readonly<RenderScene>,
-    preferences: Readonly<VisualPreferences>,
-    discs: number[],
-    lines: number[],
-    width: number,
-    height: number,
-    dpr: number,
-  ): void {
-    const minDimension = Math.min(width, height);
-    const glowScale = preferences.reduceBloom ? 0.58 : 1;
-    const primary = scene.environment.primary;
-    const secondary = scene.environment.secondary;
-    const primaryColor = (alpha: number): RenderColor => [
-      primary[0],
-      primary[1],
-      primary[2],
-      Math.max(0, Math.min(1, alpha * glowScale)),
-    ];
-    const secondaryColor = (alpha: number): RenderColor => [
-      secondary[0],
-      secondary[1],
-      secondary[2],
-      Math.max(0, Math.min(1, alpha * glowScale)),
-    ];
-
-    if (frame.constellation) {
-      const { points, strength } = frame.constellation;
-
-      for (let index = 1; index < points.length; index += 1) {
-        const previous = points[index - 1];
-        const point = points[index];
-
-        if (!previous || !point) {
-          continue;
-        }
-
-        pushLine(
-          lines,
-          previous.x * width,
-          previous.y * height,
-          point.x * width,
-          point.y * height,
-          secondaryColor(strength * 0.12),
-        );
-      }
-
-      for (const point of points) {
-        const radius = Math.max(
-          1,
-          dpr * (1.2 + strength * 1.4),
-        );
-
-        pushDisc(
-          discs,
-          point.x * width,
-          point.y * height,
-          radius,
-          radius,
-          primaryColor(strength * 0.34),
-        );
-      }
-    }
-
-    if (frame.alignment) {
-      for (const point of frame.alignment.points) {
-        pushLine(
-          lines,
-          scene.listener.x * width,
-          scene.listener.y * height,
-          point.x * width,
-          point.y * height,
-          primaryColor(frame.alignment.strength * 0.085),
-        );
-      }
-    }
-
-    if (frame.mote) {
-      const tail = 0.16;
-      const tailX = frame.mote.head.x
-        + (frame.mote.from.x - frame.mote.head.x) * tail;
-      const tailY = frame.mote.head.y
-        + (frame.mote.from.y - frame.mote.head.y) * tail;
-
-      pushLine(
-        lines,
-        tailX * width,
-        tailY * height,
-        frame.mote.head.x * width,
-        frame.mote.head.y * height,
-        secondaryColor(frame.mote.strength * 0.22),
-      );
-      pushDisc(
-        discs,
-        frame.mote.head.x * width,
-        frame.mote.head.y * height,
-        Math.max(1, dpr * 1.7),
-        Math.max(1, dpr * 1.7),
-        primaryColor(frame.mote.strength * 0.62),
-      );
-    }
-
-    if (frame.orbit) {
-      const radius = minDimension * frame.orbit.radius;
-
-      for (let index = 0; index < 3; index += 1) {
-        const angle = frame.orbit.phase
-          + (Math.PI * 2 * index) / 3;
-        const x = scene.listener.x * width
-          + Math.cos(angle) * radius;
-        const y = scene.listener.y * height
-          + Math.sin(angle) * radius;
-        const dotRadius = Math.max(1, dpr * 1.45);
-
-        pushDisc(
-          discs,
-          x,
-          y,
-          dotRadius,
-          dotRadius,
-          secondaryColor(frame.orbit.strength * 0.48),
-        );
-      }
-    }
-
-    if (frame.silenceDust) {
-      const fall = preferences.reduceMotion
-        ? 0
-        : frame.silenceDust.progress * 0.1;
-
-      for (const [index, point] of frame.silenceDust.points.entries()) {
-        const y = Math.min(
-          0.94,
-          point.y
-            + fall * (0.42 + (index % 3) * 0.16),
-        );
-        const radius = Math.max(
-          0.65,
-          dpr * (0.72 + (index % 3) * 0.18),
-        );
-
-        pushDisc(
-          discs,
-          point.x * width,
-          y * height,
-          radius,
-          radius,
-          primaryColor(
-            frame.silenceDust.strength
-            * (0.11 + (index % 2) * 0.035),
-          ),
-        );
-      }
-    }
   }
 
   private pushEventDiscs(
