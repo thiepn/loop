@@ -6106,3 +6106,64 @@ a:focus-visible,
     transition: none;
   }
 }
+
+
+/* Visual V2 Phase 15 — final visual QA, resilience & polish */
+
+.playground-topbar,
+.brand,
+.world-heading {
+  min-width: 0;
+}
+
+.world-heading {
+  max-width: min(38vw, 420px);
+}
+
+.world-heading > :is(strong, span) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .playground-topbar-actions button,
+  .persistence-topbar-tools button {
+    min-width: 44px;
+  }
+}
+
+@media (forced-colors: active) {
+  .playground-shell .world-renderer-v2 {
+    opacity: 0 !important;
+  }
+
+  .playground-shell[data-renderer-v2] :is(
+    .orb-visual,
+    .field-surface,
+    .toy-surface,
+    .toy-symbol,
+    .portal-exit-surface,
+    .link-path,
+    .link-node,
+    .listener-rings,
+    .listener-dot
+  ) {
+    opacity: 1 !important;
+  }
+
+  :is(
+    .play-toggle,
+    .visual-settings-button,
+    .persistence-topbar-tools button,
+    .playground-dock,
+    .presentation-exit-button
+  ) {
+    border-color: ButtonText;
+    color: ButtonText;
+    background: Canvas;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+}
