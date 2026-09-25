@@ -120,7 +120,7 @@ describe('Visual V2 Phase 16 delight', () => {
     let rareBars = 0;
 
     for (let bar = 0; bar < 512; bar += 1) {
-      if (frame(bar).kinds.length > 0) {
+      if (frame(bar).mask !== 0) {
         rareBars += 1;
       }
     }
@@ -129,18 +129,14 @@ describe('Visual V2 Phase 16 delight', () => {
     expect(rareBars).toBeLessThan(120);
   });
 
-  it('creates constellation, mote, alignment and orbit moments over a long deterministic run', () => {
-    const seen = new Set<string>();
+  it('creates every rare delight family over a long deterministic run', () => {
+    let mask = 0;
 
     for (let bar = 0; bar < 2048; bar += 1) {
-      for (const kind of frame(bar).kinds) {
-        seen.add(kind);
-      }
+      mask |= frame(bar).mask;
     }
 
-    expect(seen).toEqual(
-      new Set(['constellation', 'mote', 'alignment', 'orbit']),
-    );
+    expect(mask & 15).toBe(15);
   });
 
   it('uses silent bars for bounded settle dust', () => {
@@ -149,7 +145,7 @@ describe('Visual V2 Phase 16 delight', () => {
       progress: 0.6,
     });
 
-    expect(result.kinds).toContain('silence');
+    expect(result.mask & 16).toBe(16);
     expect(result.dots).toHaveLength(8);
     expect(result.dots.every((dot) => dot.color[3] <= 1)).toBe(true);
   });
@@ -162,9 +158,7 @@ describe('Visual V2 Phase 16 delight', () => {
         { silent: true },
       );
 
-      expect(result.kinds).not.toContain('mote');
-      expect(result.kinds).not.toContain('orbit');
-      expect(result.kinds).not.toContain('silence');
+      expect(result.mask & (2 | 8 | 16)).toBe(0);
     }
   });
 
@@ -175,7 +169,7 @@ describe('Visual V2 Phase 16 delight', () => {
         { ...HIGH, reduceMotion: true },
       );
 
-      expect(result.kinds).toEqual([]);
+      expect(result.mask).toBe(0);
     }
   });
 
@@ -192,7 +186,7 @@ describe('Visual V2 Phase 16 delight', () => {
       { silent: true, progress: 0.8 },
     );
 
-    expect(early.kinds).toEqual(['silence']);
+    expect(early.mask).toBe(16);
     expect(late.dots).toEqual(early.dots);
   });
 
