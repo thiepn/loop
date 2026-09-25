@@ -196,9 +196,9 @@ export function deriveDelightFrame(
     };
   }
 
-  const hit = (
+  const hitEvent = (
     hitSample?.event.kind === 'choreography-hit'
-      ? hitSample
+      ? hitSample.event
       : null
   );
   const alignmentRoll = hash01(seed, 37);
@@ -212,16 +212,16 @@ export function deriveDelightFrame(
   );
   const alignment = (
     rareMotionAllowed
-    && hit
-    && hit.event.simultaneousCount >= 2
+    && hitEvent
+    && hitEvent.simultaneousCount >= 2
     && activeCount >= 2
     && alignmentRoll < alignmentChance
   )
     ? {
         points: alignmentPoints,
         strength: (
-          Math.pow(1 - hit.progress, 1.8)
-          * hit.event.intensity
+          Math.pow(1 - (hitSample?.progress ?? 1), 1.8)
+          * hitEvent.intensity
         ),
       }
     : null;
