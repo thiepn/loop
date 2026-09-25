@@ -25,6 +25,10 @@ import {
   deriveTransitionFrame,
   type TransitionFrame,
 } from './TransitionModel';
+import {
+  deriveDelightFrame,
+  type DelightFrame,
+} from './DelightModel';
 import { CanvasOrbMaterialLayer } from './CanvasOrbMaterialLayer';
 import { CanvasTrailLayer } from './CanvasTrailLayer';
 import {
@@ -107,6 +111,14 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       events,
       preferences,
     );
+    const delight = deriveDelightFrame(
+      scene,
+      events,
+      preferences,
+      width,
+      height,
+      dpr,
+    );
     const particles = environmentParticleLayout(
       scene.environment,
       preferences,
@@ -132,6 +144,7 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       height,
       false,
     );
+    this.drawDelight(delight);
 
     this.fieldLayer.render(
       scene.fields,
@@ -716,6 +729,19 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
         particle.alpha * (scene.playing ? 1 : 0.72),
       );
       context.fill();
+    }
+  }
+
+  private drawDelight(
+    frame: Readonly<DelightFrame>,
+  ): void {
+    for (const dot of frame.dots) {
+      this.drawCircle(
+        dot[0],
+        dot[1],
+        dot[2],
+        dot[3],
+      );
     }
   }
 

@@ -15,6 +15,7 @@ import { WebGLListenerLayer } from './WebGLListenerLayer';
 import { deriveLightFrame } from './LightModel';
 import { deriveChoreographyFrame } from './ChoreographyModel';
 import { deriveTransitionFrame } from './TransitionModel';
+import { deriveDelightFrame } from './DelightModel';
 import { WebGLFieldMaterialLayer } from './WebGLFieldMaterialLayer';
 import { WebGLOrbMaterialLayer } from './WebGLOrbMaterialLayer';
 import { WebGLTrailLayer } from './WebGLTrailLayer';
@@ -68,27 +69,6 @@ const DISC_FRAGMENT_SOURCE = '#version 300 es\n'
   + '  float edge = 1.0 - smoothstep(0.82, 1.0, distance_to_center);\n'
   + '  float body = 0.82 + (1.0 - distance_to_center) * 0.18;\n'
   + '  out_color = vec4(v_color.rgb * body, v_color.a * edge);\n'
-  + '}';
-
-const LINE_VERTEX_SOURCE = '#version 300 es\n'
-  + 'in vec2 a_position;\n'
-  + 'in vec4 a_color;\n'
-  + 'uniform vec2 u_resolution;\n'
-  + 'out vec4 v_color;\n'
-  + 'void main() {\n'
-  + '  vec2 zeroToOne = a_position / u_resolution;\n'
-  + '  vec2 clip = zeroToOne * 2.0 - 1.0;\n'
-  + '  clip.y = -clip.y;\n'
-  + '  gl_Position = vec4(clip, 0.0, 1.0);\n'
-  + '  v_color = a_color;\n'
-  + '}';
-
-const LINE_FRAGMENT_SOURCE = '#version 300 es\n'
-  + 'precision mediump float;\n'
-  + 'in vec4 v_color;\n'
-  + 'out vec4 out_color;\n'
-  + 'void main() {\n'
-  + '  out_color = v_color;\n'
   + '}';
 
 function compileShader(
@@ -204,7 +184,6 @@ function pushDisc(
 export class WebGL2WorldRenderer implements WorldRenderer {
   public readonly kind = 'webgl2' as const;
   private disc: DiscProgramResources | null = null;
-  private line: ProgramResources | null = null;
   private environment: WebGLEnvironmentLayer | null = null;
   private crossLayer: WebGLCrossSystemLayer | null = null;
   private fieldLayer: WebGLFieldMaterialLayer | null = null;
@@ -240,9 +219,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     timestampMs: number,
   ): void {
     const disc = this.disc;
-    const line = this.line;
-
-    if (!disc || !line || this.gl.isContextLost()) {
+    if (!disc || this.gl.isContextLost()) {
       return;
     }
 
@@ -269,7 +246,26 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       events,
       preferences,
     );
+    const delight = deriveDelightFrame(
+      scene,
+      events,
+      preferences,
+      width,
+      height,
+      dpr,
+    );
     const discVertices: number[] = [];
+
+    for (const item of delight.dots) {
+      pushDisc(
+        discVertices,
+        item[0],
+        item[1],
+        item[2],
+        item[2],
+        item[3],
+      );
+    }
 
     for (const toy of scene.toys) {
       const [diameterX, diameterY] = toyDiameterPixels(
@@ -456,12 +452,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       DISC_VERTEX_SOURCE,
       DISC_FRAGMENT_SOURCE,
     );
-    const lineProgram = createProgram(
-      gl,
-      LINE_VERTEX_SOURCE,
-      LINE_FRAGMENT_SOURCE,
-    );
-
     this.disc = {
       program: discProgram,
       buffer: requiredBuffer(gl),
@@ -469,14 +459,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       localLocation: gl.getAttribLocation(discProgram, 'a_local'),
       colorLocation: gl.getAttribLocation(discProgram, 'a_color'),
       resolutionLocation: requiredUniform(gl, discProgram, 'u_resolution'),
-    };
-
-    this.line = {
-      program: lineProgram,
-      buffer: requiredBuffer(gl),
-      positionLocation: gl.getAttribLocation(lineProgram, 'a_position'),
-      colorLocation: gl.getAttribLocation(lineProgram, 'a_color'),
-      resolutionLocation: requiredUniform(gl, lineProgram, 'u_resolution'),
     };
 
     this.environment = new WebGLEnvironmentLayer(gl);
@@ -513,11 +495,6 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       this.disc = null;
     }
 
-    if (this.line) {
-      this.gl.deleteBuffer(this.line.buffer);
-      this.gl.deleteProgram(this.line.program);
-      this.line = null;
-    }
   }
 
   private drawDiscs(
