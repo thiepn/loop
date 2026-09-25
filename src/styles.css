@@ -4298,7 +4298,10 @@ a:focus-visible,
   }
 
   .pwa-update-banner {
-    top: max(8px, env(safe-area-inset-top));
+    top: max(
+      58px,
+      calc(env(safe-area-inset-top) + 50px)
+    );
     width: calc(100% - 16px);
   }
 }
