@@ -6139,6 +6139,10 @@ a:focus-visible,
     opacity: 0 !important;
   }
 
+  .playground-shell[data-presentation="true"] .presentation-dom-stage {
+    opacity: 1 !important;
+  }
+
   .playground-shell[data-renderer-v2] :is(
     .orb-visual,
     .field-surface,
