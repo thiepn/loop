@@ -299,6 +299,45 @@ test('complete clean-user V1 workflow survives the release-candidate matrix', as
   expect(pageErrors).toEqual([]);
 });
 
+test('presentation mode frames the World without changing creative coordinates', async ({
+  page,
+}, testInfo) => {
+  await openStarter(page, testInfo, 'weird');
+  await stopPlayback(page);
+
+  const shell = page.locator('.playground-shell');
+  const orb = page.locator('.sound-orb').first();
+  const before = {
+    x: await orb.getAttribute('data-x'),
+    y: await orb.getAttribute('data-y'),
+  };
+
+  await activate(page.locator('[data-presentation-enter]'), testInfo);
+  await expect(shell).toHaveAttribute('data-presentation', 'true');
+  await expect(page.locator('[data-presentation-exit]')).toBeVisible();
+
+  const transform = await page.locator('.world-renderer-v2').evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  expect(transform).not.toBe('none');
+
+  if (isTouchProject(testInfo)) {
+    const box = await page.locator('[data-presentation-exit]').boundingBox();
+    expect(box).not.toBeNull();
+
+    if (box) {
+      expect(box.width).toBeGreaterThanOrEqual(48);
+      expect(box.height).toBeGreaterThanOrEqual(48);
+    }
+  }
+
+  await activate(page.locator('[data-presentation-exit]'), testInfo);
+  await expect(shell).not.toHaveAttribute('data-presentation', 'true');
+  await expect(orb).toHaveAttribute('data-x', before.x ?? '');
+  await expect(orb).toHaveAttribute('data-y', before.y ?? '');
+  await expectNoFatalShell(page);
+});
+
 test('recording either completes or degrades with an explicit unsupported state', async ({
   page,
 }, testInfo) => {

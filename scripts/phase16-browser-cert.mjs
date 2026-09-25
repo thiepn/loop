@@ -700,6 +700,64 @@ async function main() {
       })()
     `);
 
+    const presentation = await client.evaluate(`
+      (async () => {
+        const nextFrame = () => new Promise(requestAnimationFrame);
+        const enter = document.querySelector(
+          '[data-presentation-enter]'
+        );
+
+        if (!(enter instanceof HTMLButtonElement) || enter.disabled) {
+          throw new Error('Presentation entry is unavailable.');
+        }
+
+        enter.click();
+        await nextFrame();
+        await nextFrame();
+
+        const shell = document.querySelector('.playground-shell');
+        const renderer = document.querySelector('.world-renderer-v2');
+
+        if (!(shell instanceof HTMLElement) || !(renderer instanceof HTMLElement)) {
+          throw new Error('Presentation surface failed to mount.');
+        }
+
+        const active = shell.dataset.presentation === 'true';
+        const transformApplied = getComputedStyle(renderer).transform !== 'none';
+        const gaps = [];
+        let previous = performance.now();
+
+        for (let frame = 0; frame < 120; frame += 1) {
+          const current = await nextFrame();
+          if (frame >= 5) {
+            gaps.push(current - previous);
+          }
+          previous = current;
+        }
+
+        const sorted = [...gaps].sort((a, b) => a - b);
+        const exit = document.querySelector(
+          '[data-presentation-exit]'
+        );
+
+        if (!(exit instanceof HTMLButtonElement)) {
+          throw new Error('Presentation exit control is unavailable.');
+        }
+
+        exit.click();
+        await nextFrame();
+        await nextFrame();
+
+        return {
+          active,
+          transformApplied,
+          exited: shell.dataset.presentation !== 'true',
+          p95Ms: sorted[Math.floor(sorted.length * 0.95)] ?? 0,
+          maxMs: Math.max(...gaps),
+        };
+      })()
+    `, { userGesture: true });
+
     await client.send('Page.setWebLifecycleState', {
       state: 'frozen',
     });
@@ -771,6 +829,7 @@ async function main() {
       frameLayoutDurationMs,
       frameRecalcStyleDurationMs,
       modalChurnMs: churn,
+      presentation,
       heapBeforeBytes: heapBefore,
       heapAfterBytes: heapAfter,
       heapGrowthBytes: heapAfter - heapBefore,
@@ -863,6 +922,33 @@ async function main() {
       budgets.longTaskMaxMs,
       ' ms',
     );
+
+    assertBudget(
+      failures,
+      'Presentation animation-frame p95',
+      presentation.p95Ms,
+      budgets.headlessFrameP95Ms,
+      ' ms',
+    );
+    assertBudget(
+      failures,
+      'Presentation animation-frame max',
+      presentation.maxMs,
+      budgets.headlessFrameMaxMs,
+      ' ms',
+    );
+
+    if (!presentation.active || !presentation.transformApplied) {
+      failures.push(
+        'Presentation mode did not activate its camera transform.',
+      );
+    }
+
+    if (!presentation.exited) {
+      failures.push(
+        'Presentation mode did not exit cleanly.',
+      );
+    }
 
     if (!recovery.playgroundMounted) {
       failures.push(

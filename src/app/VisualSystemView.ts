@@ -1,10 +1,6 @@
-import type { SoundRole } from '../core/sounds/SoundDefinition';
 import {
-  profileForVisualPreferences,
-  type VisualPreferences,
   type VisualQuality,
 } from '../core/visual/VisualQuality';
-import type { NormalizedPoint } from '../core/world/SoundOrb';
 import type { AppState } from './state';
 import { ModalFocusController } from './ModalFocusController';
 
@@ -17,20 +13,8 @@ export interface VisualSystemCallbacks {
   readonly onReduceBloom: (value: boolean) => void;
 }
 
-const ROLE_COLORS: Record<SoundRole, string> = {
-  beat: '#fb7185',
-  percussion: '#fbbf24',
-  bass: '#22d3ee',
-  harmony: '#a78bfa',
-  melody: '#34d399',
-  texture: '#60a5fa',
-  voice: '#f472b6',
-};
-
 export class VisualSystemView {
   private readonly shell: HTMLElement;
-  private readonly ambientLayer: HTMLElement;
-  private readonly burstLayer: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
   private readonly settingsBackdrop: HTMLElement;
   private readonly settingsFocus: ModalFocusController;
@@ -38,48 +22,20 @@ export class VisualSystemView {
   private readonly reduceMotionInput: HTMLInputElement;
   private readonly reduceParticlesInput: HTMLInputElement;
   private readonly reduceBloomInput: HTMLInputElement;
-  private readonly positions = new Map<string, NormalizedPoint>();
-  private readonly cleanupTimers = new Set<ReturnType<typeof setTimeout>>();
-  private roles = new Map<string, SoundRole>();
-  private preferences: VisualPreferences = {
-    quality: 'balanced',
-    reduceMotion: false,
-    reduceParticles: false,
-    reduceBloom: false,
-  };
 
   public constructor(
     root: HTMLElement,
     callbacks: VisualSystemCallbacks,
   ) {
     const shell = root.querySelector<HTMLElement>('.playground-shell');
-    const canvas = root.querySelector<HTMLElement>('[data-canvas]');
     const topbarActions = root.querySelector<HTMLElement>('[data-topbar-actions]');
     const playButton = topbarActions?.querySelector<HTMLElement>('[data-play]');
 
-    if (!shell || !canvas || !topbarActions || !playButton) {
+    if (!shell || !topbarActions || !playButton) {
       throw new Error('Visual system requires the playground shell.');
     }
 
     this.shell = shell;
-    const effectsLayer = document.createElement('div');
-    effectsLayer.className = 'visual-effects-layer';
-    effectsLayer.setAttribute('aria-hidden', 'true');
-
-    const ambientLayer = document.createElement('div');
-    ambientLayer.className = 'ambient-particle-layer';
-
-    const burstLayer = document.createElement('div');
-    burstLayer.className = 'orb-burst-layer';
-
-    effectsLayer.append(
-      ambientLayer,
-      burstLayer,
-    );
-    canvas.prepend(effectsLayer);
-
-    this.ambientLayer = ambientLayer;
-    this.burstLayer = burstLayer;
 
     const settingsButton = document.createElement('button');
     settingsButton.type = 'button';
@@ -230,31 +186,6 @@ export class VisualSystemView {
   }
 
   public render(state: Readonly<AppState>): void {
-    this.preferences = {
-      quality: state.visualQuality,
-      reduceMotion: state.visualReduceMotion,
-      reduceParticles: state.visualReduceParticles,
-      reduceBloom: state.visualReduceBloom,
-    };
-
-    this.roles = new Map(
-      state.world.soundOrbs.map((orb) => [orb.id, orb.role]),
-    );
-
-    const liveIds = new Set(state.world.soundOrbs.map((orb) => orb.id));
-
-    for (const orb of state.world.soundOrbs) {
-      if (!this.positions.has(orb.id)) {
-        this.positions.set(orb.id, orb.position);
-      }
-    }
-
-    for (const orbId of [...this.positions.keys()]) {
-      if (!liveIds.has(orbId)) {
-        this.clearOrb(orbId);
-      }
-    }
-
     this.shell.dataset.visualQuality = state.visualQuality;
     this.shell.dataset.reduceMotion = String(state.visualReduceMotion);
     this.shell.dataset.reduceParticles = String(state.visualReduceParticles);
@@ -276,132 +207,11 @@ export class VisualSystemView {
     this.reduceMotionInput.checked = state.visualReduceMotion;
     this.reduceParticlesInput.checked = state.visualReduceParticles;
     this.reduceBloomInput.checked = state.visualReduceBloom;
-
-    this.syncAmbientParticles();
-  }
-
-  public pulseOrb(
-    orbId: string,
-    intensity: number,
-    livePosition?: NormalizedPoint,
-  ): void {
-    const role = this.roles.get(orbId);
-    const position = livePosition ?? this.positions.get(orbId);
-
-    if (livePosition) {
-      this.positions.set(orbId, livePosition);
-    }
-
-    if (!role || !position) {
-      return;
-    }
-
-    const profile = profileForVisualPreferences(this.preferences);
-    const count = profile.burstParticleCount;
-
-    if (count <= 0) {
-      return;
-    }
-
-    const amount = Math.max(0.2, Math.min(1, intensity));
-    const radius = role === 'bass'
-      ? 34
-      : role === 'texture'
-        ? 40
-        : role === 'percussion'
-          ? 24
-          : 30;
-
-    for (let index = 0; index < count; index += 1) {
-      const particle = document.createElement('span');
-      particle.className = 'orb-burst-particle';
-      particle.dataset.role = role;
-      particle.style.left = `${position.x * 100}%`;
-      particle.style.top = `${position.y * 100}%`;
-      particle.style.setProperty('--burst-color', ROLE_COLORS[role]);
-
-      const angle = (
-        (Math.PI * 2 * index) / count
-        + ((orbId.length * 0.37) % 1)
-      );
-      const spread = radius * (
-        0.65
-        + ((index * 37 + orbId.length) % 10) / 22
-      );
-      particle.style.setProperty(
-        '--burst-x',
-        `${Math.cos(angle) * spread * amount}px`,
-      );
-      particle.style.setProperty(
-        '--burst-y',
-        `${Math.sin(angle) * spread * amount}px`,
-      );
-
-      this.burstLayer.append(particle);
-
-      const timer = setTimeout(() => {
-        this.cleanupTimers.delete(timer);
-        particle.remove();
-      }, this.preferences.reduceMotion ? 220 : 520);
-
-      this.cleanupTimers.add(timer);
-    }
-  }
-
-  public clearOrb(orbId: string): void {
-    this.positions.delete(orbId);
   }
 
   public destroy(): void {
     this.settingsFocus.destroy();
-
-    for (const timer of this.cleanupTimers) {
-      clearTimeout(timer);
-    }
-
-    this.cleanupTimers.clear();
-
-    this.positions.clear();
-    this.ambientLayer.parentElement?.remove();
     this.settingsButton.remove();
     this.settingsBackdrop.remove();
   }
-
-  private syncAmbientParticles(): void {
-    const profile = profileForVisualPreferences(this.preferences);
-    const rendererActive = this.shell.dataset.rendererV2 === 'webgl2'
-      || this.shell.dataset.rendererV2 === 'canvas2d';
-    const desired = rendererActive
-      ? 0
-      : profile.ambientParticleCount;
-    const current = this.ambientLayer.children.length;
-
-    if (current > desired) {
-      while (this.ambientLayer.children.length > desired) {
-        this.ambientLayer.lastElementChild?.remove();
-      }
-      return;
-    }
-
-    for (let index = current; index < desired; index += 1) {
-      const particle = document.createElement('span');
-      particle.className = 'ambient-particle';
-
-      const x = (index * 37 + 17) % 97;
-      const y = (index * 61 + 29) % 91;
-      const size = 1 + (index % 3);
-      const delay = -(index % 11) * 0.73;
-      const duration = 9 + (index % 7) * 1.6;
-
-      particle.style.left = `${x}%`;
-      particle.style.top = `${y}%`;
-      particle.style.width = `${size}px`;
-      particle.style.height = `${size}px`;
-      particle.style.animationDelay = `${delay}s`;
-      particle.style.animationDuration = `${duration}s`;
-
-      this.ambientLayer.append(particle);
-    }
-  }
-
 }

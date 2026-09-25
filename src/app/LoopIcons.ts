@@ -19,7 +19,9 @@ export type LoopIconName =
   | 'record'
   | 'clear'
   | 'check'
-  | 'download';
+  | 'download'
+  | 'present'
+  | 'exit';
 
 const ICONS: Record<LoopIconName, string> = {
   play: '<path d="m9 7 8 5-8 5Z" fill="currentColor" stroke="none"/>',
@@ -43,6 +45,8 @@ const ICONS: Record<LoopIconName, string> = {
   clear: '<path d="m5 16 8-10 6 5-7 9H8Z"/><path d="m10 10 6 5"/>',
   check: '<path d="m5 12 4 4 10-10"/>',
   download: '<path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/>',
+  present: '<path d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5"/>',
+  exit: '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>',
 };
 
 export function loopIcon(name: LoopIconName): string {
