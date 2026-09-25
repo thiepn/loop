@@ -96,6 +96,7 @@ describe('Visual V2 environment model', () => {
 
     expect(dense.density).toBeGreaterThan(sparse.density);
     expect(dense.detailScale).toBeLessThan(sparse.detailScale);
+    expect(sparse.detailScale).toBeLessThanOrEqual(1);
     expect(dense.detailScale).toBeGreaterThanOrEqual(0.68);
   });
 
