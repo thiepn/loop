@@ -61,9 +61,9 @@
 - [x] density/detail scaling is covered.
 - [x] composition-derived palette differentiation is covered.
 - [x] focus-aware presentation framing is covered.
-- [ ] exact final tree passes strict typecheck/unit suite.
-- [ ] production JS+CSS raw/gzip budgets pass.
-- [ ] browser performance certification passes.
+- [x] exact final tree passes strict typecheck/unit suite.
+- [x] production JS+CSS raw/gzip budgets pass.
+- [x] browser performance certification passes.
 - [ ] Release Candidate browser matrix passes after merge.
 
 ## Exit condition
