@@ -40,6 +40,7 @@ import {
   createEmptyWorld,
   type WorldDocument,
 } from '../src/core/world/World';
+import { projectWorldToRenderScene } from '../src/core/visual/v2/SceneAdapter';
 
 const PERF_BUDGETS_MS = {
   motionTenMinutes: 1_500,
@@ -47,6 +48,7 @@ const PERF_BUDGETS_MS = {
   magicThousand: 1_000,
   persistenceChurn: 3_000,
   backupHundred: 1_000,
+  sceneProjectionMinute: 4_000,
 } as const;
 
 function measured<T>(
@@ -255,6 +257,69 @@ describe('Phase 16 performance and soak certification', () => {
 
     expect(Number.isFinite(checksum)).toBe(true);
     expect(elapsedMs).toBeLessThan(PERF_BUDGETS_MS.motionTenMinutes);
+  }, 15_000);
+
+  it('projects one simulated minute of 60 Hz max-World visual scenes inside the render-prep budget', () => {
+    const world = maxComplexityWorld();
+    const positions = new Map(
+      world.soundOrbs.map((orb) => [
+        orb.id,
+        { ...orb.position },
+      ]),
+    );
+    const frames = 60 * 60;
+
+    const { elapsedMs, value: checksum } = measured(
+      `${frames.toLocaleString()} max-World visual scene projections`,
+      () => {
+        let checksumValue = 0;
+
+        for (let frame = 0; frame < frames; frame += 1) {
+          const orb = world.soundOrbs[frame % world.soundOrbs.length]!;
+          const base = orb.position;
+          positions.set(orb.id, {
+            x: Math.min(
+              0.95,
+              Math.max(
+                0.05,
+                base.x + Math.sin(frame * 0.017) * 0.035,
+              ),
+            ),
+            y: Math.min(
+              0.95,
+              Math.max(
+                0.05,
+                base.y + Math.cos(frame * 0.013) * 0.035,
+              ),
+            ),
+          });
+
+          const scene = projectWorldToRenderScene(
+            world,
+            {
+              selectedOrbId: null,
+              selectedFieldId: null,
+              selectedToyId: null,
+              selectedLinkId: null,
+              playing: true,
+              recording: false,
+              liveOrbPositions: positions,
+            },
+          );
+
+          checksumValue += scene.orbs[
+            frame % scene.orbs.length
+          ]?.cross.neighborLight ?? 0;
+        }
+
+        return checksumValue;
+      },
+    );
+
+    expect(Number.isFinite(checksum)).toBe(true);
+    expect(elapsedMs).toBeLessThan(
+      PERF_BUDGETS_MS.sceneProjectionMinute,
+    );
   }, 15_000);
 
   it('schedules ten simulated minutes at the production 25 ms pulse cadence without duplicates or stale ticks', () => {
