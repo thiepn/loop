@@ -56,6 +56,8 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
   private readonly listenerLayer: CanvasListenerLayer;
   private readonly trailLayer: CanvasTrailLayer;
   private readonly orbMaterial: CanvasOrbMaterialLayer;
+  private particleKey = '';
+  private particles: ReturnType<typeof environmentParticleLayout> = [];
 
   public constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -119,10 +121,22 @@ export class Canvas2DWorldRenderer implements WorldRenderer {
       height,
       dpr,
     );
-    const particles = environmentParticleLayout(
-      scene.environment,
-      preferences,
-    );
+    const particleKey = [
+      scene.environment.seed,
+      scene.environment.particleDensity,
+      preferences.quality,
+      preferences.reduceParticles,
+    ].join(':');
+
+    if (particleKey !== this.particleKey) {
+      this.particleKey = particleKey;
+      this.particles = environmentParticleLayout(
+        scene.environment,
+        preferences,
+      );
+    }
+
+    const particles = this.particles;
 
     this.drawEnvironment(
       scene,
