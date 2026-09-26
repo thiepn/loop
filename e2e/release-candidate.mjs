@@ -586,10 +586,10 @@ test('reduced particles and glow remain effective in semantic fallback visuals',
   );
   expect(Number.parseFloat(bloom)).toBeLessThanOrEqual(0.22);
 
-  await expect(page.locator('.orb-visual').first()).toHaveCSS(
-    'filter',
-    'none',
+  const orbFilter = await page.locator('.orb-visual').first().evaluate(
+    (element) => getComputedStyle(element).filter,
   );
+  expect(orbFilter).not.toContain('drop-shadow');
   await expectNoFatalShell(page);
 });
 

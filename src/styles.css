@@ -6209,6 +6209,13 @@ a:focus-visible,
   box-shadow: none;
 }
 
+.playground-shell[data-reduce-bloom="true"]
+  .world-canvas.onboarding-move
+  .sound-orb:first-child
+  .orb-visual {
+  filter: brightness(1.1);
+}
+
 @media (prefers-contrast: more) {
   :is(
     button,
