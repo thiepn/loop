@@ -1,6 +1,8 @@
 import type { VisualPreferences, VisualQuality } from '../VisualQuality';
 import type { RendererKind } from './RenderTypes';
 
+export type RenderPerformancePressure = 0 | 1 | 2;
+
 export interface RendererSupport {
   readonly webgl2: boolean;
   readonly canvas2d: boolean;
@@ -69,6 +71,28 @@ function basePolicy(quality: VisualQuality): RenderQualityPolicy {
   }
 }
 
+export function performanceAdjustedVisualPreferences(
+  preferences: Readonly<VisualPreferences>,
+  pressure: RenderPerformancePressure,
+): VisualPreferences {
+  if (pressure === 0) {
+    return preferences;
+  }
+
+  const quality: VisualQuality = pressure === 2
+    ? 'battery'
+    : preferences.quality === 'high'
+      ? 'balanced'
+      : 'battery';
+
+  return {
+    ...preferences,
+    quality,
+    reduceParticles: preferences.reduceParticles || pressure === 2,
+    reduceBloom: preferences.reduceBloom || pressure === 2,
+  };
+}
+
 export function renderPolicyForPreferences(
   preferences: VisualPreferences,
 ): RenderQualityPolicy {
@@ -105,19 +129,29 @@ export function clampRenderDevicePixelRatio(
 export function motionRenderIntervalMs(
   renderer: RendererKind,
   quality: VisualQuality,
+  pressure: RenderPerformancePressure = 0,
 ): number {
+  if (renderer === 'webgl2') {
+    return pressure === 0
+      ? 0
+      : pressure === 1
+        ? 1000 / 60
+        : 1000 / 40;
+  }
+
   if (renderer !== 'canvas2d') {
     return 0;
   }
 
-  switch (quality) {
-    case 'high':
-      return 1000 / 60;
-    case 'balanced':
-      return 1000 / 40;
-    case 'battery':
-      return 1000 / 30;
-  }
+  const base = quality === 'high'
+    ? 1000 / 60
+    : quality === 'balanced'
+      ? 1000 / 40
+      : 1000 / 30;
+
+  return pressure === 2
+    ? Math.max(base, 1000 / 24)
+    : base;
 }
 
 

@@ -340,8 +340,11 @@ export class TrailHistory {
         : true,
     });
 
-    while (trail.points.length > policy.maxPoints) {
-      trail.points.shift();
+    if (trail.points.length > policy.maxPoints) {
+      trail.points.splice(
+        0,
+        trail.points.length - policy.maxPoints,
+      );
     }
 
     this.prune(timestampMs, preferences);
@@ -396,12 +399,25 @@ export class TrailHistory {
     }
 
     for (const [orbId, trail] of this.trails) {
-      const filtered = trail.points.filter(
-        (point) => nowMs - point.timestampMs <= policy.lifetimeMs,
-      );
+      let expired = 0;
 
-      if (filtered.length !== trail.points.length) {
-        trail.points = filtered;
+      while (
+        expired < trail.points.length
+        && nowMs - trail.points[expired]!.timestampMs > policy.lifetimeMs
+      ) {
+        expired += 1;
+      }
+
+      if (expired > 0) {
+        trail.points.splice(0, expired);
+        changed = true;
+      }
+
+      if (trail.points.length > policy.maxPoints) {
+        trail.points.splice(
+          0,
+          trail.points.length - policy.maxPoints,
+        );
         changed = true;
       }
 

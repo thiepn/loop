@@ -3,6 +3,7 @@ import {
   clampRenderDevicePixelRatio,
   renderPolicyForPreferences,
   motionRenderIntervalMs,
+  performanceAdjustedVisualPreferences,
   rendererDevicePixelRatio,
   selectRendererKind,
 } from '../src/core/visual/v2/RendererPolicy';
@@ -50,6 +51,46 @@ describe('Visual V2 renderer policy', () => {
     expect(motionRenderIntervalMs('canvas2d', 'high')).toBeCloseTo(16.67, 1);
     expect(motionRenderIntervalMs('canvas2d', 'balanced')).toBe(25);
     expect(motionRenderIntervalMs('canvas2d', 'battery')).toBeCloseTo(33.33, 1);
+  });
+
+  it('degrades only effective graphics policy under runtime pressure', () => {
+    const requested = {
+      quality: 'high' as const,
+      reduceMotion: false,
+      reduceParticles: false,
+      reduceBloom: false,
+    };
+
+    const reduced = performanceAdjustedVisualPreferences(
+      requested,
+      1,
+    );
+    const minimal = performanceAdjustedVisualPreferences(
+      requested,
+      2,
+    );
+
+    expect(reduced).toEqual({
+      ...requested,
+      quality: 'balanced',
+    });
+    expect(minimal).toEqual({
+      ...requested,
+      quality: 'battery',
+      reduceParticles: true,
+      reduceBloom: true,
+    });
+    expect(requested.quality).toBe('high');
+    expect(requested.reduceParticles).toBe(false);
+  });
+
+  it('throttles visual motion only when WebGL runtime pressure is active', () => {
+    expect(motionRenderIntervalMs('webgl2', 'high', 0)).toBe(0);
+    expect(motionRenderIntervalMs('webgl2', 'balanced', 1))
+      .toBeCloseTo(16.67, 1);
+    expect(motionRenderIntervalMs('webgl2', 'battery', 2)).toBe(25);
+    expect(motionRenderIntervalMs('canvas2d', 'battery', 2))
+      .toBeCloseTo(41.67, 1);
   });
 
   it('caps DPR by visual quality', () => {

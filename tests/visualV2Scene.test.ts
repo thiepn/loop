@@ -66,6 +66,31 @@ describe('Visual V2 scene adapter', () => {
     expect(world.soundOrbs[0]?.position).toEqual({ x: 0.2, y: 0.3 });
   });
 
+  it('reuses immutable World and Field derivations across motion frames', () => {
+    const world = createTestWorld();
+    const options = {
+      selectedOrbId: null,
+      selectedFieldId: null,
+      selectedToyId: null,
+      selectedLinkId: null,
+      playing: true,
+      recording: false,
+    };
+    const first = projectWorldToRenderScene(world, options);
+    const second = projectWorldToRenderScene(world, {
+      ...options,
+      liveOrbPositions: new Map([
+        ['beat', { x: 0.31, y: 0.44 }],
+      ]),
+    });
+
+    expect(second.environment).toBe(first.environment);
+    expect(second.fieldIntersections).toBe(first.fieldIntersections);
+    expect(second.fieldEnvironment).toBe(first.fieldEnvironment);
+    expect(second.fields[0]?.material).toBe(first.fields[0]?.material);
+    expect(second.orbs[0]?.position).not.toEqual(first.orbs[0]?.position);
+  });
+
   it('resolves live positions into both Orbs and Links', () => {
     const world = createTestWorld();
     const live = new Map([

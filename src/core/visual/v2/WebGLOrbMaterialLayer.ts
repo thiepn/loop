@@ -184,6 +184,7 @@ export class WebGLOrbMaterialLayer {
   private readonly choreoSettle: WebGLUniformLocation;
   private readonly timeMs: WebGLUniformLocation;
   private readonly pattern: WebGLUniformLocation;
+  private readonly patternData = new Float32Array(16);
 
   public constructor(
     private readonly gl: WebGL2RenderingContext,
@@ -446,10 +447,8 @@ export class WebGLOrbMaterialLayer {
       );
       gl.uniform1f(this.pulse, pulse.amount);
       gl.uniform1f(this.pulseProgress, pulse.progress);
-      gl.uniform1fv(
-        this.pattern,
-        new Float32Array(orb.material.pattern),
-      );
+      this.patternData.set(orb.material.pattern);
+      gl.uniform1fv(this.pattern, this.patternData);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }

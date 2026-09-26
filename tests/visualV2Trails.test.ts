@@ -263,6 +263,46 @@ describe('Visual V2 trail history', () => {
     expect(history.hasVisible(2000, BALANCED)).toBe(false);
   });
 
+  it('trims existing history in place when runtime quality steps down', () => {
+    const history = new TrailHistory();
+    const orb = createSoundOrb({
+      id: 'degrade',
+      soundId: 'melody-soft-pluck',
+      role: 'melody',
+      position: { x: 0.1, y: 0.1 },
+    });
+    const world = createEmptyWorld({
+      soundOrbs: [orb],
+    });
+
+    for (let index = 0; index < 24; index += 1) {
+      history.sampleOrb(
+        orb,
+        { x: 0.1 + index * 0.015, y: 0.2 },
+        index * 20,
+        1000,
+        700,
+        [],
+        [],
+        HIGH,
+      );
+    }
+
+    expect(history.snapshot(world)[0]?.points.length)
+      .toBeGreaterThan(8);
+
+    const battery = {
+      ...BALANCED,
+      quality: 'battery' as const,
+    };
+
+    expect(history.prune(480, battery)).toBe(true);
+    expect(history.snapshot(world)[0]?.points.length)
+      .toBeLessThanOrEqual(
+        trailPolicyForPreferences(battery).maxPoints,
+      );
+  });
+
   it('clears existing history when Reduce Motion becomes active', () => {
     const history = new TrailHistory();
     const orb = createSoundOrb({
