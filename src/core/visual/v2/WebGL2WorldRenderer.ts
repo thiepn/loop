@@ -43,34 +43,9 @@ interface DiscProgramResources extends ProgramResources {
   readonly localLocation: number;
 }
 
-const DISC_VERTEX_SOURCE = '#version 300 es\n'
-  + 'in vec2 a_position;\n'
-  + 'in vec2 a_local;\n'
-  + 'in vec4 a_color;\n'
-  + 'uniform vec2 u_resolution;\n'
-  + 'out vec2 v_local;\n'
-  + 'out vec4 v_color;\n'
-  + 'void main() {\n'
-  + '  vec2 zeroToOne = a_position / u_resolution;\n'
-  + '  vec2 clip = zeroToOne * 2.0 - 1.0;\n'
-  + '  clip.y = -clip.y;\n'
-  + '  gl_Position = vec4(clip, 0.0, 1.0);\n'
-  + '  v_local = a_local;\n'
-  + '  v_color = a_color;\n'
-  + '}';
+const DISC_VERTEX_SOURCE = "#version 300 es\nin vec2 a_position;in vec2 a_local;in vec4 a_color;uniform vec2 u_resolution;out vec2 v_local;out vec4 v_color;void main(){vec2 zeroToOne=a_position/u_resolution;vec2 clip=zeroToOne*2.0-1.0;clip.y=-clip.y;gl_Position=vec4(clip,0.0,1.0);v_local=a_local;v_color=a_color;}";
 
-const DISC_FRAGMENT_SOURCE = '#version 300 es\n'
-  + 'precision mediump float;\n'
-  + 'in vec2 v_local;\n'
-  + 'in vec4 v_color;\n'
-  + 'out vec4 out_color;\n'
-  + 'void main() {\n'
-  + '  float distance_to_center = length(v_local);\n'
-  + '  if (distance_to_center > 1.0) discard;\n'
-  + '  float edge = 1.0 - smoothstep(0.82, 1.0, distance_to_center);\n'
-  + '  float body = 0.82 + (1.0 - distance_to_center) * 0.18;\n'
-  + '  out_color = vec4(v_color.rgb * body, v_color.a * edge);\n'
-  + '}';
+const DISC_FRAGMENT_SOURCE = "#version 300 es\nprecision mediump float;in vec2 v_local;in vec4 v_color;out vec4 out_color;void main(){float distance_to_center=length(v_local);if(distance_to_center>1.0)discard;float edge=1.0-smoothstep(0.82,1.0,distance_to_center);float body=0.82+(1.0-distance_to_center)*0.18;out_color=vec4(v_color.rgb*body,v_color.a*edge);}";
 
 function compileShader(
   gl: WebGL2RenderingContext,
