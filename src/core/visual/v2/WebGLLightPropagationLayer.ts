@@ -19,9 +19,9 @@ function program(gl:WebGL2RenderingContext):WebGLProgram{
   if(!gl.getProgramParameter(p,gl.LINK_STATUS)){const m=gl.getProgramInfoLog(p)??'light program';gl.deleteProgram(p);throw new Error(m);}
   return p;
 }
+const DISC_CORNERS=[[-1,-1],[1,-1],[-1,1],[-1,1],[1,-1],[1,1]] as const;
 function pushDisc(target:number[],x:number,y:number,r:number,color:readonly[number,number,number,number]){
-  const c=[[-1,-1],[1,-1],[-1,1],[-1,1],[1,-1],[1,1]] as const;
-  for(const [lx,ly] of c) target.push(x+lx*r,y+ly*r,lx,ly,color[0],color[1],color[2],color[3]);
+  for(const [lx,ly] of DISC_CORNERS) target.push(x+lx*r,y+ly*r,lx,ly,color[0],color[1],color[2],color[3]);
 }
 function bezier(a:{x:number;y:number},b:{x:number;y:number},t:number){
   const cx=(a.x+b.x)/2; const cy=(a.y+b.y)/2-0.07;
