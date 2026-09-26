@@ -24,6 +24,90 @@ import {
   deriveFieldMaterial,
 } from './FieldMaterialModel';
 import { deriveOrbMaterial } from './OrbMaterialModel';
+const environmentCache = new WeakMap<
+  WorldDocument,
+  ReturnType<typeof deriveWorldEnvironment>
+>();
+const fieldSetCache = new WeakMap<
+  readonly EffectFieldDocument[],
+  {
+    readonly intersections: ReturnType<typeof deriveFieldIntersections>;
+    readonly environment: ReturnType<typeof deriveFieldEnvironment>;
+  }
+>();
+const fieldMaterialCache = new WeakMap<
+  EffectFieldDocument,
+  ReturnType<typeof deriveFieldMaterial>
+>();
+const orbIndexCache = new WeakMap<
+  WorldDocument,
+  ReadonlyMap<string, WorldDocument['soundOrbs'][number]>
+>();
+
+function worldEnvironment(
+  world: WorldDocument,
+): ReturnType<typeof deriveWorldEnvironment> {
+  let environment = environmentCache.get(world);
+
+  if (!environment) {
+    environment = deriveWorldEnvironment(world);
+    environmentCache.set(world, environment);
+  }
+
+  return environment;
+}
+
+function fieldSet(
+  fields: readonly EffectFieldDocument[],
+): {
+  readonly intersections: ReturnType<typeof deriveFieldIntersections>;
+  readonly environment: ReturnType<typeof deriveFieldEnvironment>;
+} {
+  let cached = fieldSetCache.get(fields);
+
+  if (!cached) {
+    const intersections = deriveFieldIntersections(fields);
+    cached = {
+      intersections,
+      environment: deriveFieldEnvironment(
+        fields,
+        intersections,
+      ),
+    };
+    fieldSetCache.set(fields, cached);
+  }
+
+  return cached;
+}
+
+function fieldMaterial(
+  field: EffectFieldDocument,
+): ReturnType<typeof deriveFieldMaterial> {
+  let material = fieldMaterialCache.get(field);
+
+  if (!material) {
+    material = deriveFieldMaterial(field);
+    fieldMaterialCache.set(field, material);
+  }
+
+  return material;
+}
+
+function orbIndex(
+  world: WorldDocument,
+): ReadonlyMap<string, WorldDocument['soundOrbs'][number]> {
+  let index = orbIndexCache.get(world);
+
+  if (!index) {
+    index = new Map(
+      world.soundOrbs.map((orb) => [orb.id, orb]),
+    );
+    orbIndexCache.set(world, index);
+  }
+
+  return index;
+}
+
 import {
   deriveCrossEnvironment,
   deriveFieldCrossInteraction,
@@ -152,17 +236,14 @@ export function projectWorldToRenderScene(
         world.soundOrbs,
         positions,
       ),
-      material: deriveFieldMaterial(field),
+      material: fieldMaterial(field),
     }),
   );
 
-  const fieldIntersections = deriveFieldIntersections(
-    fieldDocuments,
-  );
-  const fieldEnvironment = deriveFieldEnvironment(
-    fieldDocuments,
-    fieldIntersections,
-  );
+  const {
+    intersections: fieldIntersections,
+    environment: fieldEnvironment,
+  } = fieldSet(fieldDocuments);
 
   const toys = toyDocuments.map(
     (toy) => ({
@@ -182,6 +263,7 @@ export function projectWorldToRenderScene(
   );
 
   const links: RenderLink[] = [];
+  const indexedOrbs = orbIndex(world);
 
   for (const link of world.links) {
     const source = positions.get(link.sourceOrbId);
@@ -191,12 +273,8 @@ export function projectWorldToRenderScene(
       continue;
     }
 
-    const sourceOrb = world.soundOrbs.find(
-      (orb) => orb.id === link.sourceOrbId,
-    );
-    const targetOrb = world.soundOrbs.find(
-      (orb) => orb.id === link.targetOrbId,
-    );
+    const sourceOrb = indexedOrbs.get(link.sourceOrbId);
+    const targetOrb = indexedOrbs.get(link.targetOrbId);
 
     if (!sourceOrb || !targetOrb) {
       continue;
@@ -239,6 +317,6 @@ export function projectWorldToRenderScene(
     ),
     trails: options.trails ?? [],
     listener: { x: 0.5, y: 0.5 },
-    environment: deriveWorldEnvironment(world),
+    environment: worldEnvironment(world),
   };
 }
