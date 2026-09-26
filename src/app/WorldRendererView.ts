@@ -111,6 +111,7 @@ export class WorldRendererView {
   private performanceAverageMs = 0;
   private performanceSlowSamples = 0;
   private performanceFastSamples = 0;
+  private viewportPolicyDirty = false;
   private currentWorldId: string | null = null;
   private fieldTransitionsActive = false;
   private lastMotionInvalidationMs = Number.NEGATIVE_INFINITY;
@@ -560,7 +561,6 @@ export class WorldRendererView {
       this.renderer.restore();
       this.contextLost = false;
       this.shell.dataset.rendererState = 'ready';
-    this.shell.dataset.rendererPressure = 'normal';
       if (this.performancePressure === 0) {
         this.setPerformancePressure(1);
       }
@@ -593,6 +593,7 @@ export class WorldRendererView {
     this.renderer = createWorldRenderer(canvas);
     this.shell.dataset.rendererV2 = this.renderer.kind;
     this.shell.dataset.rendererState = 'ready';
+    this.shell.dataset.rendererPressure = 'normal';
 
     this.clock = new AnimationClock((timestampMs) => {
       return this.renderFrame(timestampMs);
@@ -1348,7 +1349,8 @@ export class WorldRendererView {
       : pressure === 1
         ? 'reduced'
         : 'minimal';
-    this.syncViewport();
+    this.viewportPolicyDirty = true;
+    this.requestRender();
   }
 
   private samplePerformance(renderMs: number): void {
@@ -1403,6 +1405,7 @@ export class WorldRendererView {
   }
 
   private syncViewport(): void {
+    this.viewportPolicyDirty = false;
     const rect = this.worldCanvas.getBoundingClientRect();
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
@@ -1437,6 +1440,10 @@ export class WorldRendererView {
   private renderFrame(timestampMs: number): boolean {
     if (this.contextLost || !this.scene) {
       return false;
+    }
+
+    if (this.viewportPolicyDirty) {
+      this.syncViewport();
     }
 
     const trailChanged = this.trailHistory.prune(
