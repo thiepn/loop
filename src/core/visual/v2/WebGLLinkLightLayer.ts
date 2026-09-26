@@ -17,6 +17,7 @@ import { linkChoreographyBoost } from './ChoreographyModel';
 import type {
   RenderEventSample,
   RenderLink,
+  RenderLinkGhost,
   RenderLinkCrossInteraction,
 } from './RenderTypes';
 
