@@ -24,6 +24,15 @@ import {
   deriveFieldMaterial,
 } from './FieldMaterialModel';
 import { deriveOrbMaterial } from './OrbMaterialModel';
+import {
+  deriveCrossEnvironment,
+  deriveFieldCrossInteraction,
+  deriveLinkCrossInteraction,
+  deriveOrbCouplings,
+  deriveOrbCrossInteractions,
+  deriveToyCrossInteraction,
+} from './CrossSystemModel';
+
 const environmentCache = new WeakMap<
   WorldDocument,
   ReturnType<typeof deriveWorldEnvironment>
@@ -107,15 +116,6 @@ function orbIndex(
 
   return index;
 }
-
-import {
-  deriveCrossEnvironment,
-  deriveFieldCrossInteraction,
-  deriveLinkCrossInteraction,
-  deriveOrbCouplings,
-  deriveOrbCrossInteractions,
-  deriveToyCrossInteraction,
-} from './CrossSystemModel';
 
 export interface SceneProjectionOptions {
   readonly selectedOrbId: string | null;
