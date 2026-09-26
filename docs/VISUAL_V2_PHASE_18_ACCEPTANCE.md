@@ -68,9 +68,14 @@
 - [x] existing forced-colors + Reduce Motion presentation stress.
 - [x] existing renderer-less compatibility presentation.
 - [x] exact final tree passes strict typecheck/unit/soak suite.
-- [x] production JS+CSS raw/gzip budgets pass unchanged: 504,921 raw bytes / 122,641 gzip bytes.
+- [x] production JS+CSS raw/gzip budgets pass unchanged: 505,133 raw bytes / 122,694 gzip bytes.
 - [x] browser performance certification passes.
-- [ ] full Release Candidate Matrix passes after merge.
+- [x] full Release Candidate Matrix passes after merge across Chromium desktop, Firefox desktop, Android Chromium, iPhone WebKit and iPad WebKit.
+
+## RC hardening
+- [x] renderer-less Chromium exposed onboarding glow overriding Reduce Glow; the semantic fallback now suppresses the drop-shadow while retaining non-glow brightness emphasis.
+- [x] Chromium then exposed the 180 ms Orb filter transition retaining stale glow after the setting changed; Reduce Glow now disables filter transitions so glow removal is immediate.
+- [x] the final repaired main tree passes Verify and the full cross-browser Release Candidate Matrix.
 
 ## Exit condition
 
