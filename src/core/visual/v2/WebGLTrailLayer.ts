@@ -1,3 +1,4 @@
+import { DynamicVertexBuffer } from './DynamicVertexBuffer';
 import type { VisualPreferences } from '../VisualQuality';
 import {
   smoothedTrailPoints,
@@ -182,6 +183,8 @@ export class WebGLTrailLayer {
   private readonly positionLocation: number;
   private readonly colorLocation: number;
   private readonly resolution: WebGLUniformLocation;
+  private readonly vertices: number[] = [];
+  private readonly uploader: DynamicVertexBuffer;
 
   public constructor(
     private readonly gl: WebGL2RenderingContext,
@@ -195,6 +198,7 @@ export class WebGLTrailLayer {
     }
 
     this.buffer = buffer;
+    this.uploader = new DynamicVertexBuffer(gl, buffer);
     this.positionLocation = gl.getAttribLocation(
       this.program,
       'a_position',
@@ -225,7 +229,8 @@ export class WebGLTrailLayer {
     const detail = renderPolicyForPreferences(
       preferences,
     ).trailDetail;
-    const vertices: number[] = [];
+    const vertices = this.vertices;
+    vertices.length = 0;
 
     for (const trail of trails) {
       const points = smoothedTrailPoints(
@@ -337,18 +342,12 @@ export class WebGLTrailLayer {
     }
 
     const gl = this.gl;
-    const data = new Float32Array(vertices);
+    const length = this.uploader.upload(vertices);
     const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(this.program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      data,
-      gl.DYNAMIC_DRAW,
-    );
     gl.uniform2f(this.resolution, width, height);
 
     gl.enableVertexAttribArray(this.positionLocation);
@@ -374,7 +373,7 @@ export class WebGLTrailLayer {
     gl.drawArrays(
       gl.TRIANGLES,
       0,
-      data.length / 6,
+      length / 6,
     );
   }
 
