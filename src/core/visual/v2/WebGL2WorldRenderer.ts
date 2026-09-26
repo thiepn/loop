@@ -1,3 +1,4 @@
+import { DynamicVertexBuffer } from './DynamicVertexBuffer';
 import type { VisualPreferences } from '../VisualQuality';
 import {
   ROLE_RENDER_COLORS,
@@ -150,6 +151,15 @@ function requiredUniform(
   return location;
 }
 
+const DISC_CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+] as const;
+
 function pushDisc(
   target: number[],
   x: number,
@@ -158,16 +168,7 @@ function pushDisc(
   radiusY: number,
   color: RenderColor,
 ): void {
-  const corners = [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [-1, 1],
-    [1, -1],
-    [1, 1],
-  ] as const;
-
-  for (const [localX, localY] of corners) {
+  for (const [localX, localY] of DISC_CORNERS) {
     target.push(
       x + localX * radiusX,
       y + localY * radiusY,
@@ -184,6 +185,8 @@ function pushDisc(
 export class WebGL2WorldRenderer implements WorldRenderer {
   public readonly kind = 'webgl2' as const;
   private disc: DiscProgramResources | null = null;
+  private discUploader: DynamicVertexBuffer | null = null;
+  private readonly discVertices: number[] = [];
   private environment: WebGLEnvironmentLayer | null = null;
   private crossLayer: WebGLCrossSystemLayer | null = null;
   private fieldLayer: WebGLFieldMaterialLayer | null = null;
@@ -254,7 +257,8 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       height,
       dpr,
     );
-    const discVertices: number[] = [];
+    const discVertices = this.discVertices;
+    discVertices.length = 0;
 
     for (const item of delight.dots) {
       pushDisc(
@@ -454,14 +458,16 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       DISC_VERTEX_SOURCE,
       DISC_FRAGMENT_SOURCE,
     );
+    const discBuffer = requiredBuffer(gl);
     this.disc = {
       program: discProgram,
-      buffer: requiredBuffer(gl),
+      buffer: discBuffer,
       positionLocation: gl.getAttribLocation(discProgram, 'a_position'),
       localLocation: gl.getAttribLocation(discProgram, 'a_local'),
       colorLocation: gl.getAttribLocation(discProgram, 'a_color'),
       resolutionLocation: requiredUniform(gl, discProgram, 'u_resolution'),
     };
+    this.discUploader = new DynamicVertexBuffer(gl, discBuffer);
 
     this.environment = new WebGLEnvironmentLayer(gl);
     this.crossLayer = new WebGLCrossSystemLayer(gl);
@@ -495,6 +501,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       this.gl.deleteBuffer(this.disc.buffer);
       this.gl.deleteProgram(this.disc.program);
       this.disc = null;
+      this.discUploader = null;
     }
 
   }
@@ -506,12 +513,14 @@ export class WebGL2WorldRenderer implements WorldRenderer {
     height: number,
   ): void {
     const gl = this.gl;
-    const data = new Float32Array(vertices);
+    const length = this.discUploader?.upload(vertices) ?? 0;
     const stride = 8 * Float32Array.BYTES_PER_ELEMENT;
 
+    if (length === 0) {
+      return;
+    }
+
     gl.useProgram(resources.program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, resources.buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
     gl.uniform2f(resources.resolutionLocation, width, height);
 
     gl.enableVertexAttribArray(resources.positionLocation);
@@ -544,7 +553,7 @@ export class WebGL2WorldRenderer implements WorldRenderer {
       4 * Float32Array.BYTES_PER_ELEMENT,
     );
 
-    gl.drawArrays(gl.TRIANGLES, 0, data.length / 8);
+    gl.drawArrays(gl.TRIANGLES, 0, length / 8);
   }
 
   private pushEventDiscs(
