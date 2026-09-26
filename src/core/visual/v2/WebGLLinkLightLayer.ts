@@ -17,7 +17,6 @@ import { linkChoreographyBoost } from './ChoreographyModel';
 import type {
   RenderEventSample,
   RenderLink,
-  RenderLinkGhost,
   RenderLinkCrossInteraction,
 } from './RenderTypes';
 
@@ -31,21 +30,13 @@ function ribbon(t:number[],a:PixelPoint,b:PixelPoint,w:number,c1:RenderColor,c2:
 function diamond(t:number[],p:PixelPoint,r:number,c:RenderColor,a:number){pushV(t,p.x,p.y-r,c,a);pushV(t,p.x+r,p.y,c,a);pushV(t,p.x,p.y+r,c,a);pushV(t,p.x,p.y-r,c,a);pushV(t,p.x,p.y+r,c,a);pushV(t,p.x-r,p.y,c,a);}
 function pathPoint(points:readonly PixelPoint[],progress:number):PixelPoint|null{if(points.length<2)return null;const scaled=Math.max(0,Math.min(1,progress))*(points.length-1);const i=Math.min(points.length-2,Math.floor(scaled));const f=scaled-i;const a=points[i]!,b=points[i+1]!;return{x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};}
 function createdProgress(id:string,events:readonly RenderEventSample[]){for(const s of events)if(s.event.kind==='link-created'&&s.event.linkId===id)return s.progress;return null;}
-function pulseProgress(id:string,events:readonly RenderEventSample[]){
-  return events.filter(
-    (s): s is RenderEventSample & {event:{kind:'link-pulse';linkId:string;intensity:number}} =>
-      s.event.kind==='link-pulse'&&s.event.linkId===id,
-  );
-}
-function ghostLinks(events:readonly RenderEventSample[]){return events.filter((s):s is RenderEventSample & {event:{kind:'link-deleted';link:RenderLinkGhost}}=>s.event.kind==='link-deleted');}
-
 export class WebGLLinkLightLayer{
  private readonly p:WebGLProgram;private readonly b:WebGLBuffer;private readonly pos:number;private readonly color:number;private readonly res:WebGLUniformLocation;private readonly v:number[]=[];private readonly uploader:DynamicVertexBuffer;
  public constructor(private readonly gl:WebGL2RenderingContext){this.p=prog(gl);const b=gl.createBuffer();if(!b)throw new Error("link buffer");this.b=b;this.uploader=new DynamicVertexBuffer(gl,b);this.pos=gl.getAttribLocation(this.p,'a_position');this.color=gl.getAttribLocation(this.p,'a_color');const r=gl.getUniformLocation(this.p,'u_resolution');if(!r)throw new Error("link res");this.res=r;}
  public render(links:readonly RenderLink[],preferences:Readonly<VisualPreferences>,events:readonly RenderEventSample[],width:number,height:number,dpr:number):void{
   const v=this.v;v.length=0;const boost=linkChoreographyBoost(events);
   for(const link of links)this.pushLink(v,link,preferences,events,width,height,dpr,1,boost);
-  for(const sample of ghostLinks(events)){const g=sample.event.link;this.pushGhost(v,g,preferences,width,height,dpr,Math.pow(1-sample.progress,1.4));}
+  for(const sample of events){if(sample.event.kind==='link-deleted'){const g=sample.event.link;this.pushGhost(v,g,preferences,width,height,dpr,Math.pow(1-sample.progress,1.4));}}
   if(v.length===0)return;const gl=this.gl,length=this.uploader.upload(v),stride=6*4;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.useProgram(this.p);gl.uniform2f(this.res,width,height);gl.enableVertexAttribArray(this.pos);gl.vertexAttribPointer(this.pos,2,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(this.color);gl.vertexAttribPointer(this.color,4,gl.FLOAT,false,stride,8);gl.drawArrays(gl.TRIANGLES,0,length/6);
  }
  private pushLink(v:number[],link:RenderLink,preferences:Readonly<VisualPreferences>,events:readonly RenderEventSample[],width:number,height:number,dpr:number,alpha:number,boost:number){
@@ -55,7 +46,7 @@ export class WebGLLinkLightLayer{
   const a=colorFor(link.sourceRole,link.type,link.cross),b=colorFor(link.targetRole,link.type,link.cross);
   const selected=link.selected?1:0;const baseW=(selected?3.4:2.1)*dpr*(1+link.cross.fieldInfluence.space*.16)*(1+boost*.08);const glowW=baseW*(preferences.reduceBloom?1.8:3.3)*(1+boost*.18);
   for(let i=1;i<=max&&i<points.length;i++){if(link.cross.fieldInfluence.frost>.34&&i%2===0)continue;const t0=(i-1)/(points.length-1),t1=i/(points.length-1),c0=mixRenderColor(a,b,t0),c1=mixRenderColor(a,b,t1);ribbon(v,points[i-1]!,points[i]!,glowW,c0,c1,alpha*(preferences.reduceBloom?.08:.13)*(1+boost*.25));ribbon(v,points[i-1]!,points[i]!,baseW,c0,c1,alpha*(selected?.9:.62)*(1+boost*.12));}
-  for(const sample of pulseProgress(link.id,events)){for(const p of semanticLinkPacketDirections(link,sample.progress)){const pt=pathPoint(points,p);if(!pt)continue;const c=mixRenderColor(a,b,p);diamond(v,pt,(3.4+sample.event.intensity*3.6)*dpr,c,(1-sample.progress)*.9);}}
+  for(const sample of events){if(sample.event.kind!=='link-pulse'||sample.event.linkId!==link.id)continue;for(const p of semanticLinkPacketDirections(link,sample.progress)){const pt=pathPoint(points,p);if(!pt)continue;const c=mixRenderColor(a,b,p);diamond(v,pt,(3.4+sample.event.intensity*3.6)*dpr,c,(1-sample.progress)*.9);}}
  }
  private pushGhost(v:number[],g:RenderLinkGhost,preferences:Readonly<VisualPreferences>,width:number,height:number,dpr:number,alpha:number){
   const points=crossAffectedLinkPoints(curvedLinkPoints(g.id,g.source,g.target,width,height,20),g.cross,width,height);const a=colorFor(g.sourceRole,g.type,g.cross),b=colorFor(g.targetRole,g.type,g.cross);
