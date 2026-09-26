@@ -6199,6 +6199,10 @@ a:focus-visible,
   filter: none;
 }
 
+.playground-shell[data-reduce-bloom="true"] .orb-visual {
+  transition-property: opacity;
+}
+
 .playground-shell[data-reduce-bloom="true"] :is(
   .field-surface,
   .toy-surface,
