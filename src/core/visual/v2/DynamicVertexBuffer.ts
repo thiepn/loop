@@ -48,9 +48,4 @@ export class DynamicVertexBuffer {
 
     return length;
   }
-
-  public reset(): void {
-    this.data = new Float32Array(0);
-    this.gpuCapacity = 0;
-  }
 }
